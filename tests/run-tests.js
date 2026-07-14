@@ -5,6 +5,7 @@ const path = require('path');
 const root = path.resolve(__dirname, '..');
 const data = require(path.join(root, 'data.js'));
 const timeline = require(path.join(root, 'timeline.js'));
+const i18n = require(path.join(root, 'i18n.js'));
 
 let passed = 0;
 
@@ -84,6 +85,48 @@ test('missing URL numbers stay absent instead of becoming year zero', function (
   assert.strictEqual(timeline.numericParam(empty, 'start'), undefined);
   assert.strictEqual(timeline.numericParam(explicitZero, 'start'), 0);
   assert.strictEqual(timeline.numericParam(new URLSearchParams('zoom=nope'), 'zoom'), undefined);
+});
+
+test('locale normalization and interface copy support Russian and English', function () {
+  assert.strictEqual(i18n.normalizeLocale('en-US'), 'en');
+  assert.strictEqual(i18n.normalizeLocale('ru-RU'), 'ru');
+  assert.strictEqual(i18n.normalizeLocale('de-DE'), 'en');
+  assert.strictEqual(i18n.text('ru', 'siteName'), 'Параллельные миры');
+  assert.strictEqual(i18n.text('en', 'siteName'), 'Parallel Worlds');
+  assert.strictEqual(i18n.text('xx', 'siteName'), 'Parallel Worlds');
+});
+
+test('English localization covers every historical track, period, note, and event', function () {
+  const english = i18n.localizeData(data, 'en');
+  assert.strictEqual(english.tracks.length, data.tracks.length);
+  assert.strictEqual(english.tracks.find(function (track) { return track.id === 'byzantium'; }).name, 'Byzantine Empire');
+  assert.strictEqual(english.tracks.find(function (track) { return track.id === 'babylonia'; }).periods[0].name, 'Old Babylonian period');
+  assert.strictEqual(english.tracks.find(function (track) { return track.id === 'egypt'; }).events[1].title, 'Pyramids of Giza');
+
+  english.tracks.forEach(function (track, trackIndex) {
+    const original = data.tracks[trackIndex];
+    assert.ok(track.name && track.summary, 'missing English track copy for ' + track.id);
+    assert.strictEqual(track.periods.length, original.periods.length, 'period count drift for ' + track.id);
+    assert.strictEqual(track.events.length, original.events.length, 'event count drift for ' + track.id);
+    track.periods.forEach(function (period, index) {
+      assert.ok(period.name, 'missing English period ' + track.id + ':' + index);
+      if (original.periods[index].note) assert.ok(period.note, 'missing English note ' + track.id + ':' + index);
+    });
+    track.events.forEach(function (event, index) {
+      assert.ok(event.title, 'missing English event ' + track.id + ':' + index);
+      if (original.events[index].note) assert.ok(event.note, 'missing English event note ' + track.id + ':' + index);
+    });
+  });
+});
+
+test('localized data drives English search and era notation', function () {
+  const english = i18n.localizeData(data, 'en');
+  const result = timeline.filterTracks(english.tracks, { query: 'Old Babylonian', region: 'all', type: 'all' });
+  assert.deepStrictEqual(result.map(function (track) { return track.id; }), ['babylonia']);
+  assert.strictEqual(timeline.formatYear(-753, 'en'), '753 BCE');
+  assert.strictEqual(timeline.formatYear(0, 'en'), '1 CE');
+  assert.strictEqual(timeline.formatYear(1453, 'en'), '1453 CE');
+  assert.strictEqual(timeline.formatYear(-753, 'ru'), '753 до н. э.');
 });
 
 test('required static site and Pages files exist and use relative assets', function () {

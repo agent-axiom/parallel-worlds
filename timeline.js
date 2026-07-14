@@ -34,9 +34,10 @@
     return clamp(((year - start) / (end - start)) * 100, 0, 100);
   }
 
-  function formatYear(year) {
-    if (year < 0) return Math.abs(year) + ' до н. э.';
-    return (year === 0 ? 1 : year) + ' н. э.';
+  function formatYear(year, locale) {
+    var english = String(locale || 'ru').toLowerCase().indexOf('en') === 0;
+    if (year < 0) return Math.abs(year) + (english ? ' BCE' : ' до н. э.');
+    return (year === 0 ? 1 : year) + (english ? ' CE' : ' н. э.');
   }
 
   function activeTracks(tracks, year) {
@@ -64,11 +65,18 @@
     });
   }
 
-  function buildCsv(tracks) {
-    var rows = [['Линия', 'Тип', 'Регион', 'Период', 'Начало', 'Конец', 'Примечание']];
+  function buildCsv(tracks, options) {
+    options = options || {};
+    var headers = options.headers || ['Линия', 'Тип', 'Регион', 'Период', 'Начало', 'Конец', 'Примечание'];
+    var rows = [headers];
     tracks.forEach(function (track) {
       track.periods.forEach(function (period) {
-        rows.push([track.name, track.type, track.region, period.name, period.start, period.end, period.note || '']);
+        rows.push([
+          track.name,
+          options.typeNames && options.typeNames[track.type] || track.type,
+          options.regionNames && options.regionNames[track.region] || track.region,
+          period.name, period.start, period.end, period.note || ''
+        ]);
       });
     });
     return rows.map(function (row) {
