@@ -116,6 +116,11 @@ test('English localization covers every historical track, period, note, and even
       assert.ok(event.title, 'missing English event ' + track.id + ':' + index);
       if (original.events[index].note) assert.ok(event.note, 'missing English event note ' + track.id + ':' + index);
     });
+    const englishCopy = [track.name, track.summary]
+      .concat(track.periods.map(function (period) { return period.name + ' ' + period.note; }))
+      .concat(track.events.map(function (event) { return event.title + ' ' + event.note; }))
+      .join(' ');
+    assert.ok(!/[А-Яа-яЁё]/.test(englishCopy), 'Cyrillic fallback remains in ' + track.id);
   });
 });
 
@@ -129,16 +134,45 @@ test('localized data drives English search and era notation', function () {
   assert.strictEqual(timeline.formatYear(-753, 'ru'), '753 до н. э.');
 });
 
+test('CSV export accepts localized headers, types, regions, and historical copy', function () {
+  const english = i18n.localizeData(data, 'en');
+  const babylonia = english.tracks.filter(function (track) { return track.id === 'babylonia'; });
+  const csv = timeline.buildCsv(babylonia, {
+    headers: ['Track', 'Type', 'Region', 'Period', 'Start', 'End', 'Note'],
+    typeNames: { civilization: 'civilization', tradition: 'tradition' },
+    regionNames: { mesopotamia: 'Mesopotamia' }
+  });
+  assert.ok(csv.indexOf('"Track","Type","Region"') === 0);
+  assert.ok(csv.indexOf('"Babylonia","civilization","Mesopotamia","Old Babylonian period"') !== -1);
+});
+
 test('required static site and Pages files exist and use relative assets', function () {
-  ['index.html', 'styles.css', 'app.js', 'data.js', 'timeline.js', '.nojekyll',
+  ['index.html', 'styles.css', 'app.js', 'data.js', 'i18n.js', 'timeline.js', '.nojekyll',
     '.github/workflows/deploy-pages.yml', 'scripts/validate.sh', 'README.md']
     .forEach(function (file) { assert.ok(fs.existsSync(path.join(root, file)), 'missing ' + file); });
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  ['styles.css', 'data.js', 'timeline.js', 'app.js'].forEach(function (asset) {
+  ['styles.css', 'data.js', 'i18n.js', 'timeline.js', 'app.js'].forEach(function (asset) {
     assert.ok(html.indexOf('="' + asset + '"') !== -1, 'asset is not relative: ' + asset);
   });
   assert.ok(html.indexOf('id="timeline"') !== -1);
   assert.ok(html.indexOf('id="detail-dialog"') !== -1);
+  assert.ok(html.indexOf('id="language-button"') !== -1);
+  assert.ok(html.indexOf('data-i18n="heroTitleLead"') !== -1);
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/deploy-pages.yml'), 'utf8');
+  assert.ok(workflow.indexOf('i18n.js') !== -1, 'Pages artifact does not include i18n.js');
+  const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+  assert.ok(app.indexOf("params.set('lang', state.lang)") !== -1, 'language is not persisted in URL state');
+});
+
+test('concise Russian and English launch posts include public links', function () {
+  ['launch-ru.md', 'launch-en.md'].forEach(function (filename) {
+    const postPath = path.join(root, 'docs/posts', filename);
+    assert.ok(fs.existsSync(postPath), 'missing ' + filename);
+    const post = fs.readFileSync(postPath, 'utf8');
+    assert.ok(post.indexOf('https://agent-axiom.github.io/parallel-worlds/') !== -1, 'missing site link in ' + filename);
+    assert.ok(post.indexOf('https://github.com/agent-axiom/parallel-worlds') !== -1, 'missing repository link in ' + filename);
+    assert.ok(post.split(/\s+/).length <= 130, filename + ' is not concise');
+  });
 });
 
 console.log('\nAll tests passed (' + passed + ')');

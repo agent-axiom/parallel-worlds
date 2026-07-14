@@ -121,6 +121,12 @@ a { color: inherit; }
   letter-spacing: .04em;
 }
 .icon-button:hover, .text-button:hover { color: var(--accent); }
+.language-button {
+  min-width: 2.7rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 99px;
+  padding-inline: .65rem;
+}
 
 .hero-grid {
   display: grid;
@@ -475,6 +481,8 @@ dialog h2 { margin: 1rem 0; }
   .hero { padding-bottom: 3rem; }
   .topbar { min-height: 64px; }
   .brand > span:last-child { display: none; }
+  .topbar-actions { gap: .2rem; }
+  .icon-button { padding-inline: .55rem; }
   .hero-grid { padding-top: 3.5rem; gap: 2.8rem; }
   h1 { font-size: clamp(3rem, 14vw, 4.2rem); }
   .hero-stats strong { font-size: 1.7rem; }

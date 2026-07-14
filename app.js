@@ -1,37 +1,50 @@
 (function () {
   'use strict';
 
-  var data = window.PARALLEL_WORLDS_DATA;
+  var rawData = window.PARALLEL_WORLDS_DATA;
   var timeline = window.ParallelTimeline;
+  var i18n = window.ParallelWorldsI18n;
+  var activeData = rawData;
+  var regionNames = {};
   var regionColors = {
     mesopotamia: '#a7512d', 'west-asia': '#8d5b35', africa: '#b37a27', mediterranean: '#436b7b',
     'south-asia': '#9b3f62', 'east-asia': '#a63e36', 'central-asia': '#667348',
     'southeast-asia': '#258074', oceania: '#397e9c', americas: '#75609b'
   };
-  var regionNames = {};
-  data.regions.forEach(function (region) { regionNames[region.id] = region.name; });
+
+  function initialLocale() {
+    var requested = new URLSearchParams(window.location.search).get('lang');
+    if (requested === 'ru' || requested === 'en') return requested;
+    var saved = localStorage.getItem('parallel-worlds-language');
+    if (saved === 'ru' || saved === 'en') return saved;
+    return i18n.normalizeLocale(navigator.language || 'en');
+  }
 
   var defaults = {
-    query: '', region: 'all', type: 'all', start: data.range.start, end: data.range.end,
-    year: -500, zoom: 100, theme: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    query: '', region: 'all', type: 'all', start: rawData.range.start, end: rawData.range.end,
+    year: -500, zoom: 100, lang: initialLocale(),
+    theme: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   };
   var state = Object.assign({}, defaults);
   var elements = {};
   var toastTimer;
 
   function get(id) { return document.getElementById(id); }
+  function t(key, values) { return i18n.text(state.lang, key, values); }
+  function formatYear(year) { return timeline.formatYear(year, state.lang); }
 
   function readUrlState() {
     var params = new URLSearchParams(window.location.search);
+    if (params.get('lang') === 'ru' || params.get('lang') === 'en') state.lang = params.get('lang');
     if (params.has('q')) state.query = params.get('q').slice(0, 100);
-    if (data.regions.some(function (region) { return region.id === params.get('region'); })) state.region = params.get('region');
+    if (rawData.regions.some(function (region) { return region.id === params.get('region'); })) state.region = params.get('region');
     if (['all', 'civilization', 'tradition'].indexOf(params.get('type')) !== -1) state.type = params.get('type');
     var start = timeline.numericParam(params, 'start');
     var end = timeline.numericParam(params, 'end');
     var year = timeline.numericParam(params, 'year');
     var zoom = timeline.numericParam(params, 'zoom');
-    if (start !== undefined) state.start = timeline.clamp(start, data.range.start, data.range.end - 1);
-    if (end !== undefined) state.end = timeline.clamp(end, state.start + 1, data.range.end);
+    if (start !== undefined) state.start = timeline.clamp(start, rawData.range.start, rawData.range.end - 1);
+    if (end !== undefined) state.end = timeline.clamp(end, state.start + 1, rawData.range.end);
     if (year !== undefined) state.year = timeline.clamp(year, state.start, state.end);
     if (zoom !== undefined) state.zoom = timeline.clamp(zoom, 75, 240);
     var savedTheme = localStorage.getItem('parallel-worlds-theme');
@@ -40,6 +53,7 @@
 
   function writeUrlState() {
     var params = new URLSearchParams();
+    params.set('lang', state.lang);
     if (state.query) params.set('q', state.query);
     if (state.region !== defaults.region) params.set('region', state.region);
     if (state.type !== defaults.type) params.set('type', state.type);
@@ -47,8 +61,7 @@
     if (state.end !== defaults.end) params.set('end', state.end);
     if (state.year !== defaults.year) params.set('year', state.year);
     if (state.zoom !== defaults.zoom) params.set('zoom', state.zoom);
-    var query = params.toString();
-    history.replaceState(null, '', window.location.pathname + (query ? '?' + query : '') + window.location.hash);
+    history.replaceState(null, '', window.location.pathname + '?' + params.toString() + window.location.hash);
   }
 
   function escapeHtml(value) {
@@ -62,33 +75,58 @@
       'export-button', 'range-start', 'range-end', 'year-input', 'year-output', 'contemporary-summary',
       'timeline', 'empty-state', 'reset-button', 'contemporary-list', 'detail-dialog', 'dialog-title',
       'dialog-meta', 'dialog-summary', 'dialog-periods', 'dialog-events', 'dialog-sources', 'dialog-close',
-      'source-links', 'theme-button', 'share-button', 'toast', 'track-count', 'period-count', 'event-count']
+      'source-links', 'theme-button', 'language-button', 'share-button', 'toast', 'track-count', 'period-count', 'event-count']
       .forEach(function (id) { elements[id] = get(id); });
   }
 
-  function initializeControls() {
-    data.regions.forEach(function (region) {
-      var option = document.createElement('option');
-      option.value = region.id;
-      option.textContent = region.name;
-      elements['region-select'].appendChild(option);
-    });
-    data.presets.forEach(function (preset) {
-      var button = document.createElement('button');
-      button.className = 'preset-button';
-      button.type = 'button';
-      button.dataset.preset = preset.id;
-      button.textContent = preset.name;
-      elements['preset-buttons'].appendChild(button);
-    });
-    Object.keys(data.sources).forEach(function (id) {
-      var source = data.sources[id];
+  function initializeSources() {
+    Object.keys(rawData.sources).forEach(function (id) {
+      var source = rawData.sources[id];
       var link = document.createElement('a');
       link.href = source.url;
       link.target = '_blank';
       link.rel = 'noreferrer';
       link.textContent = source.title + ' ↗';
       elements['source-links'].appendChild(link);
+    });
+  }
+
+  function applyStaticCopy() {
+    document.documentElement.lang = state.lang;
+    document.title = t('pageTitle');
+    document.querySelector('meta[name="description"]').setAttribute('content', t('metaDescription'));
+    Array.prototype.forEach.call(document.querySelectorAll('[data-i18n]'), function (element) {
+      element.textContent = t(element.dataset.i18n);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-i18n-placeholder]'), function (element) {
+      element.setAttribute('placeholder', t(element.dataset.i18nPlaceholder));
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-i18n-title]'), function (element) {
+      element.setAttribute('title', t(element.dataset.i18nTitle));
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-i18n-aria]'), function (element) {
+      element.setAttribute('aria-label', t(element.dataset.i18nAria));
+    });
+  }
+
+  function renderLocaleControls() {
+    regionNames = {};
+    elements['region-select'].innerHTML = '';
+    activeData.regions.forEach(function (region) {
+      regionNames[region.id] = region.name;
+      var option = document.createElement('option');
+      option.value = region.id;
+      option.textContent = region.name;
+      elements['region-select'].appendChild(option);
+    });
+    elements['preset-buttons'].innerHTML = '';
+    activeData.presets.forEach(function (preset) {
+      var button = document.createElement('button');
+      button.className = 'preset-button';
+      button.type = 'button';
+      button.dataset.preset = preset.id;
+      button.textContent = preset.name;
+      elements['preset-buttons'].appendChild(button);
     });
   }
 
@@ -103,17 +141,17 @@
     elements['year-input'].min = state.start;
     elements['year-input'].max = state.end;
     elements['year-input'].value = state.year;
-    elements['year-output'].textContent = timeline.formatYear(state.year);
+    elements['year-output'].textContent = formatYear(state.year);
     document.documentElement.dataset.theme = state.theme;
     document.querySelector('meta[name="theme-color"]').setAttribute('content', state.theme === 'dark' ? '#191d1b' : '#f1eadb');
     Array.prototype.forEach.call(elements['preset-buttons'].children, function (button) {
-      var preset = data.presets.find(function (item) { return item.id === button.dataset.preset; });
+      var preset = activeData.presets.find(function (item) { return item.id === button.dataset.preset; });
       button.classList.toggle('active', preset.start === state.start && preset.end === state.end && (!preset.region || preset.region === state.region));
     });
   }
 
   function filteredTracks() {
-    return timeline.filterTracks(data.tracks, state);
+    return timeline.filterTracks(activeData.tracks, state);
   }
 
   function axisHtml() {
@@ -121,33 +159,33 @@
     for (var index = 0; index <= 10; index += 1) {
       var percent = index * 10;
       var year = Math.round(state.start + (state.end - state.start) * (index / 10));
-      ticks.push('<div class="axis-tick" style="left:' + percent + '%"><span>' + escapeHtml(timeline.formatYear(year)) + '</span></div>');
+      ticks.push('<div class="axis-tick" style="left:' + percent + '%"><span>' + escapeHtml(formatYear(year)) + '</span></div>');
     }
-    return '<div class="timeline-axis"><div class="axis-corner">Линия / период</div><div class="axis-plot">' + ticks.join('') + '</div></div>';
+    return '<div class="timeline-axis"><div class="axis-corner">' + escapeHtml(t('linePeriod')) + '</div><div class="axis-plot">' + ticks.join('') + '</div></div>';
   }
 
   function trackHtml(track) {
     var periods = timeline.visiblePeriods(track, state.start, state.end).map(function (period) {
       var left = timeline.yearToPercent(period.clippedStart, state.start, state.end);
       var width = timeline.yearToPercent(period.clippedEnd, state.start, state.end) - left;
-      var title = period.name + ': ' + timeline.formatYear(period.start) + ' — ' + timeline.formatYear(period.end);
+      var title = period.name + ': ' + formatYear(period.start) + ' — ' + formatYear(period.end);
       return '<div class="period" style="left:' + left + '%;width:' + Math.max(width, .12) + '%" title="' + escapeHtml(title) + '">' + escapeHtml(period.name) + '</div>';
     }).join('');
     var events = track.events.filter(function (event) { return event.year >= state.start && event.year <= state.end; }).map(function (event) {
       var left = timeline.yearToPercent(event.year, state.start, state.end);
-      return '<span class="event-marker" style="left:' + left + '%" title="' + escapeHtml(timeline.formatYear(event.year) + ' — ' + event.title) + '"></span>';
+      return '<span class="event-marker" style="left:' + left + '%" title="' + escapeHtml(formatYear(event.year) + ' — ' + event.title) + '"></span>';
     }).join('');
     var yearLeft = timeline.yearToPercent(state.year, state.start, state.end);
-    var typeLabel = track.type === 'tradition' ? 'традиция' : 'цивилизация';
+    var typeLabel = track.type === 'tradition' ? t('tradition') : t('civilization');
     return '<div class="track-row ' + track.type + '" role="listitem" style="--region-color:' + regionColors[track.region] + '">' +
-      '<button class="track-label" type="button" data-track="' + track.id + '" title="Открыть подробности: ' + escapeHtml(track.name) + '">' +
+      '<button class="track-label" type="button" data-track="' + track.id + '" title="' + escapeHtml(t('openDetails', { name: track.name })) + '">' +
       '<span class="track-label-marker"></span><span class="track-label-text"><strong>' + escapeHtml(track.name) + '</strong><small>' + escapeHtml(regionNames[track.region]) + ' · ' + typeLabel + '</small></span></button>' +
       '<div class="track-plot">' + periods + events + '<span class="current-year-line" style="left:' + yearLeft + '%"></span></div></div>';
   }
 
   function renderTimeline() {
     var tracks = filteredTracks();
-    var baseWidth = Math.max(920, Math.round(((state.end - state.start) / (data.range.end - data.range.start)) * 1320));
+    var baseWidth = Math.max(920, Math.round(((state.end - state.start) / (rawData.range.end - rawData.range.start)) * 1320));
     document.documentElement.style.setProperty('--plot-width', Math.round(baseWidth * state.zoom / 100) + 'px');
     elements.timeline.innerHTML = axisHtml() + tracks.map(trackHtml).join('');
     elements.timeline.hidden = tracks.length === 0;
@@ -159,9 +197,9 @@
 
   function renderContemporaries() {
     var tracks = timeline.activeTracks(filteredTracks(), state.year);
-    elements['contemporary-summary'].textContent = tracks.length + ' линий активны в ' + timeline.formatYear(state.year);
+    elements['contemporary-summary'].textContent = t('activeLines', { count: tracks.length, year: formatYear(state.year) });
     if (!tracks.length) {
-      elements['contemporary-list'].innerHTML = '<span class="no-contemporaries">В текущей выборке нет линий для этого года.</span>';
+      elements['contemporary-list'].innerHTML = '<span class="no-contemporaries">' + escapeHtml(t('noContemporaries')) + '</span>';
       return;
     }
     elements['contemporary-list'].innerHTML = tracks.map(function (track) {
@@ -173,34 +211,42 @@
   }
 
   function openDetails(id) {
-    var track = data.tracks.find(function (item) { return item.id === id; });
+    var track = activeData.tracks.find(function (item) { return item.id === id; });
     if (!track) return;
     elements['dialog-title'].textContent = track.name;
-    elements['dialog-meta'].textContent = regionNames[track.region] + ' · ' + (track.type === 'tradition' ? 'религия / традиция' : 'цивилизация / общество');
+    elements['dialog-meta'].textContent = regionNames[track.region] + ' · ' + (track.type === 'tradition' ? t('traditionMeta') : t('civilizationMeta'));
     elements['dialog-summary'].textContent = track.summary;
     elements['dialog-periods'].innerHTML = track.periods.map(function (period) {
-      return '<li><strong>' + escapeHtml(period.name) + '</strong><span>' + escapeHtml(timeline.formatYear(period.start)) + ' — ' + escapeHtml(timeline.formatYear(period.end)) + '</span>' + (period.note ? '<p>' + escapeHtml(period.note) + '</p>' : '') + '</li>';
+      return '<li><strong>' + escapeHtml(period.name) + '</strong><span>' + escapeHtml(formatYear(period.start)) + ' — ' + escapeHtml(formatYear(period.end)) + '</span>' + (period.note ? '<p>' + escapeHtml(period.note) + '</p>' : '') + '</li>';
     }).join('');
     elements['dialog-events'].innerHTML = track.events.slice().sort(function (a, b) { return a.year - b.year; }).map(function (event) {
-      return '<li><strong>' + escapeHtml(timeline.formatYear(event.year)) + '</strong><span>' + escapeHtml(event.title) + '</span>' + (event.note ? '<p>' + escapeHtml(event.note) + '</p>' : '') + '</li>';
+      return '<li><strong>' + escapeHtml(formatYear(event.year)) + '</strong><span>' + escapeHtml(event.title) + '</span>' + (event.note ? '<p>' + escapeHtml(event.note) + '</p>' : '') + '</li>';
     }).join('');
-    elements['dialog-sources'].innerHTML = '<strong>Обзорные источники: </strong>' + track.sources.map(function (sourceId) {
-      var source = data.sources[sourceId];
+    elements['dialog-sources'].innerHTML = '<strong>' + escapeHtml(t('detailsSources')) + ' </strong>' + track.sources.map(function (sourceId) {
+      var source = rawData.sources[sourceId];
       return '<a href="' + source.url + '" target="_blank" rel="noreferrer">' + escapeHtml(source.title) + ' ↗</a>';
     }).join(', ');
     if (typeof elements['detail-dialog'].showModal === 'function') elements['detail-dialog'].showModal();
     else elements['detail-dialog'].setAttribute('open', '');
   }
 
+  function closeDetails() {
+    if (typeof elements['detail-dialog'].close === 'function') elements['detail-dialog'].close();
+    else elements['detail-dialog'].removeAttribute('open');
+  }
+
   function renderStats() {
-    var periodCount = data.tracks.reduce(function (sum, track) { return sum + track.periods.length; }, 0);
-    var eventCount = data.tracks.reduce(function (sum, track) { return sum + track.events.length; }, 0);
-    elements['track-count'].textContent = data.tracks.length;
+    var periodCount = rawData.tracks.reduce(function (sum, track) { return sum + track.periods.length; }, 0);
+    var eventCount = rawData.tracks.reduce(function (sum, track) { return sum + track.events.length; }, 0);
+    elements['track-count'].textContent = rawData.tracks.length;
     elements['period-count'].textContent = periodCount;
     elements['event-count'].textContent = eventCount;
   }
 
   function render() {
+    activeData = i18n.localizeData(rawData, state.lang);
+    applyStaticCopy();
+    renderLocaleControls();
     syncControls();
     renderTimeline();
     renderContemporaries();
@@ -208,8 +254,8 @@
   }
 
   function updateRange(start, end) {
-    start = timeline.clamp(Number(start), data.range.start, data.range.end - 1);
-    end = timeline.clamp(Number(end), start + 1, data.range.end);
+    start = timeline.clamp(Number(start), rawData.range.start, rawData.range.end - 1);
+    end = timeline.clamp(Number(end), start + 1, rawData.range.end);
     state.start = start;
     state.end = end;
     state.year = timeline.clamp(state.year, start, end);
@@ -224,11 +270,16 @@
   }
 
   function downloadCsv() {
-    var blob = new Blob(['\ufeff' + timeline.buildCsv(filteredTracks())], { type: 'text/csv;charset=utf-8' });
+    var options = {
+      headers: [t('csvLine'), t('csvType'), t('csvRegion'), t('csvPeriod'), t('csvStart'), t('csvEnd'), t('csvNote')],
+      typeNames: { civilization: t('civilization'), tradition: t('tradition') },
+      regionNames: regionNames
+    };
+    var blob = new Blob(['\ufeff' + timeline.buildCsv(filteredTracks(), options)], { type: 'text/csv;charset=utf-8' });
     var url = URL.createObjectURL(blob);
     var link = document.createElement('a');
     link.href = url;
-    link.download = 'parallel-worlds.csv';
+    link.download = t('csvFilename');
     link.click();
     URL.revokeObjectURL(url);
   }
@@ -244,15 +295,21 @@
     elements['preset-buttons'].addEventListener('click', function (event) {
       var button = event.target.closest('[data-preset]');
       if (!button) return;
-      var preset = data.presets.find(function (item) { return item.id === button.dataset.preset; });
+      var preset = activeData.presets.find(function (item) { return item.id === button.dataset.preset; });
       if (preset.region) state.region = preset.region;
       updateRange(preset.start, preset.end);
     });
     elements['reset-button'].addEventListener('click', function () {
-      state = Object.assign({}, defaults, { theme: state.theme });
+      state = Object.assign({}, defaults, { theme: state.theme, lang: state.lang });
       render();
     });
     elements['export-button'].addEventListener('click', downloadCsv);
+    elements['language-button'].addEventListener('click', function () {
+      state.lang = state.lang === 'ru' ? 'en' : 'ru';
+      state.query = '';
+      localStorage.setItem('parallel-worlds-language', state.lang);
+      render();
+    });
     elements['theme-button'].addEventListener('click', function () {
       state.theme = state.theme === 'dark' ? 'light' : 'dark';
       localStorage.setItem('parallel-worlds-theme', state.theme);
@@ -261,14 +318,14 @@
     elements['share-button'].addEventListener('click', function () {
       var url = window.location.href;
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(url).then(function () { showToast('Ссылка скопирована'); });
+        navigator.clipboard.writeText(url).then(function () { showToast(t('linkCopied')); });
       } else {
-        window.prompt('Скопируйте ссылку', url);
+        window.prompt(t('copyLinkPrompt'), url);
       }
     });
-    elements['dialog-close'].addEventListener('click', function () { elements['detail-dialog'].close(); });
+    elements['dialog-close'].addEventListener('click', closeDetails);
     elements['detail-dialog'].addEventListener('click', function (event) {
-      if (event.target === elements['detail-dialog']) elements['detail-dialog'].close();
+      if (event.target === elements['detail-dialog']) closeDetails();
     });
     document.addEventListener('keydown', function (event) {
       if (event.key === '/' && document.activeElement.tagName !== 'INPUT') {
@@ -281,7 +338,7 @@
   function init() {
     collectElements();
     readUrlState();
-    initializeControls();
+    initializeSources();
     bindEvents();
     renderStats();
     render();
