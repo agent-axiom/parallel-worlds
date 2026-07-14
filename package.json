@@ -1,0 +1,12 @@
+{
+  "name": "parallel-worlds",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Интерактивная сравнительная шкала цивилизаций и религий",
+  "scripts": {
+    "test": "node tests/run-tests.js",
+    "validate": "bash scripts/validate.sh",
+    "serve": "python3 -m http.server 8080"
+  },
+  "license": "MIT"
+}

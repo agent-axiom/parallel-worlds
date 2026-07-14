@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Интерактивная сравнительная шкала цивилизаций и религий от 3500 года до н. э. до 1600 года н. э.">
+  <meta name="theme-color" content="#f1eadb">
+  <title>Параллельные миры — сравнительная шкала истории</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#timeline">К шкале времени</a>
+
+  <header class="hero">
+    <nav class="topbar" aria-label="Основная навигация">
+      <a class="brand" href="./" aria-label="Параллельные миры — главная">
+        <span class="brand-mark" aria-hidden="true">PW</span>
+        <span>Параллельные миры</span>
+      </a>
+      <div class="topbar-actions">
+        <button class="icon-button" id="share-button" type="button" title="Скопировать ссылку">Ссылка</button>
+        <button class="icon-button" id="theme-button" type="button" title="Сменить тему" aria-label="Сменить тему">◐</button>
+      </div>
+    </nav>
+
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">Сравнительная хронология · 3500 до н. э. — 1600 н. э.</p>
+        <h1>История происходила <em>одновременно</em></h1>
+        <p class="hero-lede">Сопоставьте Шумер и Египет, Византию и Китай, майя, ацтеков и инков — вместе с религиозными и философскими традициями, которые пересекали границы государств.</p>
+      </div>
+      <div class="hero-stats" aria-label="Статистика набора данных">
+        <div><strong id="track-count">49</strong><span>исторических линий</span></div>
+        <div><strong id="period-count">196</strong><span>периодов</span></div>
+        <div><strong id="event-count">147</strong><span>ориентиров</span></div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="controls-shell" aria-label="Управление шкалой">
+      <div class="controls-primary">
+        <label class="search-field">
+          <span class="sr-only">Поиск</span>
+          <span aria-hidden="true">⌕</span>
+          <input id="search-input" type="search" placeholder="Найти цивилизацию, период или событие…" autocomplete="off">
+        </label>
+        <label>
+          <span>Регион</span>
+          <select id="region-select"></select>
+        </label>
+        <label>
+          <span>Тип линии</span>
+          <select id="type-select">
+            <option value="all">Все типы</option>
+            <option value="civilization">Цивилизации и государства</option>
+            <option value="tradition">Религии и традиции</option>
+          </select>
+        </label>
+        <label class="zoom-field">
+          <span>Масштаб <output id="zoom-output">100%</output></span>
+          <input id="zoom-input" type="range" min="75" max="240" step="5" value="100">
+        </label>
+      </div>
+
+      <div class="presets-row">
+        <span>Быстрый диапазон</span>
+        <div id="preset-buttons" class="preset-buttons"></div>
+        <button class="text-button" id="export-button" type="button">Экспорт CSV ↓</button>
+      </div>
+
+      <div class="range-row">
+        <label>От <input id="range-start" type="number" min="-3500" max="1599" step="1"></label>
+        <div class="range-rule" aria-hidden="true"></div>
+        <label>До <input id="range-end" type="number" min="-3499" max="1600" step="1"></label>
+      </div>
+    </section>
+
+    <section class="timeline-section" aria-labelledby="timeline-heading">
+      <div class="section-heading">
+        <div>
+          <p class="kicker">Слои времени</p>
+          <h2 id="timeline-heading">Кто жил в одно время?</h2>
+        </div>
+        <p><span class="legend-swatch civilization"></span> цивилизации <span class="legend-swatch tradition"></span> традиции</p>
+      </div>
+
+      <div class="year-explorer">
+        <div class="year-readout">
+          <span>Выбранный год</span>
+          <strong id="year-output">500 до н. э.</strong>
+        </div>
+        <label class="year-slider">
+          <span class="sr-only">Выбрать год</span>
+          <input id="year-input" type="range" min="-3500" max="1600" step="1" value="-500">
+        </label>
+        <p id="contemporary-summary">Перемещайте ползунок, чтобы увидеть современников.</p>
+      </div>
+
+      <div class="timeline-frame">
+        <div class="timeline-scroll" tabindex="0" aria-label="Горизонтальная сравнительная шкала">
+          <div id="timeline" class="timeline" role="list"></div>
+        </div>
+        <div id="empty-state" class="empty-state" hidden>
+          <strong>Ничего не найдено</strong>
+          <span>Измените запрос или сбросьте фильтры.</span>
+          <button id="reset-button" type="button">Сбросить фильтры</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="contemporaries" aria-labelledby="contemporaries-heading">
+      <div>
+        <p class="kicker">Срез одного года</p>
+        <h2 id="contemporaries-heading">На сцене одновременно</h2>
+        <p>Линии, в которых выбранный год попадает хотя бы в один период.</p>
+      </div>
+      <div id="contemporary-list" class="contemporary-list" aria-live="polite"></div>
+    </section>
+
+    <section class="method-note" aria-labelledby="method-heading">
+      <p class="kicker">Как читать шкалу</p>
+      <h2 id="method-heading">Даты — ориентиры, а не стены</h2>
+      <p>Границы периодов условны: культурные практики не прекращаются в один год, а традиции развиваются неодинаково в разных регионах. Шкала предназначена для сравнения крупных хронологических рамок; спорные и традиционные датировки подписаны в карточках.</p>
+      <div id="source-links" class="source-links"></div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Параллельные миры · открытая сравнительная хронология</span>
+    <a href="https://github.com/agent-axiom/parallel-worlds">Исходный код</a>
+  </footer>
+
+  <dialog id="detail-dialog" aria-labelledby="dialog-title">
+    <div class="dialog-topline">
+      <span id="dialog-meta"></span>
+      <button id="dialog-close" type="button" aria-label="Закрыть">×</button>
+    </div>
+    <h2 id="dialog-title"></h2>
+    <p id="dialog-summary" class="dialog-summary"></p>
+    <div class="dialog-columns">
+      <section>
+        <h3>Периоды</h3>
+        <ol id="dialog-periods" class="detail-list"></ol>
+      </section>
+      <section>
+        <h3>Ориентиры</h3>
+        <ol id="dialog-events" class="detail-list events"></ol>
+      </section>
+    </div>
+    <div id="dialog-sources" class="dialog-sources"></div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="data.js"></script>
+  <script src="timeline.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
