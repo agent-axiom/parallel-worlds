@@ -43,6 +43,31 @@ test('chronology exposes deep-time and historical mode ranges', function () {
   assert.deepStrictEqual(chronology.modeRange('historical', range), { start: -3500, end: 1600 });
 });
 
+test('piecewise chronology projects and reverses deep and historical time', function () {
+  const scale = chronology.createScale(-20000, 1600, 'overview', -3500, 0.30);
+  assert.strictEqual(chronology.projectYear(-20000, scale), 0);
+  assert.ok(Math.abs(chronology.projectYear(-3500, scale) - 30) < 0.001);
+  assert.strictEqual(chronology.projectYear(1600, scale), 100);
+  [-20000, -12000, -3500, -1, 1, 1600].forEach(function (year) {
+    const projected = chronology.projectYear(year, scale);
+    assert.ok(Math.abs(chronology.unprojectYear(projected, scale) - year) <= 1, 'round-trip failed for ' + year);
+  });
+  const deep = chronology.createScale(-20000, -3500, 'deep');
+  assert.strictEqual(chronology.projectYear(-11750, deep), 50);
+  const historical = chronology.createScale(-3500, 1600, 'historical');
+  assert.ok(chronology.projectYear(1, historical) > chronology.projectYear(-1, historical));
+});
+
+test('adaptive chronology ticks never manufacture year zero', function () {
+  const overview = chronology.createScale(-20000, 1600, 'overview', -3500, 0.30);
+  const ticks = chronology.ticks(overview, 10);
+  assert.ok(ticks.length >= 8 && ticks.length <= 14);
+  assert.strictEqual(ticks.indexOf(0), -1);
+  assert.ok(ticks.indexOf(-3500) !== -1);
+  assert.strictEqual(chronology.recommendedStep(overview), 500);
+  assert.strictEqual(chronology.recommendedStep(chronology.createScale(-3500, 1600, 'historical')), 20);
+});
+
 test('dataset covers the requested world history scope', function () {
   assert.strictEqual(data.range.start, -3500);
   assert.strictEqual(data.range.end, 1600);

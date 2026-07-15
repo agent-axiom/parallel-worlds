@@ -1,8 +1,9 @@
 (function (root, factory) {
-  var api = factory();
+  var chronology = typeof module === 'object' && module.exports ? require('./chronology.js') : root.ParallelWorldsChronology;
+  var api = factory(chronology);
   if (typeof module === 'object' && module.exports) module.exports = api;
   root.ParallelTimeline = api;
-}(typeof self !== 'undefined' ? self : this, function () {
+}(typeof self !== 'undefined' ? self : this, function (chronology) {
   'use strict';
 
   function normalize(value) {
@@ -30,6 +31,7 @@
   }
 
   function yearToPercent(year, start, end) {
+    if (start && typeof start === 'object') return chronology.projectYear(year, start);
     if (end === start) return 0;
     return clamp(((year - start) / (end - start)) * 100, 0, 100);
   }
