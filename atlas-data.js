@@ -11,15 +11,15 @@
 
   return {
     regions: {
-      mesopotamia: { x: 59, y: 42, radius: 7 },
-      'west-asia': { x: 61, y: 41, radius: 11 },
-      africa: { x: 54, y: 57, radius: 15 },
-      mediterranean: { x: 56, y: 39, radius: 10 },
-      'south-asia': { x: 71, y: 50, radius: 11 },
+      mesopotamia: { x: 59, y: 44, radius: 7 },
+      'west-asia': { x: 65, y: 38, radius: 11 },
+      africa: { x: 52, y: 59, radius: 15 },
+      mediterranean: { x: 52, y: 36, radius: 10 },
+      'south-asia': { x: 71, y: 52, radius: 11 },
       'east-asia': { x: 82, y: 41, radius: 14 },
-      'central-asia': { x: 70, y: 34, radius: 14 },
-      'southeast-asia': { x: 79, y: 58, radius: 11 },
-      oceania: { x: 91, y: 69, radius: 14 },
+      'central-asia': { x: 70, y: 28, radius: 14 },
+      'southeast-asia': { x: 79, y: 61, radius: 11 },
+      oceania: { x: 91, y: 70, radius: 14 },
       americas: { x: 25, y: 50, radius: 20 }
     },
     tracks: {

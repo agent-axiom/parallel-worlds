@@ -31,7 +31,7 @@
 
   var defaults = {
     query: '', region: 'all', type: 'all', start: rawData.range.start, end: rawData.range.end,
-    year: -500, zoom: 100, lang: initialLocale(), view: 'map', focus: [], selectedRegion: '', playing: false,
+    year: -500, zoom: 100, lang: initialLocale(), view: 'map', focus: [], selectedRegion: '', playing: false, filtersOpen: false,
     theme: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   };
   var state = Object.assign({}, defaults);
@@ -68,6 +68,7 @@
       'timeline', 'empty-state', 'reset-button', 'contemporary-list', 'detail-dialog', 'dialog-title',
       'dialog-meta', 'dialog-summary', 'dialog-periods', 'dialog-events', 'dialog-sources', 'dialog-close',
       'source-links', 'theme-button', 'language-select', 'share-button', 'toast', 'track-count', 'period-count', 'event-count',
+      'filter-toggle', 'filters-content',
       'view-map-button', 'view-chronology-button', 'atlas-view', 'chronology-view', 'atlas-map', 'atlas-world',
       'atlas-regions', 'atlas-panel', 'atlas-region-list', 'atlas-play-button', 'atlas-year-input', 'atlas-year-output', 'atlas-map-summary']
       .forEach(function (id) { elements[id] = get(id); });
@@ -142,6 +143,9 @@
     elements['atlas-year-input'].value = state.year;
     elements['atlas-year-output'].textContent = formatYear(state.year);
     elements['language-select'].value = state.lang;
+    elements['filters-content'].classList.toggle('open', state.filtersOpen);
+    elements['filter-toggle'].setAttribute('aria-expanded', String(state.filtersOpen));
+    elements['filter-toggle'].firstElementChild.textContent = t(state.filtersOpen ? 'hideFilters' : 'showFilters');
     elements['atlas-view'].hidden = state.view !== 'map';
     elements['chronology-view'].hidden = state.view !== 'chronology';
     [['view-map-button', 'map'], ['view-chronology-button', 'chronology']].forEach(function (entry) {
@@ -396,6 +400,10 @@
   }
 
   function bindEvents() {
+    elements['filter-toggle'].addEventListener('click', function () {
+      state.filtersOpen = !state.filtersOpen;
+      syncControls();
+    });
     elements['search-input'].addEventListener('input', function (event) { state.query = event.target.value; render(); });
     elements['region-select'].addEventListener('change', function (event) { state.region = event.target.value; render(); });
     elements['type-select'].addEventListener('change', function (event) { state.type = event.target.value; render(); });

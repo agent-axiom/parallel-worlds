@@ -122,6 +122,15 @@ test('atlas geography covers every historical track with valid coordinates', fun
     assert.ok(region.y >= 0 && region.y <= 100, 'invalid region y for ' + regionId);
     assert.ok(region.radius > 0 && region.radius <= 25, 'invalid region radius for ' + regionId);
   });
+  const regionIds = Object.keys(atlasData.regions);
+  regionIds.forEach(function (regionId, index) {
+    regionIds.slice(index + 1).forEach(function (otherId) {
+      const region = atlasData.regions[regionId];
+      const other = atlasData.regions[otherId];
+      const distance = Math.hypot(region.x - other.x, region.y - other.y);
+      assert.ok(distance >= 7, 'atlas markers overlap: ' + regionId + ' and ' + otherId);
+    });
+  });
   Object.keys(atlasData.tracks).forEach(function (trackId) {
     assert.ok(atlasData.tracks[trackId].length >= 1 && atlasData.tracks[trackId].length <= 3, 'invalid center count for ' + trackId);
     atlasData.tracks[trackId].forEach(function (center) {
@@ -219,9 +228,9 @@ test('missing URL numbers stay absent instead of becoming year zero', function (
 test('explorer state round-trips view, year, filters, and focused tracks', function () {
   const defaults = {
     view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
-    start: data.range.start, end: data.range.end, zoom: 100, lang: 'en'
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'en', selectedRegion: ''
   };
-  const parsed = explorerState.parse(new URLSearchParams('view=chronology&year=1200&focus=china,byzantium&q=empire&region=east-asia&type=civilization&zoom=125&lang=zh'), defaults, data);
+  const parsed = explorerState.parse(new URLSearchParams('view=chronology&year=1200&focus=china,byzantium&q=empire&region=east-asia&type=civilization&zoom=125&lang=zh&panel=east-asia'), defaults, data);
   assert.strictEqual(parsed.view, 'chronology');
   assert.strictEqual(parsed.year, 1200);
   assert.deepStrictEqual(parsed.focus, ['china', 'byzantium']);
@@ -230,18 +239,20 @@ test('explorer state round-trips view, year, filters, and focused tracks', funct
   assert.strictEqual(parsed.type, 'civilization');
   assert.strictEqual(parsed.zoom, 125);
   assert.strictEqual(parsed.lang, 'zh');
+  assert.strictEqual(parsed.selectedRegion, 'east-asia');
   const params = explorerState.serialize(parsed, defaults);
   assert.strictEqual(params.get('view'), 'chronology');
   assert.strictEqual(params.get('focus'), 'china,byzantium');
   assert.strictEqual(params.get('year'), '1200');
+  assert.strictEqual(params.get('panel'), 'east-asia');
 });
 
 test('explorer state rejects invalid values and bounds shared focus', function () {
   const defaults = {
     view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
-    start: data.range.start, end: data.range.end, zoom: 100, lang: 'en'
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'en', selectedRegion: ''
   };
-  const parsed = explorerState.parse(new URLSearchParams('view=globe&year=9999&focus=china,unknown,china,rome,inca&region=moon&type=other&zoom=999&lang=de'), defaults, data);
+  const parsed = explorerState.parse(new URLSearchParams('view=globe&year=9999&focus=china,unknown,china,rome,inca&region=moon&type=other&zoom=999&lang=de&panel=moon'), defaults, data);
   assert.strictEqual(parsed.view, 'map');
   assert.strictEqual(parsed.year, data.range.end);
   assert.deepStrictEqual(parsed.focus, ['china', 'rome']);
@@ -249,6 +260,7 @@ test('explorer state rejects invalid values and bounds shared focus', function (
   assert.strictEqual(parsed.type, 'all');
   assert.strictEqual(parsed.zoom, 240);
   assert.strictEqual(parsed.lang, 'en');
+  assert.strictEqual(parsed.selectedRegion, '');
 });
 
 test('atlas view renders accessible region controls and bundled world SVG', function () {
@@ -449,6 +461,22 @@ test('required static site and Pages files exist and use relative assets', funct
   const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
   assert.ok(app.indexOf('explorerState.serialize(state, defaults)') !== -1, 'shared explorer state is not persisted in the URL');
   assert.ok(app.indexOf("i18n.locales.some") !== -1, 'app does not validate locales through the locale registry');
+});
+
+test('landing layout explicitly uses the compact atlas-first hero', function () {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
+  assert.ok(html.indexOf('class="hero hero-compact"') !== -1, 'landing hero is not marked as compact');
+  assert.ok(css.indexOf('.hero-compact .hero-grid') !== -1, 'compact hero does not have an explicit layout contract');
+});
+
+test('mobile filters use an accessible collapsed disclosure', function () {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+  assert.ok(html.indexOf('id="filter-toggle"') !== -1, 'missing mobile filter disclosure');
+  assert.ok(html.indexOf('aria-controls="filters-content"') !== -1, 'filter disclosure is not connected to its panel');
+  assert.ok(html.indexOf('aria-expanded="false"') !== -1, 'filters should be collapsed initially');
+  assert.ok(app.indexOf("setAttribute('aria-expanded'") !== -1, 'filter disclosure state is not synchronized');
 });
 
 test('concise Russian and English launch posts include public links', function () {

@@ -35,6 +35,7 @@
     if (view === 'map' || view === 'chronology') state.view = view;
     if (params.has('q')) state.query = params.get('q').slice(0, 100);
     if ((data.regions || []).some(function (region) { return region.id === params.get('region'); })) state.region = params.get('region');
+    if ((data.regions || []).some(function (region) { return region.id === params.get('panel'); })) state.selectedRegion = params.get('panel');
     if (['all', 'civilization', 'tradition'].indexOf(params.get('type')) !== -1) state.type = params.get('type');
 
     var start = numberParam(params, 'start');
@@ -56,6 +57,7 @@
     if (state.view !== defaults.view) params.set('view', state.view);
     if (state.query) params.set('q', state.query);
     if (state.region !== defaults.region) params.set('region', state.region);
+    if (state.selectedRegion) params.set('panel', state.selectedRegion);
     if (state.type !== defaults.type) params.set('type', state.type);
     if (state.start !== defaults.start) params.set('start', state.start);
     if (state.end !== defaults.end) params.set('end', state.end);

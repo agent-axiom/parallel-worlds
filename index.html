@@ -11,7 +11,7 @@
 <body>
   <a class="skip-link" href="#timeline" data-i18n="skipTimeline">К шкале времени</a>
 
-  <header class="hero">
+  <header class="hero hero-compact">
     <nav class="topbar" aria-label="Основная навигация" data-i18n-aria="mainNav">
       <a class="brand" href="./" aria-label="Параллельные миры — главная" data-i18n-aria="brandAria">
         <span class="brand-mark" aria-hidden="true">PW</span>
@@ -47,6 +47,10 @@
 
   <main>
     <section class="controls-shell" aria-label="Управление шкалой" data-i18n-aria="controlsAria">
+      <button id="filter-toggle" class="mobile-filter-toggle" type="button" aria-controls="filters-content" aria-expanded="false">
+        <span data-i18n="showFilters">Показать поиск и фильтры</span><span aria-hidden="true">⌄</span>
+      </button>
+      <div id="filters-content" class="filters-content">
       <div class="controls-primary">
         <label class="search-field">
           <span class="sr-only" data-i18n="searchLabel">Поиск</span>
@@ -81,6 +85,7 @@
         <label><span data-i18n="from">От</span> <input id="range-start" type="number" min="-3500" max="1599" step="1"></label>
         <div class="range-rule" aria-hidden="true"></div>
         <label><span data-i18n="to">До</span> <input id="range-end" type="number" min="-3499" max="1600" step="1"></label>
+      </div>
       </div>
     </section>
 
