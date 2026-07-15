@@ -664,13 +664,18 @@ test('CSV export carries reviewed dating evidence and exact source links', funct
 });
 
 test('required static site and Pages files exist and use relative assets', function () {
+  const evidenceAssets = ['chronology.js', 'academic-data.js', 'data-quality.js'];
   const atlasAssets = ['atlas-data.js', 'insights.js', 'atlas.js', 'explorer-state.js', 'atlas-view.js'];
-  ['index.html', 'styles.css', 'app.js', 'data.js', 'i18n.js', 'timeline.js'].concat(atlasAssets).concat(['.nojekyll',
+  ['index.html', 'styles.css', 'app.js', 'data.js', 'i18n.js', 'timeline.js'].concat(evidenceAssets).concat(atlasAssets).concat(['.nojekyll',
     '.github/workflows/deploy-pages.yml', 'scripts/validate.sh', 'README.md']
     ).forEach(function (file) { assert.ok(fs.existsSync(path.join(root, file)), 'missing ' + file); });
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  ['styles.css', 'data.js', 'i18n.js', 'timeline.js', 'app.js'].concat(atlasAssets).forEach(function (asset) {
+  ['styles.css', 'data.js', 'i18n.js', 'timeline.js', 'app.js'].concat(evidenceAssets).concat(atlasAssets).forEach(function (asset) {
     assert.ok(html.indexOf('="' + asset + '"') !== -1, 'asset is not relative: ' + asset);
+  });
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/deploy-pages.yml'), 'utf8');
+  evidenceAssets.forEach(function (asset) {
+    assert.ok(workflow.indexOf(asset) !== -1, 'Pages artifact omits evidence asset ' + asset);
   });
   assert.ok(html.indexOf('id="timeline"') !== -1);
   assert.ok(html.indexOf('id="detail-dialog"') !== -1);
@@ -685,7 +690,6 @@ test('required static site and Pages files exist and use relative assets', funct
   atlasAssets.forEach(function (asset) {
     assert.ok(html.indexOf('src="' + asset + '"') !== -1, 'missing atlas asset ' + asset);
   });
-  const workflow = fs.readFileSync(path.join(root, '.github/workflows/deploy-pages.yml'), 'utf8');
   assert.ok(workflow.indexOf('i18n.js') !== -1, 'Pages artifact does not include i18n.js');
   const validator = fs.readFileSync(path.join(root, 'scripts/validate.sh'), 'utf8');
   atlasAssets.forEach(function (asset) {
