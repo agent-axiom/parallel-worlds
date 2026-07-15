@@ -4,6 +4,7 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const data = require(path.join(root, 'data.js'));
+const chronology = require(path.join(root, 'chronology.js'));
 const timeline = require(path.join(root, 'timeline.js'));
 const i18n = require(path.join(root, 'i18n.js'));
 const atlas = require(path.join(root, 'atlas.js'));
@@ -24,6 +25,23 @@ function test(name, fn) {
     throw error;
   }
 }
+
+test('historical calendar skips year zero in both directions', function () {
+  assert.strictEqual(chronology.isValidHistoricalYear(-1), true);
+  assert.strictEqual(chronology.isValidHistoricalYear(1), true);
+  assert.strictEqual(chronology.isValidHistoricalYear(0), false);
+  assert.strictEqual(chronology.nextYear(-1, 1), 1);
+  assert.strictEqual(chronology.nextYear(1, -1), -1);
+  assert.strictEqual(chronology.historicalDistance(-1, 1), 1);
+  assert.strictEqual(chronology.addHistoricalYears(-2, 2), 1);
+});
+
+test('chronology exposes deep-time and historical mode ranges', function () {
+  const range = { start: -20000, end: 1600 };
+  assert.deepStrictEqual(chronology.modeRange('overview', range), range);
+  assert.deepStrictEqual(chronology.modeRange('deep', range), { start: -20000, end: -3500 });
+  assert.deepStrictEqual(chronology.modeRange('historical', range), { start: -3500, end: 1600 });
+});
 
 test('dataset covers the requested world history scope', function () {
   assert.strictEqual(data.range.start, -3500);
