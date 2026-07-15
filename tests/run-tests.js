@@ -299,6 +299,19 @@ test('atlas geography uses inspectable longitude and latitude', function () {
   });
 });
 
+test('bundled Natural Earth map metadata and paths are production ready', function () {
+  const mapPath = path.join(root, 'world-map-data.js');
+  assert.ok(fs.existsSync(mapPath), 'missing generated Natural Earth map asset');
+  const worldMap = require(mapPath);
+  assert.strictEqual(worldMap.projection, 'Equal Earth');
+  assert.strictEqual(worldMap.source.version, '5.1.2');
+  assert.ok(worldMap.source.url.indexOf('ne_110m_land.geojson') !== -1);
+  assert.deepStrictEqual(worldMap.viewBox, [0, 0, 1000, 520]);
+  assert.ok(worldMap.landPath.length > 10000);
+  assert.ok(worldMap.graticulePath.length > 100);
+  assert.ok(fs.statSync(mapPath).size < 120 * 1024);
+});
+
 test('atlas projects active centers and aggregates filtered regions', function () {
   const tracks = [
     { id: 'alpha', region: 'east-asia', type: 'civilization', periods: [{ start: -600, end: -400 }] },
