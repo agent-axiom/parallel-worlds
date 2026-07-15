@@ -571,6 +571,7 @@ test('adaptive timeline exposes one shared tooltip and period interaction hooks'
 });
 
 test('luminous atlas and adaptive timeline CSS expose the approved visual states', function () {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
   ['.atlas-coast-glow', '.atlas-comparison', '.period-density-wide', '.period-density-medium',
     '.period-density-compact', '.period-density-node', '.event-lane', '.period-lane',
@@ -579,6 +580,12 @@ test('luminous atlas and adaptive timeline CSS expose the approved visual states
   });
   assert.ok(/@media\s*\(prefers-reduced-motion:\s*reduce\)/.test(css));
   assert.ok(/overflow-x:\s*(clip|hidden)/.test(css));
+  assert.ok(/class="atlas-geography"[\s\S]*id="atlas-world"[\s\S]*id="atlas-regions"/.test(html), 'map and markers must share one projected geography layer');
+  assert.ok(/\.atlas-geography\s*\{[^}]*aspect-ratio:\s*1000\s*\/\s*520/s.test(css), 'geography layer must preserve the Natural Earth viewBox ratio');
+  assert.ok(/--pulse-size:\s*clamp\([^;]+,\s*3\.5rem\)/.test(css), 'dense atlas pulses must remain compact');
+  ['mediterranean', 'west-asia'].forEach(function (region) {
+    assert.ok(css.indexOf('.atlas-region[data-region="' + region + '"] small') !== -1, 'dense atlas label needs a collision offset: ' + region);
+  });
 });
 
 test('atlas view renders accessible region controls and bundled world SVG', function () {

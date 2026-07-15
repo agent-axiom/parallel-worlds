@@ -386,6 +386,15 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   letter-spacing: -.04em;
 }
 .atlas-map-title small { color: rgba(245, 239, 225, .62); font-size: .7rem; line-height: 1.45; }
+.atlas-geography {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  z-index: 1;
+  width: 100%;
+  aspect-ratio: 1000 / 520;
+  transform: translateY(-50%);
+}
 .atlas-world-layer, .atlas-regions { position: absolute; inset: 0; }
 .atlas-world-layer { z-index: 1; display: grid; place-items: center; }
 .atlas-world { width: 100%; height: 100%; }
@@ -417,7 +426,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 }
 .atlas-regions { z-index: 3; }
 .atlas-region {
-  --pulse-size: clamp(2.7rem, calc(2.1rem + var(--atlas-radius) * .11rem), 4.25rem);
+  --pulse-size: clamp(2.45rem, calc(2rem + var(--atlas-radius) * .075rem), 3.5rem);
   position: absolute;
   left: var(--atlas-x);
   top: var(--atlas-y);
@@ -449,8 +458,8 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   z-index: 1;
   display: grid;
   place-items: center;
-  width: 2.05rem;
-  height: 2.05rem;
+  width: 1.9rem;
+  height: 1.9rem;
   border: 1px solid rgba(255,255,255,.55);
   border-radius: 50%;
   background: #b54b32;
@@ -469,6 +478,19 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   letter-spacing: .04em;
   white-space: nowrap;
   text-shadow: 0 1px 6px #000;
+}
+.atlas-region[data-region="mediterranean"] small {
+  top: 50%;
+  right: 50%;
+  left: auto;
+  transform: translate(-1.4rem, -50%);
+  text-align: right;
+}
+.atlas-region[data-region="west-asia"] small {
+  top: 50%;
+  left: 50%;
+  transform: translate(1.4rem, -50%);
+  text-align: left;
 }
 .atlas-playback {
   position: absolute;
@@ -911,7 +933,7 @@ dialog h2 { margin: 1rem 0; }
   .view-switch { width: 100%; }
   .view-button { flex: 1; }
   .explorer-shell { margin-inline: calc(clamp(1rem, 4vw, 4.5rem) * -.45); }
-  .atlas-map, .atlas-workspace { min-height: 540px; }
+  .atlas-map, .atlas-workspace { min-height: 500px; }
   .atlas-map-title { max-width: 14rem; }
   .atlas-region small { display: none; }
   .atlas-playback { grid-template-columns: 1fr; gap: .35rem; border-radius: var(--radius); }
