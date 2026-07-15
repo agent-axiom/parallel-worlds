@@ -570,6 +570,17 @@ test('adaptive timeline exposes one shared tooltip and period interaction hooks'
   assert.ok(app.indexOf('period-lane') !== -1);
 });
 
+test('luminous atlas and adaptive timeline CSS expose the approved visual states', function () {
+  const css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
+  ['.atlas-coast-glow', '.atlas-comparison', '.period-density-wide', '.period-density-medium',
+    '.period-density-compact', '.period-density-node', '.event-lane', '.period-lane',
+    '.detail-list li.emphasized', '.period-tooltip'].forEach(function (selector) {
+    assert.ok(css.indexOf(selector) !== -1, 'missing CSS contract ' + selector);
+  });
+  assert.ok(/@media\s*\(prefers-reduced-motion:\s*reduce\)/.test(css));
+  assert.ok(/overflow-x:\s*(clip|hidden)/.test(css));
+});
+
 test('atlas view renders accessible region controls and bundled world SVG', function () {
   const html = atlasView.renderRegions([{ id: 'east-asia', count: 3, x: 76, y: 40, radius: 14 }], {
     regionNames: { 'east-asia': 'East Asia' },

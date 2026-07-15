@@ -270,6 +270,7 @@
       focusIds: state.focus
     });
     var copy = atlasCopy();
+    elements['atlas-map'].classList.toggle('has-selection', Boolean(state.selectedRegion));
     elements['atlas-world'].innerHTML = atlasView.worldSvg(worldMapData, t('atlasAria'), model.comparisonConnector, copy);
     elements['atlas-regions'].innerHTML = atlasView.renderRegions(model.regions, copy);
     elements['atlas-map-summary'].textContent = t('activeLines', { count: model.stats.tracks, year: formatYear(state.year) });
