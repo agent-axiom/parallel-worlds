@@ -54,9 +54,38 @@
     });
   }
 
+  function insightLocale(locale) {
+    var value = String(locale || '').toLowerCase();
+    if (value.indexOf('ru') === 0) return 'ru';
+    if (value === 'zh' || value.indexOf('zh-') === 0) return 'zh';
+    return 'en';
+  }
+
+  function selectInsight(insights, activeTracks, year, locale, focusIds) {
+    var activeIds = (activeTracks || []).map(function (track) { return track.id; });
+    var focus = focusIds || [];
+    var eligible = (insights || []).filter(function (item) {
+      return year >= item.start && year <= item.end && item.trackIds.every(function (id) {
+        return activeIds.indexOf(id) !== -1;
+      });
+    }).map(function (item) {
+      return {
+        item: item,
+        focusScore: item.trackIds.filter(function (id) { return focus.indexOf(id) !== -1; }).length
+      };
+    }).sort(function (a, b) {
+      return b.focusScore - a.focusScore || a.item.id.localeCompare(b.item.id);
+    });
+    if (!eligible.length) return null;
+    var selected = eligible[0].item;
+    var copy = selected.copy[insightLocale(locale)] || selected.copy.en;
+    return Object.assign({}, selected, copy);
+  }
+
   return {
     activePeriod: activePeriod,
     aggregateRegions: aggregateRegions,
-    projectActiveCenters: projectActiveCenters
+    projectActiveCenters: projectActiveCenters,
+    selectInsight: selectInsight
   };
 }));

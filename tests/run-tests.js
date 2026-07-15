@@ -7,6 +7,8 @@ const data = require(path.join(root, 'data.js'));
 const timeline = require(path.join(root, 'timeline.js'));
 const i18n = require(path.join(root, 'i18n.js'));
 const atlas = require(path.join(root, 'atlas.js'));
+const atlasData = require(path.join(root, 'atlas-data.js'));
+const insights = require(path.join(root, 'insights.js'));
 
 let passed = 0;
 
@@ -107,6 +109,61 @@ test('atlas projection handles boundaries and missing optional geography', funct
   assert.deepStrictEqual(atlas.projectActiveCenters([track], 101, geography), []);
   assert.deepStrictEqual(atlas.projectActiveCenters([track], 0, { tracks: {} }), []);
   assert.deepStrictEqual(atlas.projectActiveCenters([track], 0, {}), []);
+});
+
+test('atlas geography covers every historical track with valid coordinates', function () {
+  const trackIds = new Set(data.tracks.map(function (track) { return track.id; }));
+  assert.deepStrictEqual(Object.keys(atlasData.tracks).sort(), Array.from(trackIds).sort());
+  Object.keys(atlasData.regions).forEach(function (regionId) {
+    const region = atlasData.regions[regionId];
+    assert.ok(region.x >= 0 && region.x <= 100, 'invalid region x for ' + regionId);
+    assert.ok(region.y >= 0 && region.y <= 100, 'invalid region y for ' + regionId);
+    assert.ok(region.radius > 0 && region.radius <= 25, 'invalid region radius for ' + regionId);
+  });
+  Object.keys(atlasData.tracks).forEach(function (trackId) {
+    assert.ok(atlasData.tracks[trackId].length >= 1 && atlasData.tracks[trackId].length <= 3, 'invalid center count for ' + trackId);
+    atlasData.tracks[trackId].forEach(function (center) {
+      assert.ok(center.id, 'missing center id for ' + trackId);
+      assert.ok(center.x >= 0 && center.x <= 100, 'invalid center x for ' + trackId);
+      assert.ok(center.y >= 0 && center.y <= 100, 'invalid center y for ' + trackId);
+      assert.ok(center.start < center.end, 'invalid center dates for ' + trackId);
+    });
+  });
+});
+
+test('editorial comparisons are valid and complete in three locales', function () {
+  assert.ok(insights.length >= 30);
+  const insightIds = new Set();
+  insights.forEach(function (insight) {
+    assert.ok(insight.id && insight.start < insight.end, 'invalid insight range');
+    assert.ok(!insightIds.has(insight.id), 'duplicate insight ' + insight.id);
+    insightIds.add(insight.id);
+    assert.strictEqual(insight.trackIds.length, 2, 'comparison must reference two tracks');
+    insight.trackIds.forEach(function (id) {
+      assert.ok(data.tracks.some(function (track) { return track.id === id; }), 'unknown insight track ' + id);
+    });
+    [insight.start, Math.floor((insight.start + insight.end) / 2), insight.end].forEach(function (year) {
+      const activeIds = timeline.activeTracks(data.tracks, year).map(function (track) { return track.id; });
+      insight.trackIds.forEach(function (id) {
+        assert.ok(activeIds.indexOf(id) !== -1, insight.id + ' references inactive ' + id + ' in ' + year);
+      });
+    });
+    ['ru', 'en', 'zh'].forEach(function (locale) {
+      assert.ok(insight.copy[locale].title && insight.copy[locale].summary, 'missing ' + locale + ' copy for ' + insight.id);
+    });
+    insight.sourceIds.forEach(function (id) { assert.ok(data.sources[id], 'unknown source ' + id); });
+  });
+});
+
+test('atlas selects eligible localized insights and prefers focused tracks', function () {
+  const active = timeline.activeTracks(data.tracks, -500);
+  const defaultInsight = atlas.selectInsight(insights, active, -500, 'ru', []);
+  assert.ok(defaultInsight && defaultInsight.title && defaultInsight.summary);
+  const focused = atlas.selectInsight(insights, active, -500, 'ru', ['greece']);
+  assert.strictEqual(focused.id, 'confucius-greek-polis');
+  const englishFallback = atlas.selectInsight(insights, active, -500, 'xx', ['greece']);
+  assert.strictEqual(englishFallback.title, insights.find(function (item) { return item.id === 'confucius-greek-polis'; }).copy.en.title);
+  assert.strictEqual(atlas.selectInsight(insights, timeline.activeTracks(data.tracks, -3500), -3500, 'en', []), null);
 });
 
 test('missing URL numbers stay absent instead of becoming year zero', function () {
