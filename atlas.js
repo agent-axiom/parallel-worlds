@@ -6,6 +6,33 @@
 }(typeof self !== 'undefined' ? self : this, function (chronology) {
   'use strict';
 
+  var MAP_PADDING = 4;
+  var EQUAL_EARTH_MAX_X = 2.70663;
+  var EQUAL_EARTH_MAX_Y = 1.31737;
+
+  function projectGeoPoint(longitude, latitude) {
+    longitude = Number(longitude);
+    latitude = Number(latitude);
+    if (!Number.isFinite(longitude) || !Number.isFinite(latitude) || longitude < -180 || longitude > 180 || latitude < -90 || latitude > 90) return null;
+    var A1 = 1.340264;
+    var A2 = -0.081106;
+    var A3 = 0.000893;
+    var A4 = 0.003796;
+    var M = Math.sqrt(3) / 2;
+    var lambda = longitude * Math.PI / 180;
+    var phi = latitude * Math.PI / 180;
+    var theta = Math.asin(M * Math.sin(phi));
+    var theta2 = theta * theta;
+    var theta6 = theta2 * theta2 * theta2;
+    var rawX = lambda * Math.cos(theta) / (M * (A1 + 3 * A2 * theta2 + theta6 * (7 * A3 + 9 * A4 * theta2)));
+    var rawY = theta * (A1 + A2 * theta2 + theta6 * (A3 + A4 * theta2));
+    var span = 100 - MAP_PADDING * 2;
+    return {
+      x: Number((MAP_PADDING + ((rawX + EQUAL_EARTH_MAX_X) / (2 * EQUAL_EARTH_MAX_X)) * span).toFixed(4)),
+      y: Number((MAP_PADDING + ((EQUAL_EARTH_MAX_Y - rawY) / (2 * EQUAL_EARTH_MAX_Y)) * span).toFixed(4))
+    };
+  }
+
   function activePeriod(track, year) {
     return (track.periods || []).find(function (period) {
       return year >= period.start && year <= period.end;
@@ -24,7 +51,10 @@
       var period = activePeriod(track, year);
       if (!period) return items;
       (centersByTrack[track.id] || []).forEach(function (center) {
-        if (centerIsActive(center, year)) items.push({ track: track, center: center, period: period });
+        var projected = projectGeoPoint(center.longitude, center.latitude);
+        if (centerIsActive(center, year) && projected) {
+          items.push({ track: track, center: Object.assign({}, center, projected), period: period });
+        }
       });
       return items;
     }, []);
@@ -115,7 +145,8 @@
     var regionGeometry = options.geography && options.geography.regions ? options.geography.regions : {};
     var regions = aggregateRegions(projectedCenters).reduce(function (items, region) {
       var geometry = regionGeometry[region.id];
-      if (geometry) items.push(Object.assign({}, region, geometry));
+      var projected = geometry && projectGeoPoint(geometry.longitude, geometry.latitude);
+      if (geometry && projected) items.push(Object.assign({}, region, geometry, projected));
       return items;
     }, []);
     var selectedRegion = options.selectedRegion || '';
@@ -154,6 +185,7 @@
     aggregateRegions: aggregateRegions,
     buildModel: buildModel,
     nextPlaybackYear: nextPlaybackYear,
+    projectGeoPoint: projectGeoPoint,
     projectActiveCenters: projectActiveCenters,
     selectInsight: selectInsight
   };

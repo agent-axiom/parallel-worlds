@@ -210,9 +210,9 @@ test('reviewed deep-time geography intersects records and atlas counts societies
     { id: 'culture', region: 'west-asia', type: 'archaeological-culture', periods: [{ start: -10000, end: -9000 }] },
     { id: 'tradition', region: 'west-asia', type: 'tradition', periods: [{ start: -10000, end: -9000 }] }
   ], -9500, { tracks: {
-    site: [{ id: 'site', x: 50, y: 40, start: -10000, end: -9000 }],
-    culture: [{ id: 'culture', x: 51, y: 40, start: -10000, end: -9000 }],
-    tradition: [{ id: 'tradition', x: 52, y: 40, start: -10000, end: -9000 }]
+    site: [{ id: 'site', longitude: 38, latitude: 37, start: -10000, end: -9000 }],
+    culture: [{ id: 'culture', longitude: 39, latitude: 37, start: -10000, end: -9000 }],
+    tradition: [{ id: 'tradition', longitude: 40, latitude: 37, start: -10000, end: -9000 }]
   } });
   const aggregate = atlas.aggregateRegions(projected)[0];
   assert.strictEqual(aggregate.societies, 2);
@@ -269,6 +269,36 @@ test('year projection and active-track lookup handle BCE and CE', function () {
   assert.ok(active.indexOf('inca') === -1);
 });
 
+test('Equal Earth projection is centered, finite, bounded, and defensive', function () {
+  assert.deepStrictEqual(atlas.projectGeoPoint(0, 0), { x: 50, y: 50 });
+  [[-180, 0], [180, 0], [0, 90], [0, -90], [116.31, 28.95], [-72.55, -13.52]].forEach(function (point) {
+    const projected = atlas.projectGeoPoint(point[0], point[1]);
+    assert.ok(Number.isFinite(projected.x) && projected.x >= 4 && projected.x <= 96);
+    assert.ok(Number.isFinite(projected.y) && projected.y >= 4 && projected.y <= 96);
+  });
+  assert.strictEqual(atlas.projectGeoPoint(181, 0), null);
+  assert.strictEqual(atlas.projectGeoPoint(0, -91), null);
+  assert.strictEqual(atlas.projectGeoPoint('east', 20), null);
+});
+
+test('atlas geography uses inspectable longitude and latitude', function () {
+  Object.keys(atlasData.regions).forEach(function (id) {
+    const region = atlasData.regions[id];
+    assert.ok(region.longitude >= -180 && region.longitude <= 180, id);
+    assert.ok(region.latitude >= -90 && region.latitude <= 90, id);
+    assert.strictEqual(region.x, undefined);
+    assert.strictEqual(region.y, undefined);
+  });
+  Object.keys(atlasData.tracks).forEach(function (trackId) {
+    atlasData.tracks[trackId].forEach(function (center) {
+      assert.ok(center.longitude >= -180 && center.longitude <= 180, center.id);
+      assert.ok(center.latitude >= -90 && center.latitude <= 90, center.id);
+      assert.strictEqual(center.x, undefined);
+      assert.strictEqual(center.y, undefined);
+    });
+  });
+});
+
 test('atlas projects active centers and aggregates filtered regions', function () {
   const tracks = [
     { id: 'alpha', region: 'east-asia', type: 'civilization', periods: [{ start: -600, end: -400 }] },
@@ -277,8 +307,8 @@ test('atlas projects active centers and aggregates filtered regions', function (
   ];
   const geography = {
     tracks: {
-      alpha: [{ id: 'alpha-core', x: 72, y: 38, start: -600, end: -400 }],
-      beta: [{ id: 'beta-core', x: 70, y: 39, start: -550, end: -300 }]
+      alpha: [{ id: 'alpha-core', longitude: 116, latitude: 35, start: -600, end: -400 }],
+      beta: [{ id: 'beta-core', longitude: 113, latitude: 34, start: -550, end: -300 }]
     }
   };
   const projected = atlas.projectActiveCenters(tracks, -500, geography);
@@ -290,7 +320,7 @@ test('atlas projects active centers and aggregates filtered regions', function (
 
 test('atlas projection handles boundaries and missing optional geography', function () {
   const track = { id: 'alpha', region: 'west-asia', type: 'civilization', periods: [{ start: -100, end: 100 }] };
-  const geography = { tracks: { alpha: [{ id: 'core', x: 50, y: 40, start: -100, end: 100 }] } };
+  const geography = { tracks: { alpha: [{ id: 'core', longitude: 45, latitude: 33, start: -100, end: 100 }] } };
   assert.strictEqual(atlas.projectActiveCenters([track], -100, geography).length, 1);
   assert.strictEqual(atlas.projectActiveCenters([track], 100, geography).length, 1);
   assert.deepStrictEqual(atlas.projectActiveCenters([track], 101, geography), []);
@@ -303,8 +333,8 @@ test('atlas geography covers every historical track with valid coordinates', fun
   assert.deepStrictEqual(Object.keys(atlasData.tracks).sort(), Array.from(trackIds).sort());
   Object.keys(atlasData.regions).forEach(function (regionId) {
     const region = atlasData.regions[regionId];
-    assert.ok(region.x >= 0 && region.x <= 100, 'invalid region x for ' + regionId);
-    assert.ok(region.y >= 0 && region.y <= 100, 'invalid region y for ' + regionId);
+    assert.ok(region.longitude >= -180 && region.longitude <= 180, 'invalid region longitude for ' + regionId);
+    assert.ok(region.latitude >= -90 && region.latitude <= 90, 'invalid region latitude for ' + regionId);
     assert.ok(region.radius > 0 && region.radius <= 25, 'invalid region radius for ' + regionId);
   });
   const regionIds = Object.keys(atlasData.regions);
@@ -312,16 +342,18 @@ test('atlas geography covers every historical track with valid coordinates', fun
     regionIds.slice(index + 1).forEach(function (otherId) {
       const region = atlasData.regions[regionId];
       const other = atlasData.regions[otherId];
-      const distance = Math.hypot(region.x - other.x, region.y - other.y);
-      assert.ok(distance >= 7, 'atlas markers overlap: ' + regionId + ' and ' + otherId);
+      const projected = atlas.projectGeoPoint(region.longitude, region.latitude);
+      const otherProjected = atlas.projectGeoPoint(other.longitude, other.latitude);
+      const distance = Math.hypot(projected.x - otherProjected.x, projected.y - otherProjected.y);
+      assert.ok(distance >= 5, 'atlas markers overlap: ' + regionId + ' and ' + otherId);
     });
   });
   Object.keys(atlasData.tracks).forEach(function (trackId) {
     assert.ok(atlasData.tracks[trackId].length >= 1 && atlasData.tracks[trackId].length <= 3, 'invalid center count for ' + trackId);
     atlasData.tracks[trackId].forEach(function (center) {
       assert.ok(center.id, 'missing center id for ' + trackId);
-      assert.ok(center.x >= 0 && center.x <= 100, 'invalid center x for ' + trackId);
-      assert.ok(center.y >= 0 && center.y <= 100, 'invalid center y for ' + trackId);
+      assert.ok(center.longitude >= -180 && center.longitude <= 180, 'invalid center longitude for ' + trackId);
+      assert.ok(center.latitude >= -90 && center.latitude <= 90, 'invalid center latitude for ' + trackId);
       assert.ok(center.start < center.end, 'invalid center dates for ' + trackId);
     });
   });
@@ -378,8 +410,8 @@ test('atlas model combines filters, region selection, focus, and missing geograp
     { id: 'gamma', name: 'Gamma', summary: 'Later society', region: 'americas', type: 'civilization', periods: [{ name: 'Gamma age', start: 100, end: 500 }], events: [] }
   ];
   const geography = {
-    regions: { 'east-asia': { x: 76, y: 40, radius: 14 } },
-    tracks: { alpha: [{ id: 'alpha-core', x: 75, y: 40, start: -600, end: -400 }] }
+    regions: { 'east-asia': { longitude: 118, latitude: 34, radius: 14 } },
+    tracks: { alpha: [{ id: 'alpha-core', longitude: 116, latitude: 35, start: -600, end: -400 }] }
   };
   const comparisons = [{
     id: 'alpha-beta', start: -540, end: -410, trackIds: ['alpha', 'beta'], sourceIds: [],
@@ -390,7 +422,7 @@ test('atlas model combines filters, region selection, focus, and missing geograp
     filters: { query: '', region: 'all', type: 'all' }, selectedRegion: 'east-asia', focusIds: ['beta']
   });
   assert.deepStrictEqual(model.activeTracks.map(function (track) { return track.id; }), ['alpha', 'beta']);
-  assert.deepStrictEqual(model.regions.map(function (region) { return [region.id, region.count, region.x]; }), [['east-asia', 1, 76]]);
+  assert.deepStrictEqual(model.regions.map(function (region) { return [region.id, region.count, region.x]; }), [['east-asia', 1, atlas.projectGeoPoint(118, 34).x]]);
   assert.deepStrictEqual(model.regionTracks.map(function (item) { return item.track.id; }), ['alpha', 'beta']);
   assert.deepStrictEqual(model.stats, { tracks: 2, societies: 1, civilizations: 1, traditions: 1, regions: 1 });
   assert.strictEqual(model.insight.id, 'alpha-beta');
