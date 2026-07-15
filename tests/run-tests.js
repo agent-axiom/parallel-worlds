@@ -9,6 +9,7 @@ const i18n = require(path.join(root, 'i18n.js'));
 const atlas = require(path.join(root, 'atlas.js'));
 const atlasData = require(path.join(root, 'atlas-data.js'));
 const insights = require(path.join(root, 'insights.js'));
+const explorerState = require(path.join(root, 'explorer-state.js'));
 
 let passed = 0;
 
@@ -172,6 +173,41 @@ test('missing URL numbers stay absent instead of becoming year zero', function (
   assert.strictEqual(timeline.numericParam(empty, 'start'), undefined);
   assert.strictEqual(timeline.numericParam(explicitZero, 'start'), 0);
   assert.strictEqual(timeline.numericParam(new URLSearchParams('zoom=nope'), 'zoom'), undefined);
+});
+
+test('explorer state round-trips view, year, filters, and focused tracks', function () {
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'en'
+  };
+  const parsed = explorerState.parse(new URLSearchParams('view=chronology&year=1200&focus=china,byzantium&q=empire&region=east-asia&type=civilization&zoom=125&lang=zh'), defaults, data);
+  assert.strictEqual(parsed.view, 'chronology');
+  assert.strictEqual(parsed.year, 1200);
+  assert.deepStrictEqual(parsed.focus, ['china', 'byzantium']);
+  assert.strictEqual(parsed.query, 'empire');
+  assert.strictEqual(parsed.region, 'east-asia');
+  assert.strictEqual(parsed.type, 'civilization');
+  assert.strictEqual(parsed.zoom, 125);
+  assert.strictEqual(parsed.lang, 'zh');
+  const params = explorerState.serialize(parsed, defaults);
+  assert.strictEqual(params.get('view'), 'chronology');
+  assert.strictEqual(params.get('focus'), 'china,byzantium');
+  assert.strictEqual(params.get('year'), '1200');
+});
+
+test('explorer state rejects invalid values and bounds shared focus', function () {
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'en'
+  };
+  const parsed = explorerState.parse(new URLSearchParams('view=globe&year=9999&focus=china,unknown,china,rome,inca&region=moon&type=other&zoom=999&lang=de'), defaults, data);
+  assert.strictEqual(parsed.view, 'map');
+  assert.strictEqual(parsed.year, data.range.end);
+  assert.deepStrictEqual(parsed.focus, ['china', 'rome']);
+  assert.strictEqual(parsed.region, 'all');
+  assert.strictEqual(parsed.type, 'all');
+  assert.strictEqual(parsed.zoom, 240);
+  assert.strictEqual(parsed.lang, 'en');
 });
 
 test('locale normalization and interface copy support Russian and English', function () {
