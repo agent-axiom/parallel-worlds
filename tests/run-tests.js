@@ -410,11 +410,12 @@ test('CSV export supports Chinese headers and values', function () {
 });
 
 test('required static site and Pages files exist and use relative assets', function () {
-  ['index.html', 'styles.css', 'app.js', 'data.js', 'i18n.js', 'timeline.js', '.nojekyll',
+  const atlasAssets = ['atlas-data.js', 'insights.js', 'atlas.js', 'explorer-state.js', 'atlas-view.js'];
+  ['index.html', 'styles.css', 'app.js', 'data.js', 'i18n.js', 'timeline.js'].concat(atlasAssets).concat(['.nojekyll',
     '.github/workflows/deploy-pages.yml', 'scripts/validate.sh', 'README.md']
-    .forEach(function (file) { assert.ok(fs.existsSync(path.join(root, file)), 'missing ' + file); });
+    ).forEach(function (file) { assert.ok(fs.existsSync(path.join(root, file)), 'missing ' + file); });
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  ['styles.css', 'data.js', 'i18n.js', 'timeline.js', 'app.js'].forEach(function (asset) {
+  ['styles.css', 'data.js', 'i18n.js', 'timeline.js', 'app.js'].concat(atlasAssets).forEach(function (asset) {
     assert.ok(html.indexOf('="' + asset + '"') !== -1, 'asset is not relative: ' + asset);
   });
   assert.ok(html.indexOf('id="timeline"') !== -1);
@@ -427,11 +428,24 @@ test('required static site and Pages files exist and use relative assets', funct
     'atlas-panel', 'atlas-play-button', 'atlas-year-input', 'chronology-view'].forEach(function (id) {
     assert.ok(html.indexOf('id="' + id + '"') !== -1, 'missing explorer element ' + id);
   });
-  ['atlas-data.js', 'insights.js', 'atlas.js', 'explorer-state.js', 'atlas-view.js'].forEach(function (asset) {
+  atlasAssets.forEach(function (asset) {
     assert.ok(html.indexOf('src="' + asset + '"') !== -1, 'missing atlas asset ' + asset);
   });
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/deploy-pages.yml'), 'utf8');
   assert.ok(workflow.indexOf('i18n.js') !== -1, 'Pages artifact does not include i18n.js');
+  const validator = fs.readFileSync(path.join(root, 'scripts/validate.sh'), 'utf8');
+  atlasAssets.forEach(function (asset) {
+    assert.ok(workflow.indexOf(asset) !== -1, 'Pages artifact does not include ' + asset);
+    assert.ok(validator.indexOf(asset) !== -1, 'validator does not cover ' + asset);
+  });
+  const atlasBytes = atlasAssets.reduce(function (sum, asset) { return sum + fs.statSync(path.join(root, asset)).size; }, 0);
+  assert.ok(atlasBytes < 180 * 1024, 'atlas modules exceed the 180 KB static budget');
+  atlasAssets.forEach(function (asset) {
+    const source = fs.readFileSync(path.join(root, asset), 'utf8');
+    ['fetch(', 'XMLHttpRequest', '<script src="http'].forEach(function (marker) {
+      assert.strictEqual(source.indexOf(marker), -1, asset + ' contains forbidden runtime dependency: ' + marker);
+    });
+  });
   const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
   assert.ok(app.indexOf('explorerState.serialize(state, defaults)') !== -1, 'shared explorer state is not persisted in the URL');
   assert.ok(app.indexOf("i18n.locales.some") !== -1, 'app does not validate locales through the locale registry');
