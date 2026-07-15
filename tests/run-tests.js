@@ -410,6 +410,20 @@ test('atlas selects eligible localized insights and prefers focused tracks', fun
   assert.strictEqual(atlas.selectInsight(insights, timeline.activeTracks(data.tracks, -3500), -3500, 'en', []), null);
 });
 
+test('comparison connector exists only for a selected eligible pair', function () {
+  const connector = atlas.buildComparisonConnector(
+    { id: 'pair', trackIds: ['alpha', 'beta'], title: 'Alpha and Beta' },
+    [
+      { track: { id: 'alpha' }, center: { x: 30, y: 40 } },
+      { track: { id: 'beta' }, center: { x: 70, y: 35 } }
+    ],
+    ['alpha', 'beta']
+  );
+  assert.deepStrictEqual(connector, { id: 'pair', from: { x: 30, y: 40 }, to: { x: 70, y: 35 }, title: 'Alpha and Beta' });
+  assert.strictEqual(atlas.buildComparisonConnector({ id: 'pair', trackIds: ['alpha', 'beta'] }, [], []), null);
+  assert.strictEqual(atlas.buildComparisonConnector({ id: 'pair', trackIds: ['alpha', 'beta'] }, [{ track: { id: 'alpha' }, center: { x: 30, y: 40 } }], ['alpha', 'beta']), null);
+});
+
 test('playback advances by a fixed historical step and wraps at the visible range', function () {
   assert.strictEqual(atlas.nextPlaybackYear(-500, -3500, 1600, 20), -480);
   assert.strictEqual(atlas.nextPlaybackYear(-1, -3500, 1600, 1), 1);

@@ -114,6 +114,25 @@
     return Object.assign({}, selected, copy);
   }
 
+  function buildComparisonConnector(insight, projectedCenters, focusIds) {
+    if (!insight || !Array.isArray(insight.trackIds) || insight.trackIds.length !== 2) return null;
+    var focus = focusIds || [];
+    if (!insight.trackIds.every(function (id) { return focus.indexOf(id) !== -1; })) return null;
+    var centers = insight.trackIds.map(function (trackId) {
+      var item = (projectedCenters || []).find(function (candidate) { return candidate.track.id === trackId; });
+      return item && item.center;
+    });
+    if (!centers[0] || !centers[1] || !centers.every(function (center) {
+      return Number.isFinite(center.x) && Number.isFinite(center.y);
+    })) return null;
+    return {
+      id: insight.id,
+      from: { x: centers[0].x, y: centers[0].y },
+      to: { x: centers[1].x, y: centers[1].y },
+      title: insight.title || ''
+    };
+  }
+
   function nextPlaybackYear(year, start, end, step) {
     var next = chronology.addHistoricalYears(Number(year), Math.max(1, Number(step) || 1));
     return next > end ? start : next;
@@ -161,6 +180,7 @@
       return ids;
     }, []);
     var focusIds = (options.focusIds || []).slice(0, 2);
+    var insight = selectInsight(options.insights || [], activeTracks, year, options.locale, focusIds);
     return {
       year: year,
       activeTracks: activeTracks,
@@ -169,6 +189,7 @@
       selectedRegion: selectedRegion,
       regionTracks: regionTracks,
       focusIds: focusIds,
+      comparisonConnector: buildComparisonConnector(insight, projectedCenters, focusIds),
       stats: {
         tracks: activeTracks.length,
         societies: societyCount,
@@ -176,13 +197,14 @@
         traditions: activeTracks.length - societyCount,
         regions: activeRegionIds.length
       },
-      insight: selectInsight(options.insights || [], activeTracks, year, options.locale, focusIds)
+      insight: insight
     };
   }
 
   return {
     activePeriod: activePeriod,
     aggregateRegions: aggregateRegions,
+    buildComparisonConnector: buildComparisonConnector,
     buildModel: buildModel,
     nextPlaybackYear: nextPlaybackYear,
     projectGeoPoint: projectGeoPoint,
