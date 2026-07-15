@@ -38,7 +38,7 @@ assert.deepStrictEqual(chronology.modeRange('historical', data.range), { start: 
 
 **Step 2: Run tests to verify RED**
 
-Run: `npm test`  
+Run: `npm test`
 Expected: failure because `chronology.js` does not exist.
 
 **Step 3: Implement the minimal module**
@@ -60,7 +60,7 @@ Add `<script src="chronology.js"></script>` to `index.html`.
 
 **Step 5: Run tests to verify GREEN**
 
-Run: `npm test`  
+Run: `npm test`
 Expected: all tests pass.
 
 **Step 6: Commit**
@@ -95,7 +95,7 @@ Test adaptive ticks and assert that no tick equals zero.
 
 **Step 2: Run tests to verify RED**
 
-Run: `npm test`  
+Run: `npm test`
 Expected: missing projection API.
 
 **Step 3: Implement piecewise projection**
@@ -116,7 +116,7 @@ Extend `timeline.yearToPercent` to accept either `(year, start, end)` for backwa
 
 **Step 5: Run tests to verify GREEN**
 
-Run: `npm test`  
+Run: `npm test`
 Expected: all tests pass.
 
 **Step 6: Commit**
@@ -150,7 +150,7 @@ Assert unique period/event IDs, required dating metadata, exact source URLs, val
 
 **Step 2: Run tests to verify RED**
 
-Run: `npm test`  
+Run: `npm test`
 Expected: modules do not exist.
 
 **Step 3: Implement `data-quality.js`**
@@ -192,7 +192,7 @@ Load `academic-data.js` before `data.js`, and `data-quality.js` before applicati
 
 **Step 7: Run tests to verify GREEN**
 
-Run: `npm test`  
+Run: `npm test`
 Expected: all tests pass with an empty reviewed corpus.
 
 **Step 8: Commit**
@@ -230,7 +230,7 @@ For each required ID, assert `tier`, `kind`, `title`, `publisher`, `year`, and a
 
 **Step 2: Run tests to verify RED**
 
-Run: `npm test`  
+Run: `npm test`
 Expected: required source IDs are missing.
 
 **Step 3: Add verified source records**
@@ -243,7 +243,7 @@ Add a concise “Evidence and uncertainty” section to `README.md` linking to t
 
 **Step 5: Run tests to verify GREEN**
 
-Run: `npm test`  
+Run: `npm test`
 Expected: source validation passes.
 
 **Step 6: Commit**
@@ -283,7 +283,7 @@ Assert all patched periods/events have exact sources and dating metadata.
 
 **Step 2: Run tests to verify RED**
 
-Run: `npm test`  
+Run: `npm test`
 Expected: missing Chinese sequence and bare Korean label.
 
 **Step 3: Add reviewed patches**
@@ -299,7 +299,7 @@ Update `i18n.localizeData` so reviewed records can carry `copy.ru`, `copy.en`, a
 
 **Step 5: Run tests to verify GREEN**
 
-Run: `npm test`  
+Run: `npm test`
 Expected: editorial and localization tests pass.
 
 **Step 6: Commit**
@@ -337,7 +337,7 @@ Assert no track name uses a modern nation as the owner of prehistoric evidence, 
 
 **Step 2: Run tests to verify RED**
 
-Run: `npm test`  
+Run: `npm test`
 Expected: corpus IDs are missing.
 
 **Step 3: Add reviewed records**
@@ -359,7 +359,7 @@ Keep legacy compatibility aliases in the model for one release.
 
 **Step 6: Run tests to verify GREEN**
 
-Run: `npm test`  
+Run: `npm test`
 Expected: corpus, source, localization, and geography validation passes.
 
 **Step 7: Commit**
@@ -391,7 +391,7 @@ Assert:
 
 **Step 2: Run tests to verify RED**
 
-Run: `npm test`  
+Run: `npm test`
 Expected: controls and state are missing.
 
 **Step 3: Add semantic controls**
@@ -428,7 +428,7 @@ Add compact controls, breakpoint label, open-edge treatment, precision badges, r
 
 **Step 8: Run tests to verify GREEN**
 
-Run: `npm test`  
+Run: `npm test`
 Expected: all tests pass.
 
 **Step 9: Commit**
@@ -463,7 +463,7 @@ Assert CSV includes `Precision`, `Dating basis`, `Review status`, and `Sources` 
 
 **Step 2: Run tests to verify RED**
 
-Run: `npm test`  
+Run: `npm test`
 Expected: missing keys and columns.
 
 **Step 3: Add interface copy**
@@ -476,7 +476,7 @@ Export one row per period with normalized dates, original notation, precision, d
 
 **Step 5: Run tests to verify GREEN**
 
-Run: `npm test`  
+Run: `npm test`
 Expected: all localization and export tests pass.
 
 **Step 6: Commit**
@@ -501,7 +501,7 @@ Test a deep-time year with multiple regions, non-polity track types, localized i
 
 **Step 2: Run tests to verify RED**
 
-Run: `npm test`  
+Run: `npm test`
 Expected: old aggregation model fails.
 
 **Step 3: Update atlas model and view**
@@ -516,7 +516,7 @@ Use process comparisons rather than national comparisons. Only publish an insigh
 
 **Step 5: Run tests to verify GREEN**
 
-Run: `npm test`  
+Run: `npm test`
 Expected: all atlas tests pass.
 
 **Step 6: Commit**
@@ -539,7 +539,7 @@ Require new modules in the Pages artifact and run dataset validation from Node.
 
 **Step 2: Run validation to verify RED**
 
-Run: `npm run validate`  
+Run: `npm run validate`
 Expected: new asset/module checks fail until the script is updated.
 
 **Step 3: Update validation and documentation**

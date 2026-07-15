@@ -1,7 +1,7 @@
 # Academic Deep-Time Timeline Design
 
-**Date:** 2026-07-15  
-**Status:** Approved for implementation  
+**Date:** 2026-07-15
+**Status:** Approved for implementation
 **Product:** Parallel Worlds
 
 ## 1. Purpose
