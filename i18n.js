@@ -450,6 +450,21 @@
 
   function localizeTrack(track, locale) {
     var lang = normalizeLocale(locale);
+    if (track.copy) {
+      var inline = track.copy[lang] || track.copy.en;
+      return Object.assign({}, track, {
+        name: inline.name,
+        summary: inline.summary,
+        periods: track.periods.map(function (period) {
+          var localized = period.copy && (period.copy[lang] || period.copy.en);
+          return localized ? Object.assign({}, period, { name: localized.name, note: localized.note || '' }) : period;
+        }),
+        events: track.events.map(function (event) {
+          var localized = event.copy && (event.copy[lang] || event.copy.en);
+          return localized ? Object.assign({}, event, { title: localized.title, note: localized.note || '' }) : event;
+        })
+      });
+    }
     if (lang === 'ru') return track;
     var translations = lang === 'zh' ? chineseTracks : englishTracks;
     var translated = translations[track.id];
@@ -468,9 +483,9 @@
 
   function localizeData(data, locale) {
     var lang = normalizeLocale(locale);
-    if (lang === 'ru') return data;
     var localizedRegions = lang === 'zh' ? chineseRegionNames : regionNames;
     var localizedPresets = lang === 'zh' ? chinesePresetNames : presetNames;
+    if (lang === 'ru') return Object.assign({}, data, { tracks: data.tracks.map(function (track) { return localizeTrack(track, lang); }) });
     return Object.assign({}, data, {
       regions: data.regions.map(function (region) { return Object.assign({}, region, { name: localizedRegions[region.id] }); }),
       presets: data.presets.map(function (preset) { return Object.assign({}, preset, { name: localizedPresets[preset.id] }); }),

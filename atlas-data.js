@@ -23,7 +23,8 @@
       americas: { x: 25, y: 50, radius: 20 }
     },
     tracks: {
-      sumer: [c('uruk', 59, 44, -3500, -1750)],
+      sumer: [c('sumerian-city-states', 59, 44, -2900, -2004)],
+      uruk: [c('uruk-city', 59, 44, -3500, -3100)],
       akkadia: [c('akkad', 59, 42, -2600, -1800)],
       babylonia: [c('babylon', 59, 43, -1894, -539)],
       assyria: [c('assur-nineveh', 59, 39, -2025, -100)],

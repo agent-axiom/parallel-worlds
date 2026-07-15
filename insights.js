@@ -21,10 +21,10 @@
   }
 
   return [
-    insight('sumer-egypt-cities', -3000, -2700, ['sumer', 'egypt'],
-      ['Урук и ранний Египет', 'Первые крупные города Месопотамии росли в те же века, когда вдоль Нила складывалось раннединастическое государство.'],
-      ['Uruk and early Egypt', 'Mesopotamia’s first great cities grew in the same centuries that an Early Dynastic state took shape along the Nile.'],
-      ['乌鲁克与早期埃及', '美索不达米亚最早的大城市兴起之时，尼罗河沿岸的早王朝国家也正在形成。'], ['met']),
+    insight('sumer-egypt-cities', -2900, -2700, ['sumer', 'egypt'],
+      ['Шумерские города-государства и ранний Египет', 'Раннединастические города южной Месопотамии существовали в те же века, когда вдоль Нила укреплялось раннее государство.'],
+      ['Sumerian city-states and early Egypt', 'Early Dynastic cities in southern Mesopotamia existed while an early state consolidated along the Nile.'],
+      ['苏美尔城邦与早期埃及', '美索不达米亚南部的早王朝城市与尼罗河沿岸早期国家的巩固处于同一时代。'], ['met']),
     insight('akkad-indus-networks', -2400, -2000, ['akkadia', 'indus'],
       ['Аккад и города Инда', 'Территориальная держава Аккада существовала рядом по времени с развитой городской сетью Хараппской цивилизации.'],
       ['Akkad and the Indus cities', 'Akkad’s territorial state overlapped in time with the mature urban network of the Harappan civilization.'],

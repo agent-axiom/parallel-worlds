@@ -109,8 +109,9 @@ test('academic schema accepts sourced reviewed records and rejects missing evide
 });
 
 test('academic data shell and source URL validation are explicit', function () {
-  assert.deepStrictEqual(academicData.tracks, []);
-  assert.deepStrictEqual(academicData.patches, {});
+  assert.ok(Array.isArray(academicData.tracks));
+  assert.ok(academicData.tracks.some(function (track) { return track.id === 'uruk'; }));
+  assert.ok(academicData.patches && academicData.patches.china && academicData.patches.korea && academicData.patches.sumer);
   assert.strictEqual(academicData.scale.breakpoint, -3500);
   assert.strictEqual(quality.isGenericHomepage('https://www.metmuseum.org/'), true);
   assert.strictEqual(quality.isGenericHomepage('https://www.metmuseum.org/essays/uruk-the-first-city'), false);
@@ -143,6 +144,39 @@ test('dataset covers the requested world history scope', function () {
   const ids = data.tracks.map(function (track) { return track.id; });
   ['sumer', 'egypt', 'byzantium', 'china', 'aztec', 'inca', 'christianity', 'islam', 'buddhism']
     .forEach(function (id) { assert.ok(ids.indexOf(id) !== -1, 'missing ' + id); });
+});
+
+test('priority chronology distinguishes Chinese and Korean Three Kingdoms and separates Uruk', function () {
+  const china = data.tracks.find(function (track) { return track.id === 'china'; });
+  const korea = data.tracks.find(function (track) { return track.id === 'korea'; });
+  const sumer = data.tracks.find(function (track) { return track.id === 'sumer'; });
+  const uruk = data.tracks.find(function (track) { return track.id === 'uruk'; });
+
+  assert.ok(china.periods.some(function (period) { return period.id === 'china-three-kingdoms' && period.start === 220 && period.end === 280; }));
+  assert.ok(china.periods.some(function (period) { return period.id === 'china-northern-southern-dynasties'; }));
+  assert.ok(timeline.activeTracks([china], 350).length, 'China should not have a 220–581 gap');
+
+  const koreanKingdoms = korea.periods.find(function (period) { return period.id === 'korea-three-kingdoms'; });
+  assert.ok(koreanKingdoms);
+  assert.ok(/Когурё.*Пэкче.*Силла/.test(koreanKingdoms.copy.ru.name));
+  assert.ok(/Goguryeo.*Baekje.*Silla/.test(koreanKingdoms.copy.en.name));
+  assert.ok(/高句丽.*百济.*新罗/.test(koreanKingdoms.copy.zh.name));
+  assert.ok(korea.periods.every(function (period) { return period.name !== 'Три царства'; }));
+
+  assert.ok(!/oldest|древнейш|最古/i.test(JSON.stringify(sumer)));
+  assert.ok(!sumer.periods.some(function (period) { return /Uruk|Урук|乌鲁克/.test(JSON.stringify(period)); }));
+  assert.ok(uruk && uruk.type === 'site');
+});
+
+test('priority corrected tracks pass full academic validation and inline localization', function () {
+  ['sumer', 'china', 'korea', 'uruk'].forEach(function (id) {
+    const track = data.tracks.find(function (item) { return item.id === id; });
+    assert.deepStrictEqual(quality.validateReviewedTrack(track, data.sources, data.range), [], id + ' validation failed');
+  });
+  const english = i18n.localizeData(data, 'en');
+  const chinese = i18n.localizeData(data, 'zh');
+  assert.strictEqual(english.tracks.find(function (track) { return track.id === 'china'; }).periods.find(function (period) { return period.id === 'china-three-kingdoms'; }).name, 'Chinese Three Kingdoms');
+  assert.strictEqual(chinese.tracks.find(function (track) { return track.id === 'korea'; }).periods.find(function (period) { return period.id === 'korea-three-kingdoms'; }).name, '朝鲜半岛三国：高句丽、百济、新罗');
 });
 
 test('track ids and period ids are unique and valid', function () {
@@ -468,7 +502,7 @@ test('English localization covers every historical track, period, note, and even
 test('Simplified Chinese localization covers every historical track, period, note, and event', function () {
   const chinese = i18n.localizeData(data, 'zh');
   assert.strictEqual(chinese.tracks.length, data.tracks.length);
-  assert.strictEqual(chinese.tracks.find(function (track) { return track.id === 'china'; }).name, '中国');
+  assert.strictEqual(chinese.tracks.find(function (track) { return track.id === 'china'; }).name, '中国历史政权');
   assert.strictEqual(chinese.tracks.find(function (track) { return track.id === 'babylonia'; }).periods[0].name, '古巴比伦时期');
   assert.strictEqual(chinese.tracks.find(function (track) { return track.id === 'egypt'; }).events[1].title, '吉萨金字塔');
 
