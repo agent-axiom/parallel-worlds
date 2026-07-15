@@ -113,6 +113,11 @@
       tier: 'A', kind: 'scholarly-museum-publication', title: 'Art of the Korean Renaissance, 1400–1600',
       publisher: 'The Metropolitan Museum of Art', year: 2009,
       url: 'https://resources.metmuseum.org/resources/metpublications/pdf/Art_of_the_Korean_Renaissance_1400_1600.pdf', accessed: accessed
+    },
+    'met-prehistoric-art-2007': {
+      tier: 'A', kind: 'scholarly-museum-essay', title: 'Introduction to Prehistoric Art, 20,000–8000 B.C.',
+      authors: ['Laura Anne Tedesco'], publisher: 'The Metropolitan Museum of Art', year: 2007,
+      url: 'https://www.metmuseum.org/essays/introduction-to-prehistoric-art-20000-8000-b-c', accessed: accessed
     }
   };
 
@@ -161,6 +166,13 @@
       name: copy.ru.name, summary: copy.ru.summary, type: type, reviewStatus: 'reviewed', copy: copy,
       periods: periods, events: events, sources: sourceIds.slice()
     };
+  }
+
+  function reviewedTrack(id, region, type, copy, periods, events, sourceIds, extra) {
+    return Object.assign({
+      id: id, name: copy.ru.name, summary: copy.ru.summary, region: region, type: type,
+      reviewStatus: 'reviewed', copy: copy, periods: periods, events: events, sources: sourceIds.slice()
+    }, extra || {});
   }
 
   var chinaSources = ['met-korea-renaissance-2009'];
@@ -265,6 +277,166 @@
       eventCopy('Урук становится крупным городским центром', 'Рост города не равнозначен появлению одной «первой цивилизации».', 'Uruk becomes a major urban center', 'Urban growth is not the same as the appearance of a single “first civilization.”', '乌鲁克成为大型城市中心', '城市发展并不等于出现单一的“第一文明”。'))],
     sources: ['met-uruk-2003']
   }];
+
+  tracks.push(
+    reviewedTrack('xianrendong', 'east-asia', 'site',
+      trackCopy(
+        'Пещера Сяньжэньдун: ранняя керамика', 'Археологические свидетельства изготовления керамики охотниками-собирателями в пещере на территории современного юго-восточного Китая.',
+        'Xianrendong Cave: early pottery', 'Archaeological evidence for pottery made by hunter-gatherers at a cave in the territory of present-day southeastern China.',
+        '仙人洞：早期陶器证据', '今中国东南部一处洞穴中狩猎采集者制作陶器的考古证据。'
+      ), [
+        period('xianrendong-pottery', -18050, -17050, 'range', 'radiocarbon', 'ca. 20,000–19,000 cal BP (approximately 18,050–17,050 cal BCE)', ['science-xianrendong-2012'],
+          periodCopy('Слой с ранней керамикой', 'cal BP пересчитано в приблизительный диапазон до н. э.; это памятник, не государство и не «цивилизация Китая».', 'Early pottery-bearing layer', 'cal BP is normalized to an approximate BCE range; this is a site, not a state or a “Chinese civilization.”', '早期陶器层', '将cal BP换算为近似公元前年代；这是遗址，并非国家或“中国文明”。'))
+      ], [
+        event('xianrendong-pottery-evidence', -18000, 'approximate', 'radiocarbon', 'about 20,000 years before present', ['science-xianrendong-2012'],
+          eventCopy('Датированы фрагменты ранней керамики', 'Одна из древнейших надёжно датированных керамических последовательностей.', 'Early pottery fragments are dated', 'One of the earliest securely dated pottery sequences.', '早期陶片年代得到测定', '目前最早的可靠测年陶器序列之一。'))
+      ], ['science-xianrendong-2012']),
+
+    reviewedTrack('jomon', 'east-asia', 'archaeological-culture',
+      trackCopy(
+        'Археологическая последовательность Дзёмон', 'Длительная и регионально разнообразная последовательность охотников, собирателей и рыболовов Японского архипелага с керамическими традициями.',
+        'Jōmon archaeological sequence', 'A long, regionally diverse sequence of hunter-gatherer-fisher communities in the Japanese archipelago with pottery traditions.',
+        '绳纹考古序列', '日本列岛具有陶器传统、地区差异显著且延续长久的狩猎采集渔猎社群序列。'
+      ), [
+        period('jomon-sequence', -10500, -300, 'approximate', 'archaeological-chronology', 'ca. 10,500–300 BCE in the cited museum chronology', ['met-jomon-2002'],
+          periodCopy('Дзёмон', 'Зонтичная периодизация с большими региональными различиями.', 'Jōmon', 'An umbrella periodization with substantial regional variation.', '绳纹时代', '包含显著地区差异的总括性分期。'))
+      ], [
+        event('jomon-incipient', -10500, 'approximate', 'archaeological-chronology', 'ca. 10,500 BCE', ['met-jomon-2002'],
+          eventCopy('Начало начального Дзёмона по музейной хронологии', 'Другие современные хронологии могут давать более раннюю границу.', 'Incipient Jōmon begins in the cited museum chronology', 'Other modern chronologies may use an earlier boundary.', '所引博物馆年表中的草创期绳纹开始', '其他当代年表可能采用更早的起点。'))
+      ], ['met-jomon-2002']),
+
+    reviewedTrack('liangzhu', 'east-asia', 'archaeological-culture',
+      trackCopy(
+        'Лянчжу', 'Поздненеолитическая археологическая культура и раннее региональное государство в низовьях Янцзы, на территории современного Китая.',
+        'Liangzhu', 'A Late Neolithic archaeological culture and early regional state in the lower Yangtze, in the territory of present-day China.',
+        '良渚', '今中国长江下游的晚期新石器时代考古文化和早期区域国家。'
+      ), [
+        period('liangzhu-city', -3300, -2300, 'range', 'archaeological-chronology', 'ca. 3300–2300 BCE', ['unesco-liangzhu-2019'],
+          periodCopy('Городской комплекс Лянчжу', 'Город, гидротехническая система и социально различающиеся погребения.', 'Liangzhu urban complex', 'City, water-management system, and socially differentiated burials.', '良渚城市综合体', '城市、水利系统和具有社会分化的墓葬。'))
+      ], [
+        event('liangzhu-regional-state', -3000, 'approximate', 'archaeological-chronology', 'within ca. 3300–2300 BCE', ['unesco-liangzhu-2019'],
+          eventCopy('Функционирует ранний региональный центр', 'UNESCO описывает Лянчжу как центр власти и верований раннего регионального государства.', 'An early regional center is active', 'UNESCO describes Liangzhu as a center of power and belief for an early regional state.', '早期区域中心活跃', '联合国教科文组织将良渚描述为早期区域国家的权力与信仰中心。'))
+      ], ['unesco-liangzhu-2019']),
+
+    reviewedTrack('natufian', 'west-asia', 'archaeological-culture',
+      trackCopy(
+        'Натуфийская археологическая культура', 'Эпипалеолитическая последовательность южного Леванта, важная для изучения оседлости до земледелия.',
+        'Natufian archaeological culture', 'An Epipalaeolithic sequence in the southern Levant important for studying sedentism before farming.',
+        '纳图夫考古文化', '南黎凡特的旧石器时代晚期序列，对研究农业之前的定居生活十分重要。'
+      ), [
+        period('natufian-sequence', -13050, -9550, 'range', 'radiocarbon', 'ca. 15,000–11,500 cal BP (approximately 13,050–9550 cal BCE)', ['cambridge-natufian-2017'],
+          periodCopy('Натуфийская последовательность', 'Границы нормализованы из cal BP и остаются приблизительными.', 'Natufian sequence', 'Boundaries are normalized from cal BP and remain approximate.', '纳图夫序列', '边界由cal BP换算，仍为近似值。'))
+      ], [
+        event('natufian-sedentism', -12000, 'approximate', 'archaeological-chronology', 'within 15,000–11,500 cal BP', ['cambridge-natufian-2017'],
+          eventCopy('Распространяются более постоянные поселения', 'Оседлость предшествует полностью земледельческой экономике.', 'More permanent settlements spread', 'Sedentism precedes a fully agricultural economy.', '更为固定的聚落扩展', '定居早于完全农业经济。'))
+      ], ['cambridge-natufian-2017']),
+
+    reviewedTrack('gobekli-tepe', 'west-asia', 'site',
+      trackCopy(
+        'Гёбекли-Тепе', 'Монументальный памятник докерамического неолита в Верхней Месопотамии, на территории современной Турции.',
+        'Göbekli Tepe', 'A monumental Pre-Pottery Neolithic site in Upper Mesopotamia, in the territory of present-day Türkiye.',
+        '哥贝克力石阵', '今土耳其境内上美索不达米亚的一处前陶新石器时代纪念性遗址。'
+      ), [
+        period('gobekli-monuments', -9600, -8200, 'range', 'archaeological-chronology', '9600–8200 BCE', ['unesco-gobekli-2018'],
+          periodCopy('Монументальные сооружения', 'Круглые и прямоугольные комплексы с Т-образными столбами.', 'Monumental enclosures', 'Circular and rectangular complexes with T-shaped pillars.', '纪念性建筑群', '具有T形石柱的圆形和矩形建筑群。'))
+      ], [
+        event('gobekli-building', -9500, 'approximate', 'archaeological-chronology', 'early 10th millennium BCE', ['unesco-gobekli-2018'],
+          eventCopy('Начинается строительство монументальных комплексов', '', 'Monumental building begins', '', '纪念性建筑开始建造', ''))
+      ], ['unesco-gobekli-2018']),
+
+    reviewedTrack('catalhoyuk', 'west-asia', 'site',
+      trackCopy(
+        'Чатал-Хююк', 'Крупное неолитическое поселение в Анатолии, на территории современной Турции, с плотной застройкой и многослойной историей.',
+        'Çatalhöyük', 'A large Neolithic settlement in Anatolia, in the territory of present-day Türkiye, with dense building and a long stratigraphy.',
+        '恰塔霍裕克', '今土耳其安纳托利亚的一处大型新石器时代聚落，建筑密集且地层延续长久。'
+      ), [
+        period('catalhoyuk-east-mound', -7400, -6200, 'range', 'archaeological-chronology', '7400–6200 BCE', ['unesco-catalhoyuk-2012'],
+          periodCopy('Неолитические слои Восточного холма', 'Восемнадцать уровней неолитической застройки.', 'Neolithic levels of the East Mound', 'Eighteen levels of Neolithic occupation.', '东丘新石器时代地层', '十八层新石器时代居住遗存。'))
+      ], [
+        event('catalhoyuk-occupation', -7400, 'approximate', 'archaeological-chronology', 'ca. 7400 BCE', ['unesco-catalhoyuk-2012'],
+          eventCopy('Начинается последовательность Восточного холма', '', 'East Mound sequence begins', '', '东丘序列开始', ''))
+      ], ['unesco-catalhoyuk-2012']),
+
+    reviewedTrack('predynastic-nile', 'africa', 'regional-sequence',
+      trackCopy(
+        'Додинастические общества долины Нила', 'Оседлые земледельческие сообщества и политические центры долины Нила до династического объединения.',
+        'Predynastic Nile Valley societies', 'Settled farming communities and political centers in the Nile Valley before dynastic unification.',
+        '尼罗河谷前王朝社会', '王朝统一之前尼罗河谷的定居农业社群和政治中心。'
+      ), [
+        period('predynastic-nile-sequence', -5500, -3100, 'approximate', 'archaeological-chronology', 'about 5500–3100 BCE', ['british-early-egypt'],
+          periodCopy('Додинастическая последовательность', 'Региональные культуры постепенно усложняются; объединение не было мгновенным событием.', 'Predynastic sequence', 'Regional cultures become more complex; unification was not instantaneous.', '前王朝序列', '地区文化逐渐复杂化；统一并非瞬间事件。'))
+      ], [
+        event('predynastic-hierakonpolis', -4000, 'approximate', 'archaeological-chronology', 'about 4000 BCE', ['british-early-egypt'],
+          eventCopy('Иераконполь становится крупным центром', 'Один из важнейших центров Верхнего Египта.', 'Hierakonpolis becomes a major center', 'One of the major centers of Upper Egypt.', '希拉孔波利斯成为大型中心', '上埃及的重要中心之一。'))
+      ], ['british-early-egypt']),
+
+    reviewedTrack('mehrgarh', 'south-asia', 'site',
+      trackCopy(
+        'Мергарх', 'Поселение в Качи-Бег на территории современного Пакистана, ключевое для изучения раннего производства пищи в Южной Азии.',
+        'Mehrgarh', 'A settlement in the Kachi plain, in the territory of present-day Pakistan, central to the study of early food production in South Asia.',
+        '梅尔伽赫', '今巴基斯坦卡奇平原的一处聚落，是研究南亚早期食物生产的关键遗址。'
+      ), [
+        period('mehrgarh-sequence', -7000, -2600, 'approximate', 'archaeological-chronology', 'Early Food-Producing Era ca. 7000–5500 BCE; later sequence to ca. 2600 BCE', ['kenoyer-indus-2011'],
+          periodCopy('Последовательность Мергарха', 'Раннее производство пищи сменяется длительной региональной последовательностью.', 'Mehrgarh sequence', 'Early food production is followed by a long regional sequence.', '梅尔伽赫序列', '早期食物生产之后延续为长期区域序列。'))
+      ], [
+        event('mehrgarh-food-production', -7000, 'approximate', 'archaeological-chronology', 'ca. 7000 BCE', ['kenoyer-indus-2011'],
+          eventCopy('Начало ранней производящей экономики', 'Земледелие и животноводство документированы в ранних слоях.', 'Early food-producing economy begins', 'Farming and herding are documented in early levels.', '早期食物生产经济开始', '早期地层记录了农业和畜牧业。'))
+      ], ['kenoyer-indus-2011']),
+
+    reviewedTrack('european-palaeolithic-mesolithic', 'mediterranean', 'regional-sequence',
+      trackCopy(
+        'Поздний палеолит и мезолит Европы', 'Очень широкая сравнительная рамка для разнообразных обществ Европы между ледниковым максимумом и распространением земледелия.',
+        'Late Palaeolithic and Mesolithic Europe', 'A very broad comparative frame for diverse European societies between the glacial maximum and the spread of farming.',
+        '欧洲旧石器时代晚期与中石器时代', '冰盛期至农业传播之间欧洲多样社会的宽泛比较框架。'
+      ), [
+        period('europe-late-palaeolithic', -20000, -10000, 'approximate', 'archaeological-chronology', 'overview window 20,000–8000 BCE', ['met-prehistoric-art-2007'],
+          periodCopy('Поздний верхний палеолит', 'Не единая культура: шкала объединяет множество региональных последовательностей.', 'Late Upper Palaeolithic', 'Not a single culture: the line groups many regional sequences.', '旧石器时代晚期', '并非单一文化：此线汇集多个区域序列。')),
+        period('europe-mesolithic', -10000, -5000, 'approximate', 'archaeological-chronology', 'approximately 10,000–5000 BCE as a pan-European frame', ['cambridge-mesolithic-europe-2008'],
+          periodCopy('Мезолитические последовательности', 'Региональные границы значительно различаются.', 'Mesolithic sequences', 'Regional boundaries vary substantially.', '中石器时代序列', '各地区边界差异很大。'))
+      ], [
+        event('europe-postglacial-change', -10000, 'approximate', 'archaeological-chronology', 'around the start of the Holocene', ['cambridge-mesolithic-europe-2008'],
+          eventCopy('Начинаются постледниковые преобразования', 'Осваиваются новые территории, развиваются мореплавание и региональные хозяйства.', 'Postglacial transformations begin', 'New territories, seafaring, and regional economies develop.', '冰后期转型开始', '新地区得到开发，航海和区域经济发展。'))
+      ], ['met-prehistoric-art-2007', 'cambridge-mesolithic-europe-2008']),
+
+    reviewedTrack('late-pleistocene-americas', 'americas', 'regional-sequence',
+      trackCopy(
+        'Позднеплейстоценовые свидетельства в Америках', 'Археологические и хронометрические свидетельства раннего присутствия людей; ранняя граница остаётся предметом научной дискуссии.',
+        'Late Pleistocene evidence in the Americas', 'Archaeological and chronometric evidence for early human presence; the early boundary remains debated.',
+        '美洲晚更新世证据', '关于早期人类存在的考古与年代学证据；最早边界仍有学术争议。'
+      ), [
+        period('americas-early-presence', -20000, -10900, 'disputed', 'radiocarbon', 'probable presence around/before the Last Glacial Maximum; wider expansion ca. 14.7–12.9 ka before AD 2000', ['nature-americas-2020'],
+          periodCopy('Раннее присутствие и расселение', 'Начало намеренно показано как спорный интервал, а не точная дата «первого заселения».', 'Early presence and dispersal', 'The start is intentionally shown as a disputed interval, not an exact “first settlement” date.', '早期存在与扩散', '起点有意显示为争议区间，而非精确的“首次定居”日期。'))
+      ], [
+        event('americas-wider-expansion', -12000, 'approximate', 'radiocarbon', 'wider occupation during ca. 14.7–12.9 ka before AD 2000', ['nature-americas-2020'],
+          eventCopy('Более широкое расселение становится заметным', 'Байесовская модель объединяет данные 42 памятников.', 'Wider occupation becomes visible', 'A Bayesian model combines evidence from 42 sites.', '更广泛的居住变得可见', '贝叶斯模型综合了42处遗址的数据。'))
+      ], ['nature-americas-2020']),
+
+    reviewedTrack('sahul-continuity', 'oceania', 'regional-sequence',
+      trackCopy(
+        'Общества Сахула — продолжение до границы шкалы', 'Археологические общества Австралии и Новой Гвинеи существовали задолго до 20 000 года до н. э.; открытый край показывает продолжение, а не возникновение.',
+        'Sahul societies — continuity at the range boundary', 'Archaeological societies of Australia and New Guinea long predate 20,000 BCE; the open edge shows continuation, not origin.',
+        '萨胡尔社会——在时间轴边界前已延续', '澳大利亚和新几内亚的考古社会远早于公元前20000年；开放边缘表示延续，而非起源。'
+      ), [
+        period('sahul-window', -20000, -3500, 'range', 'archaeological-chronology', 'occupation extends to at least 65,000 years ago; display clipped at 20,000 BCE', ['nature-madjedbebe-2022'],
+          periodCopy('Продолжение плейстоценовых и раннеголоценовых обществ', 'Одна линия не означает единую культуру всего Сахула.', 'Continuing Pleistocene and early Holocene societies', 'One line does not imply a single culture across Sahul.', '延续的更新世与全新世早期社会', '一条线并不意味着整个萨胡尔只有一种文化。'))
+      ], [
+        event('sahul-open-boundary', -20000, 'approximate', 'archaeological-chronology', 'record continues from before the selected range', ['nature-madjedbebe-2022'],
+          eventCopy('Открытая граница: общества уже существовали', 'Маджедбебе хранит гораздо более раннюю археологическую последовательность.', 'Open boundary: societies already existed', 'Madjedbebe preserves a much earlier archaeological sequence.', '开放边界：社会此前已经存在', '马杰德贝贝保存了远早于此的考古序列。'))
+      ], ['nature-madjedbebe-2022'], { continuesBeforeRange: true }),
+
+    reviewedTrack('lapita', 'oceania', 'network',
+      trackCopy(
+        'Ранняя сеть взаимодействий Лапита', 'Морская сеть переселенцев Лапита и коренных папуасских сообществ у островной Новой Гвинеи.',
+        'Early Lapita interaction network', 'A maritime network connecting Lapita newcomers and Indigenous Papuan communities around Island New Guinea.',
+        '早期拉皮塔互动网络', '拉皮塔移民与新几内亚岛原住民巴布亚社群之间的海洋互动网络。'
+      ), [
+        period('lapita-frontier-interaction', -1530, -1110, 'range', 'radiocarbon', '3,480–3,060 years ago (approximately 1530–1110 BCE)', ['nature-lapita-2022'],
+          periodCopy('Раннее пограничное взаимодействие', 'Данные предшествуют более позднему широкому расселению по Тихому океану.', 'Early frontier interaction', 'The evidence predates the later broad settlement of the Pacific.', '早期边疆互动', '这些证据早于后来更广泛的太平洋定居。'))
+      ], [
+        event('lapita-contact', -1500, 'approximate', 'radiocarbon', 'within 3,480–3,060 years ago', ['nature-lapita-2022'],
+          eventCopy('Контакты Лапита с папуасскими сообществами', 'Фауна, обсидиан и технологии показывают повторное взаимодействие.', 'Lapita contact with Papuan communities', 'Fauna, obsidian, and technologies indicate repeated interaction.', '拉皮塔与巴布亚社群接触', '动物、黑曜石和技术表明反复互动。'))
+      ], ['nature-lapita-2022'])
+  );
 
   return {
     scale: { breakpoint: -3500, deepWeight: 0.30 },

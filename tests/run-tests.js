@@ -179,6 +179,46 @@ test('priority corrected tracks pass full academic validation and inline localiz
   assert.strictEqual(chinese.tracks.find(function (track) { return track.id === 'korea'; }).periods.find(function (period) { return period.id === 'korea-three-kingdoms'; }).name, '朝鲜半岛三国：高句丽、百济、新罗');
 });
 
+test('reviewed deep-time corpus is balanced across seven macroregions', function () {
+  const required = [
+    'xianrendong', 'jomon', 'liangzhu', 'natufian', 'gobekli-tepe', 'catalhoyuk',
+    'predynastic-nile', 'mehrgarh', 'european-palaeolithic-mesolithic',
+    'late-pleistocene-americas', 'sahul-continuity', 'lapita'
+  ];
+  const reviewed = required.map(function (id) {
+    const track = data.tracks.find(function (item) { return item.id === id; });
+    assert.ok(track, 'missing deep-time track ' + id);
+    assert.strictEqual(track.reviewStatus, 'reviewed');
+    assert.deepStrictEqual(quality.validateReviewedTrack(track, data.sources, data.range), [], id + ' validation failed');
+    return track;
+  });
+  assert.ok(new Set(reviewed.map(function (track) { return track.region; })).size >= 7, 'deep-time corpus lacks regional balance');
+  assert.strictEqual(reviewed.find(function (track) { return track.id === 'sahul-continuity'; }).continuesBeforeRange, true);
+  assert.ok(reviewed.every(function (track) { return !/Ancient China|Ancient Australia|Древний Китай|Древняя Австралия|古代中国|古代澳大利亚/.test(JSON.stringify(track.copy)); }));
+});
+
+test('reviewed deep-time geography intersects records and atlas counts societies', function () {
+  const reviewed = data.tracks.filter(function (track) { return track.reviewStatus === 'reviewed'; });
+  reviewed.forEach(function (track) {
+    assert.ok(atlasData.tracks[track.id] && atlasData.tracks[track.id].length, 'missing geography for ' + track.id);
+    atlasData.tracks[track.id].forEach(function (center) {
+      assert.ok(track.periods.some(function (period) { return center.end >= period.start && center.start <= period.end; }), 'geography does not intersect ' + track.id);
+    });
+  });
+  const projected = atlas.projectActiveCenters([
+    { id: 'site', region: 'west-asia', type: 'site', periods: [{ start: -10000, end: -9000 }] },
+    { id: 'culture', region: 'west-asia', type: 'archaeological-culture', periods: [{ start: -10000, end: -9000 }] },
+    { id: 'tradition', region: 'west-asia', type: 'tradition', periods: [{ start: -10000, end: -9000 }] }
+  ], -9500, { tracks: {
+    site: [{ id: 'site', x: 50, y: 40, start: -10000, end: -9000 }],
+    culture: [{ id: 'culture', x: 51, y: 40, start: -10000, end: -9000 }],
+    tradition: [{ id: 'tradition', x: 52, y: 40, start: -10000, end: -9000 }]
+  } });
+  const aggregate = atlas.aggregateRegions(projected)[0];
+  assert.strictEqual(aggregate.societies, 2);
+  assert.strictEqual(aggregate.traditions, 1);
+});
+
 test('track ids and period ids are unique and valid', function () {
   const trackIds = new Set();
   const periodIds = new Set();
@@ -244,7 +284,7 @@ test('atlas projects active centers and aggregates filtered regions', function (
   const projected = atlas.projectActiveCenters(tracks, -500, geography);
   assert.deepStrictEqual(projected.map(function (item) { return item.track.id; }), ['alpha', 'beta']);
   assert.deepStrictEqual(atlas.aggregateRegions(projected), [
-    { id: 'east-asia', count: 2, civilizations: 1, traditions: 1, trackIds: ['alpha', 'beta'] }
+    { id: 'east-asia', count: 2, societies: 1, civilizations: 1, traditions: 1, trackIds: ['alpha', 'beta'] }
   ]);
 });
 
@@ -348,7 +388,7 @@ test('atlas model combines filters, region selection, focus, and missing geograp
   assert.deepStrictEqual(model.activeTracks.map(function (track) { return track.id; }), ['alpha', 'beta']);
   assert.deepStrictEqual(model.regions.map(function (region) { return [region.id, region.count, region.x]; }), [['east-asia', 1, 76]]);
   assert.deepStrictEqual(model.regionTracks.map(function (item) { return item.track.id; }), ['alpha', 'beta']);
-  assert.deepStrictEqual(model.stats, { tracks: 2, civilizations: 1, traditions: 1, regions: 1 });
+  assert.deepStrictEqual(model.stats, { tracks: 2, societies: 1, civilizations: 1, traditions: 1, regions: 1 });
   assert.strictEqual(model.insight.id, 'alpha-beta');
   assert.deepStrictEqual(model.focusIds, ['beta']);
 

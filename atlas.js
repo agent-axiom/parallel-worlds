@@ -47,7 +47,8 @@
       return {
         id: id,
         count: region.trackIds.length,
-        civilizations: region.trackIds.filter(function (trackId) { return region.trackTypes[trackId] === 'civilization'; }).length,
+        societies: region.trackIds.filter(function (trackId) { return region.trackTypes[trackId] !== 'tradition'; }).length,
+        civilizations: region.trackIds.filter(function (trackId) { return region.trackTypes[trackId] !== 'tradition'; }).length,
         traditions: region.trackIds.filter(function (trackId) { return region.trackTypes[trackId] === 'tradition'; }).length,
         trackIds: region.trackIds
       };
@@ -120,7 +121,7 @@
     }).map(function (track) {
       return { track: track, period: activePeriod(track, year) };
     });
-    var civilizationCount = activeTracks.filter(function (track) { return track.type === 'civilization'; }).length;
+    var societyCount = activeTracks.filter(function (track) { return track.type !== 'tradition'; }).length;
     var activeRegionIds = activeTracks.reduce(function (ids, track) {
       if (ids.indexOf(track.region) === -1) ids.push(track.region);
       return ids;
@@ -136,8 +137,9 @@
       focusIds: focusIds,
       stats: {
         tracks: activeTracks.length,
-        civilizations: civilizationCount,
-        traditions: activeTracks.length - civilizationCount,
+        societies: societyCount,
+        civilizations: societyCount,
+        traditions: activeTracks.length - societyCount,
         regions: activeRegionIds.length
       },
       insight: selectInsight(options.insights || [], activeTracks, year, options.locale, focusIds)
