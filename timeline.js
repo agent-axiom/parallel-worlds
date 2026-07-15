@@ -71,6 +71,26 @@
     });
   }
 
+  function periodDensity(width) {
+    width = Number(width);
+    if (width >= 112) return 'wide';
+    if (width >= 64) return 'medium';
+    if (width >= 32) return 'compact';
+    return 'node';
+  }
+
+  function periodTooltipRecord(period) {
+    var dating = period.dating || {};
+    return {
+      id: period.id || '',
+      name: period.name,
+      start: period.start,
+      end: period.end,
+      precision: dating.precision || '',
+      basis: dating.basis || ''
+    };
+  }
+
   function buildCsv(tracks, options) {
     options = options || {};
     var headers = options.headers || ['Линия', 'Тип', 'Регион', 'Период', 'Начало', 'Конец', 'Примечание'];
@@ -114,6 +134,8 @@
     filterTracks: filterTracks,
     formatYear: formatYear,
     numericParam: numericParam,
+    periodDensity: periodDensity,
+    periodTooltipRecord: periodTooltipRecord,
     visiblePeriods: visiblePeriods,
     yearToPercent: yearToPercent
   };

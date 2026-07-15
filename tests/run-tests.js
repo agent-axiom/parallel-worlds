@@ -473,6 +473,20 @@ test('missing URL numbers stay absent instead of becoming year zero', function (
   assert.strictEqual(timeline.numericParam(new URLSearchParams('zoom=nope'), 'zoom'), undefined);
 });
 
+test('period density follows the approved four thresholds', function () {
+  assert.strictEqual(timeline.periodDensity(112), 'wide');
+  assert.strictEqual(timeline.periodDensity(111.99), 'medium');
+  assert.strictEqual(timeline.periodDensity(64), 'medium');
+  assert.strictEqual(timeline.periodDensity(63.99), 'compact');
+  assert.strictEqual(timeline.periodDensity(32), 'compact');
+  assert.strictEqual(timeline.periodDensity(31.99), 'node');
+});
+
+test('period tooltip record preserves full evidence metadata', function () {
+  const record = timeline.periodTooltipRecord({ id: 'p1', name: 'Full name', start: -200, end: -100, dating: { precision: 'approximate', basis: 'historical' } });
+  assert.deepStrictEqual(record, { id: 'p1', name: 'Full name', start: -200, end: -100, precision: 'approximate', basis: 'historical' });
+});
+
 test('explorer state round-trips view, year, filters, and focused tracks', function () {
   const defaults = {
     view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
