@@ -41,7 +41,7 @@ jobs:
       - name: Prepare static artifact
         run: |
           mkdir _site
-          cp index.html styles.css app.js chronology.js academic-data.js data-quality.js data.js i18n.js timeline.js atlas-data.js insights.js atlas.js explorer-state.js atlas-view.js .nojekyll _site/
+          cp index.html styles.css app.js chronology.js academic-data.js data-quality.js data.js i18n.js timeline.js atlas-data.js world-map-data.js insights.js atlas.js explorer-state.js atlas-view.js .nojekyll _site/
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:

@@ -770,11 +770,12 @@ test('CSV export carries reviewed dating evidence and exact source links', funct
 test('required static site and Pages files exist and use relative assets', function () {
   const evidenceAssets = ['chronology.js', 'academic-data.js', 'data-quality.js'];
   const atlasAssets = ['atlas-data.js', 'insights.js', 'atlas.js', 'explorer-state.js', 'atlas-view.js'];
-  ['index.html', 'styles.css', 'app.js', 'data.js', 'i18n.js', 'timeline.js'].concat(evidenceAssets).concat(atlasAssets).concat(['.nojekyll',
+  const mapAssets = ['world-map-data.js'];
+  ['index.html', 'styles.css', 'app.js', 'data.js', 'i18n.js', 'timeline.js'].concat(evidenceAssets).concat(atlasAssets).concat(mapAssets).concat(['.nojekyll',
     '.github/workflows/deploy-pages.yml', 'scripts/validate.sh', 'README.md']
     ).forEach(function (file) { assert.ok(fs.existsSync(path.join(root, file)), 'missing ' + file); });
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  ['styles.css', 'data.js', 'i18n.js', 'timeline.js', 'app.js'].concat(evidenceAssets).concat(atlasAssets).forEach(function (asset) {
+  ['styles.css', 'data.js', 'i18n.js', 'timeline.js', 'app.js'].concat(evidenceAssets).concat(atlasAssets).concat(mapAssets).forEach(function (asset) {
     assert.ok(html.indexOf('="' + asset + '"') !== -1, 'asset is not relative: ' + asset);
   });
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/deploy-pages.yml'), 'utf8');
@@ -791,18 +792,19 @@ test('required static site and Pages files exist and use relative assets', funct
     'atlas-panel', 'atlas-play-button', 'atlas-year-input', 'chronology-view'].forEach(function (id) {
     assert.ok(html.indexOf('id="' + id + '"') !== -1, 'missing explorer element ' + id);
   });
-  atlasAssets.forEach(function (asset) {
+  atlasAssets.concat(mapAssets).forEach(function (asset) {
     assert.ok(html.indexOf('src="' + asset + '"') !== -1, 'missing atlas asset ' + asset);
   });
   assert.ok(workflow.indexOf('i18n.js') !== -1, 'Pages artifact does not include i18n.js');
   const validator = fs.readFileSync(path.join(root, 'scripts/validate.sh'), 'utf8');
-  atlasAssets.forEach(function (asset) {
+  atlasAssets.concat(mapAssets).forEach(function (asset) {
     assert.ok(workflow.indexOf(asset) !== -1, 'Pages artifact does not include ' + asset);
     assert.ok(validator.indexOf(asset) !== -1, 'validator does not cover ' + asset);
   });
   const atlasBytes = atlasAssets.reduce(function (sum, asset) { return sum + fs.statSync(path.join(root, asset)).size; }, 0);
   assert.ok(atlasBytes < 180 * 1024, 'atlas modules exceed the 180 KB static budget');
-  atlasAssets.forEach(function (asset) {
+  assert.ok(fs.statSync(path.join(root, 'world-map-data.js')).size < 120 * 1024, 'Natural Earth map asset exceeds 120 KB');
+  atlasAssets.concat(mapAssets).forEach(function (asset) {
     const source = fs.readFileSync(path.join(root, asset), 'utf8');
     ['fetch(', 'XMLHttpRequest', '<script src="http'].forEach(function (marker) {
       assert.strictEqual(source.indexOf(marker), -1, asset + ' contains forbidden runtime dependency: ' + marker);
