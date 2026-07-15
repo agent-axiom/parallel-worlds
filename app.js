@@ -2,6 +2,7 @@
   'use strict';
 
   var rawData = window.PARALLEL_WORLDS_DATA;
+  var chronology = window.ParallelWorldsChronology;
   var timeline = window.ParallelTimeline;
   var i18n = window.ParallelWorldsI18n;
   var atlasData = window.PARALLEL_WORLDS_ATLAS_DATA;
@@ -31,7 +32,7 @@
 
   var defaults = {
     query: '', region: 'all', type: 'all', start: rawData.range.start, end: rawData.range.end,
-    year: -500, zoom: 100, lang: initialLocale(), view: 'map', focus: [], selectedRegion: '', playing: false, filtersOpen: false,
+    year: -500, zoom: 100, lang: initialLocale(), view: 'map', focus: [], selectedRegion: '', scaleMode: 'overview', playing: false, filtersOpen: false,
     theme: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   };
   var state = Object.assign({}, defaults);
@@ -43,6 +44,13 @@
   function get(id) { return document.getElementById(id); }
   function t(key, values) { return i18n.text(state.lang, key, values); }
   function formatYear(year) { return timeline.formatYear(year, state.lang); }
+  function currentScale() {
+    return chronology.createScale(state.start, state.end, state.scaleMode, rawData.scale.breakpoint, rawData.scale.deepWeight);
+  }
+
+  function yearFromSlider(value) {
+    return chronology.unprojectYear(Number(value) / 10, currentScale());
+  }
 
   function readUrlState() {
     var params = new URLSearchParams(window.location.search);
@@ -68,7 +76,7 @@
       'timeline', 'empty-state', 'reset-button', 'contemporary-list', 'detail-dialog', 'dialog-title',
       'dialog-meta', 'dialog-summary', 'dialog-periods', 'dialog-events', 'dialog-sources', 'dialog-close',
       'source-links', 'theme-button', 'language-select', 'share-button', 'toast', 'track-count', 'period-count', 'event-count',
-      'filter-toggle', 'filters-content',
+      'filter-toggle', 'filters-content', 'scale-mode',
       'view-map-button', 'view-chronology-button', 'atlas-view', 'chronology-view', 'atlas-map', 'atlas-world',
       'atlas-regions', 'atlas-panel', 'atlas-region-list', 'atlas-play-button', 'atlas-year-input', 'atlas-year-output', 'atlas-map-summary']
       .forEach(function (id) { elements[id] = get(id); });
@@ -127,6 +135,7 @@
   }
 
   function syncControls() {
+    var scale = currentScale();
     elements['search-input'].value = state.query;
     elements['region-select'].value = state.region;
     elements['type-select'].value = state.type;
@@ -134,18 +143,25 @@
     elements['zoom-output'].value = state.zoom + '%';
     elements['range-start'].value = state.start;
     elements['range-end'].value = state.end;
-    elements['year-input'].min = state.start;
-    elements['year-input'].max = state.end;
-    elements['year-input'].value = state.year;
+    elements['year-input'].min = 0;
+    elements['year-input'].max = 1000;
+    elements['year-input'].step = 1;
+    elements['year-input'].value = Math.round(chronology.projectYear(state.year, scale) * 10);
     elements['year-output'].textContent = formatYear(state.year);
-    elements['atlas-year-input'].min = state.start;
-    elements['atlas-year-input'].max = state.end;
-    elements['atlas-year-input'].value = state.year;
+    elements['atlas-year-input'].min = 0;
+    elements['atlas-year-input'].max = 1000;
+    elements['atlas-year-input'].step = 1;
+    elements['atlas-year-input'].value = Math.round(chronology.projectYear(state.year, scale) * 10);
     elements['atlas-year-output'].textContent = formatYear(state.year);
     elements['language-select'].value = state.lang;
     elements['filters-content'].classList.toggle('open', state.filtersOpen);
     elements['filter-toggle'].setAttribute('aria-expanded', String(state.filtersOpen));
     elements['filter-toggle'].firstElementChild.textContent = t(state.filtersOpen ? 'hideFilters' : 'showFilters');
+    Array.prototype.forEach.call(elements['scale-mode'].querySelectorAll('[data-scale]'), function (button) {
+      var selected = button.dataset.scale === state.scaleMode;
+      button.classList.toggle('active', selected);
+      button.setAttribute('aria-pressed', String(selected));
+    });
     elements['atlas-view'].hidden = state.view !== 'map';
     elements['chronology-view'].hidden = state.view !== 'chronology';
     [['view-map-button', 'map'], ['view-chronology-button', 'chronology']].forEach(function (entry) {
@@ -169,6 +185,59 @@
 
   function filteredTracks() {
     return timeline.filterTracks(activeData.tracks, state);
+  }
+
+  function typeLabel(type) {
+    var keys = {
+      civilization: 'legacySociety', 'archaeological-culture': 'archaeologicalCulture', site: 'siteType',
+      polity: 'polityType', 'regional-sequence': 'regionalSequence', network: 'networkType', tradition: 'tradition'
+    };
+    return t(keys[type] || 'societies');
+  }
+
+  function precisionSymbol(precision) {
+    return { exact: '●', approximate: '≈', range: '↔', traditional: '†', disputed: '?' }[precision] || '';
+  }
+
+  function precisionLabel(precision) {
+    var keys = { exact: 'precisionExact', approximate: 'precisionApproximate', range: 'precisionRange', traditional: 'precisionTraditional', disputed: 'precisionDisputed' };
+    return t(keys[precision] || 'precisionUnknown');
+  }
+
+  function basisLabel(basis) {
+    var keys = {
+      historical: 'basisHistorical', 'archaeological-chronology': 'basisArchaeological', radiocarbon: 'basisRadiocarbon',
+      dendrochronology: 'basisDendrochronology', stratigraphy: 'basisStratigraphy', traditional: 'basisTraditional'
+    };
+    return t(keys[basis] || 'basisUnknown');
+  }
+
+  function reviewLabel(status) {
+    return t({ reviewed: 'reviewedStatus', provisional: 'provisionalStatus', legacy: 'legacyStatus' }[status] || 'legacyStatus');
+  }
+
+  function reviewStatusHtml(track) {
+    var status = track.reviewStatus || 'legacy';
+    return '<span class="review-status ' + escapeHtml(status) + '">' + escapeHtml(reviewLabel(status)) + '</span>';
+  }
+
+  function sourceLinksHtml(sourceIds) {
+    return (sourceIds || []).map(function (sourceId) {
+      var source = rawData.sources[sourceId];
+      if (!source) return '';
+      return '<a href="' + escapeHtml(source.url) + '" target="_blank" rel="noreferrer">' + escapeHtml(source.title) + ' ↗</a>';
+    }).filter(Boolean).join(', ');
+  }
+
+  function evidenceHtml(record) {
+    if (!record.dating) return '';
+    var dating = record.dating;
+    var original = dating.original ? '<span><strong>' + escapeHtml(t('originalDating')) + '</strong> ' + escapeHtml(dating.original) + '</span>' : '';
+    var sources = sourceLinksHtml(record.sourceIds);
+    return '<div class="evidence-meta"><span class="precision-badge ' + escapeHtml(dating.precision) + '">' +
+      escapeHtml(precisionSymbol(dating.precision) + ' ' + precisionLabel(dating.precision)) + '</span>' +
+      '<span><strong>' + escapeHtml(t('datingBasis')) + '</strong> ' + escapeHtml(basisLabel(dating.basis)) + '</span>' + original +
+      (sources ? '<span class="record-sources"><strong>' + escapeHtml(t('recordSources')) + '</strong> ' + sources + '</span>' : '') + '</div>';
   }
 
   function atlasCopy() {
@@ -238,38 +307,42 @@
   }
 
   function axisHtml() {
-    var ticks = [];
-    for (var index = 0; index <= 10; index += 1) {
-      var percent = index * 10;
-      var year = Math.round(state.start + (state.end - state.start) * (index / 10));
-      ticks.push('<div class="axis-tick" style="left:' + percent + '%"><span>' + escapeHtml(formatYear(year)) + '</span></div>');
-    }
-    return '<div class="timeline-axis"><div class="axis-corner">' + escapeHtml(t('linePeriod')) + '</div><div class="axis-plot">' + ticks.join('') + '</div></div>';
+    var scale = currentScale();
+    var ticks = chronology.ticks(scale, 10).map(function (year) {
+      var percent = chronology.projectYear(year, scale);
+      return '<div class="axis-tick" style="left:' + percent + '%"><span>' + escapeHtml(formatYear(year)) + '</span></div>';
+    });
+    var breakpoint = scale.piecewise ? '<div class="scale-breakpoint" style="left:' + (scale.deepWeight * 100) + '%"><span>' + escapeHtml(t('breakpointLabel')) + '</span></div>' : '';
+    return '<div class="timeline-axis"><div class="axis-corner">' + escapeHtml(t('linePeriod')) + '</div><div class="axis-plot">' + ticks.join('') + breakpoint + '</div></div>';
   }
 
   function trackHtml(track) {
+    var scale = currentScale();
     var periods = timeline.visiblePeriods(track, state.start, state.end).map(function (period) {
-      var left = timeline.yearToPercent(period.clippedStart, state.start, state.end);
-      var width = timeline.yearToPercent(period.clippedEnd, state.start, state.end) - left;
-      var title = period.name + ': ' + formatYear(period.start) + ' — ' + formatYear(period.end);
-      return '<div class="period" style="left:' + left + '%;width:' + Math.max(width, .12) + '%" title="' + escapeHtml(title) + '">' + escapeHtml(period.name) + '</div>';
+      var left = timeline.yearToPercent(period.clippedStart, scale);
+      var width = timeline.yearToPercent(period.clippedEnd, scale) - left;
+      var title = period.name + ': ' + formatYear(period.start) + ' — ' + formatYear(period.end) + (period.dating ? ' · ' + precisionLabel(period.dating.precision) : '');
+      var openClass = track.continuesBeforeRange && period.clippedStart === state.start ? ' open-start' : '';
+      var badge = period.dating ? '<span class="precision-badge compact ' + escapeHtml(period.dating.precision) + '" aria-label="' + escapeHtml(precisionLabel(period.dating.precision)) + '">' + escapeHtml(precisionSymbol(period.dating.precision)) + '</span>' : '';
+      return '<div class="period' + openClass + '" data-review="' + escapeHtml(track.reviewStatus || 'legacy') + '" style="left:' + left + '%;width:' + Math.max(width, .12) + '%" title="' + escapeHtml(title) + '">' + badge + escapeHtml(period.name) + '</div>';
     }).join('');
     var events = track.events.filter(function (event) { return event.year >= state.start && event.year <= state.end; }).map(function (event) {
-      var left = timeline.yearToPercent(event.year, state.start, state.end);
-      return '<span class="event-marker" style="left:' + left + '%" title="' + escapeHtml(formatYear(event.year) + ' — ' + event.title) + '"></span>';
+      var left = timeline.yearToPercent(event.year, scale);
+      var precision = event.dating ? ' ' + event.dating.precision : '';
+      return '<span class="event-marker' + precision + '" style="left:' + left + '%" title="' + escapeHtml(formatYear(event.year) + ' — ' + event.title) + '"></span>';
     }).join('');
-    var yearLeft = timeline.yearToPercent(state.year, state.start, state.end);
-    var typeLabel = track.type === 'tradition' ? t('tradition') : t('civilization');
+    var yearLeft = timeline.yearToPercent(state.year, scale);
+    var localizedType = typeLabel(track.type);
     var focusClass = state.focus.indexOf(track.id) !== -1 ? ' focused' : '';
     return '<div class="track-row ' + track.type + focusClass + '" role="listitem" style="--region-color:' + regionColors[track.region] + '">' +
       '<button class="track-label" type="button" data-track="' + track.id + '" title="' + escapeHtml(t('openDetails', { name: track.name })) + '">' +
-      '<span class="track-label-marker"></span><span class="track-label-text"><strong>' + escapeHtml(track.name) + '</strong><small>' + escapeHtml(regionNames[track.region]) + ' · ' + typeLabel + '</small></span></button>' +
+      '<span class="track-label-marker"></span><span class="track-label-text"><strong>' + escapeHtml(track.name) + '</strong><small>' + escapeHtml(regionNames[track.region]) + ' · ' + escapeHtml(localizedType) + '</small></span></button>' +
       '<div class="track-plot">' + periods + events + '<span class="current-year-line" style="left:' + yearLeft + '%"></span></div></div>';
   }
 
   function renderTimeline() {
     var tracks = filteredTracks();
-    var baseWidth = Math.max(920, Math.round(((state.end - state.start) / (rawData.range.end - rawData.range.start)) * 1320));
+    var baseWidth = 1320;
     document.documentElement.style.setProperty('--plot-width', Math.round(baseWidth * state.zoom / 100) + 'px');
     elements.timeline.innerHTML = axisHtml() + tracks.map(trackHtml).join('');
     elements.timeline.hidden = tracks.length === 0;
@@ -298,18 +371,17 @@
     var track = activeData.tracks.find(function (item) { return item.id === id; });
     if (!track) return;
     elements['dialog-title'].textContent = track.name;
-    elements['dialog-meta'].textContent = regionNames[track.region] + ' · ' + (track.type === 'tradition' ? t('traditionMeta') : t('civilizationMeta'));
+    elements['dialog-meta'].innerHTML = '<span>' + escapeHtml(regionNames[track.region]) + ' · ' + escapeHtml(typeLabel(track.type)) + '</span>' + reviewStatusHtml(track);
     elements['dialog-summary'].textContent = track.summary;
     elements['dialog-periods'].innerHTML = track.periods.map(function (period) {
-      return '<li><strong>' + escapeHtml(period.name) + '</strong><span>' + escapeHtml(formatYear(period.start)) + ' — ' + escapeHtml(formatYear(period.end)) + '</span>' + (period.note ? '<p>' + escapeHtml(period.note) + '</p>' : '') + '</li>';
+      return '<li><strong>' + escapeHtml(period.name) + '</strong><span>' + escapeHtml(formatYear(period.start)) + ' — ' + escapeHtml(formatYear(period.end)) + '</span>' +
+        (period.note ? '<p>' + escapeHtml(period.note) + '</p>' : '') + evidenceHtml(period) + '</li>';
     }).join('');
     elements['dialog-events'].innerHTML = track.events.slice().sort(function (a, b) { return a.year - b.year; }).map(function (event) {
-      return '<li><strong>' + escapeHtml(formatYear(event.year)) + '</strong><span>' + escapeHtml(event.title) + '</span>' + (event.note ? '<p>' + escapeHtml(event.note) + '</p>' : '') + '</li>';
+      return '<li><strong>' + escapeHtml(formatYear(event.year)) + '</strong><span>' + escapeHtml(event.title) + '</span>' +
+        (event.note ? '<p>' + escapeHtml(event.note) + '</p>' : '') + evidenceHtml(event) + '</li>';
     }).join('');
-    elements['dialog-sources'].innerHTML = '<strong>' + escapeHtml(t('detailsSources')) + ' </strong>' + track.sources.map(function (sourceId) {
-      var source = rawData.sources[sourceId];
-      return '<a href="' + source.url + '" target="_blank" rel="noreferrer">' + escapeHtml(source.title) + ' ↗</a>';
-    }).join(', ');
+    elements['dialog-sources'].innerHTML = '<strong>' + escapeHtml(t('detailsSources')) + ' </strong>' + sourceLinksHtml(track.sources);
     if (typeof elements['detail-dialog'].showModal === 'function') elements['detail-dialog'].showModal();
     else elements['detail-dialog'].setAttribute('open', '');
   }
@@ -347,8 +419,9 @@
   }
 
   function startPlayback() {
+    var step = chronology.recommendedStep(currentScale());
     if (reducedMotion && reducedMotion.matches) {
-      state.year = atlas.nextPlaybackYear(state.year, state.start, state.end, 20);
+      state.year = atlas.nextPlaybackYear(state.year, state.start, state.end, step);
       render();
       return;
     }
@@ -356,7 +429,7 @@
     state.playing = true;
     render();
     playbackTimer = setInterval(function () {
-      state.year = atlas.nextPlaybackYear(state.year, state.start, state.end, 20);
+      state.year = atlas.nextPlaybackYear(state.year, state.start, state.end, step);
       render();
     }, 560);
   }
@@ -369,11 +442,31 @@
   }
 
   function updateRange(start, end) {
+    start = chronology.normalizeHistoricalYear(start, -1);
+    end = chronology.normalizeHistoricalYear(end, 1);
     start = timeline.clamp(Number(start), rawData.range.start, rawData.range.end - 1);
     end = timeline.clamp(Number(end), start + 1, rawData.range.end);
     state.start = start;
     state.end = end;
-    state.year = timeline.clamp(state.year, start, end);
+    if (start === rawData.range.start && end === rawData.range.end) state.scaleMode = 'overview';
+    else if (end <= rawData.scale.breakpoint) state.scaleMode = 'deep';
+    else if (start >= rawData.scale.breakpoint) state.scaleMode = 'historical';
+    else state.scaleMode = 'overview';
+    state.year = chronology.normalizeHistoricalYear(timeline.clamp(state.year, start, end), state.year < 0 ? -1 : 1);
+    render();
+  }
+
+  function setScaleMode(mode) {
+    if (['overview', 'deep', 'historical'].indexOf(mode) === -1) return;
+    stopPlayback(false);
+    state.scaleMode = mode;
+    var range = chronology.modeRange(mode, {
+      start: rawData.range.start, end: rawData.range.end, breakpoint: rawData.scale.breakpoint
+    });
+    state.start = range.start;
+    state.end = range.end;
+    state.year = timeline.clamp(state.year, range.start, range.end);
+    state.year = chronology.normalizeHistoricalYear(state.year, range.end < 1 ? -1 : 1);
     render();
   }
 
@@ -408,14 +501,18 @@
     elements['region-select'].addEventListener('change', function (event) { state.region = event.target.value; render(); });
     elements['type-select'].addEventListener('change', function (event) { state.type = event.target.value; render(); });
     elements['zoom-input'].addEventListener('input', function (event) { state.zoom = Number(event.target.value); render(); });
-    elements['year-input'].addEventListener('input', function (event) { stopPlayback(false); state.year = Number(event.target.value); render(); });
-    elements['atlas-year-input'].addEventListener('input', function (event) { stopPlayback(false); state.year = Number(event.target.value); render(); });
+    elements['year-input'].addEventListener('input', function (event) { stopPlayback(false); state.year = yearFromSlider(event.target.value); render(); });
+    elements['atlas-year-input'].addEventListener('input', function (event) { stopPlayback(false); state.year = yearFromSlider(event.target.value); render(); });
     elements['atlas-play-button'].addEventListener('click', function () {
       if (state.playing) stopPlayback(true);
       else startPlayback();
     });
     elements['view-map-button'].addEventListener('click', function () { setView('map'); });
     elements['view-chronology-button'].addEventListener('click', function () { setView('chronology'); });
+    elements['scale-mode'].addEventListener('click', function (event) {
+      var button = event.target.closest('[data-scale]');
+      if (button) setScaleMode(button.dataset.scale);
+    });
     [elements['view-map-button'], elements['view-chronology-button']].forEach(function (button) {
       button.addEventListener('keydown', function (event) {
         if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;

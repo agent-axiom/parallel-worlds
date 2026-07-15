@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Интерактивная сравнительная шкала цивилизаций и религий от 3500 года до н. э. до 1600 года н. э.">
+  <meta name="description" content="Интерактивная академическая шкала обществ, археологических культур и традиций от 20 000 года до н. э. до 1600 года н. э.">
   <meta name="theme-color" content="#f1eadb">
   <title>Параллельные миры — сравнительная шкала истории</title>
   <link rel="stylesheet" href="styles.css">
@@ -33,7 +33,7 @@
 
     <div class="hero-grid">
       <div class="hero-copy">
-        <p class="eyebrow" data-i18n="heroEyebrow">Сравнительная хронология · 3500 до н. э. — 1600 н. э.</p>
+        <p class="eyebrow" data-i18n="heroEyebrow">Сравнительная хронология · 20 000 до н. э. — 1600 н. э.</p>
         <h1><span data-i18n="heroTitleLead">История происходила</span> <em data-i18n="heroTitleEm">одновременно</em></h1>
         <p class="hero-lede" data-i18n="heroLede">Сопоставьте Шумер и Египет, Византию и Китай, майя, ацтеков и инков — вместе с религиозными и философскими традициями, которые пересекали границы государств.</p>
       </div>
@@ -65,14 +65,30 @@
           <span data-i18n="trackType">Тип линии</span>
           <select id="type-select">
             <option value="all" data-i18n="allTypes">Все типы</option>
-            <option value="civilization" data-i18n="civilizationsStates">Цивилизации и государства</option>
+            <option value="society" data-i18n="societies">Общества и археологические данные</option>
+            <option value="archaeological-culture" data-i18n="archaeologicalCulture">Археологические культуры</option>
+            <option value="site" data-i18n="siteType">Памятники и поселения</option>
+            <option value="polity" data-i18n="polityType">Государства и политии</option>
+            <option value="regional-sequence" data-i18n="regionalSequence">Региональные последовательности</option>
+            <option value="network" data-i18n="networkType">Сети и миграции</option>
             <option value="tradition" data-i18n="religionsTraditions">Религии и традиции</option>
+            <option value="legacy" data-i18n="legacyRecords">Наследуемые записи</option>
           </select>
         </label>
         <label class="zoom-field">
           <span><span data-i18n="zoom">Масштаб</span> <output id="zoom-output">100%</output></span>
           <input id="zoom-input" type="range" min="75" max="240" step="5" value="100">
         </label>
+      </div>
+
+      <div class="scale-toolbar">
+        <span data-i18n="timeScale">Шкала времени</span>
+        <div id="scale-mode" class="scale-mode" role="group" aria-label="Режим масштаба времени" data-i18n-aria="scaleModeAria">
+          <button type="button" data-scale="overview" aria-pressed="true" data-i18n="scaleOverview">Обзор</button>
+          <button type="button" data-scale="deep" aria-pressed="false" data-i18n="scaleDeep">Глубокое время</button>
+          <button type="button" data-scale="historical" aria-pressed="false" data-i18n="scaleHistorical">Историческое время</button>
+        </div>
+        <p data-i18n="scaleExplanation">Обзор сжимает 20 000–3500 годы до н. э.; подробная историческая часть начинается после видимого разрыва масштаба.</p>
       </div>
 
       <div class="presets-row">
@@ -82,9 +98,9 @@
       </div>
 
       <div class="range-row">
-        <label><span data-i18n="from">От</span> <input id="range-start" type="number" min="-3500" max="1599" step="1"></label>
+        <label><span data-i18n="from">От</span> <input id="range-start" type="number" min="-20000" max="1599" step="1"></label>
         <div class="range-rule" aria-hidden="true"></div>
-        <label><span data-i18n="to">До</span> <input id="range-end" type="number" min="-3499" max="1600" step="1"></label>
+        <label><span data-i18n="to">До</span> <input id="range-end" type="number" min="-19999" max="1600" step="1"></label>
       </div>
       </div>
     </section>
@@ -116,7 +132,7 @@
                 <button id="atlas-play-button" type="button" aria-pressed="false" data-i18n-aria="playTime"><span aria-hidden="true">▶</span><span data-i18n="playTime">Запустить время</span></button>
                 <label>
                   <span class="sr-only" data-i18n="selectYear">Выбрать год</span>
-                  <input id="atlas-year-input" type="range" min="-3500" max="1600" step="1" value="-500">
+                  <input id="atlas-year-input" type="range" min="0" max="1000" step="1" value="730">
                 </label>
               </div>
             </div>
@@ -135,7 +151,7 @@
               <p class="kicker" data-i18n="timelineKicker">Слои времени</p>
               <h2 id="timeline-heading" data-i18n="timelineHeading">Кто жил в одно время?</h2>
             </div>
-            <p><span class="legend-swatch civilization"></span> <span data-i18n="legendCivilizations">цивилизации</span> <span class="legend-swatch tradition"></span> <span data-i18n="legendTraditions">традиции</span></p>
+            <p><span class="legend-swatch civilization"></span> <span data-i18n="legendSocieties">общества и археологические записи</span> <span class="legend-swatch tradition"></span> <span data-i18n="legendTraditions">традиции</span></p>
           </div>
 
           <div class="year-explorer">
@@ -145,7 +161,7 @@
             </div>
             <label class="year-slider">
               <span class="sr-only" data-i18n="selectYear">Выбрать год</span>
-              <input id="year-input" type="range" min="-3500" max="1600" step="1" value="-500">
+              <input id="year-input" type="range" min="0" max="1000" step="1" value="730">
             </label>
             <p id="contemporary-summary" data-i18n="yearHint">Перемещайте ползунок, чтобы увидеть современников.</p>
           </div>
@@ -177,6 +193,7 @@
       <p class="kicker" data-i18n="methodKicker">Как читать шкалу</p>
       <h2 id="method-heading" data-i18n="methodHeading">Даты — ориентиры, а не стены</h2>
       <p data-i18n="methodText">Границы периодов условны: культурные практики не прекращаются в один год, а традиции развиваются неодинаково в разных регионах. Шкала предназначена для сравнения крупных хронологических рамок; спорные и традиционные датировки подписаны в карточках.</p>
+      <p class="evidence-note" data-i18n="earliestShownNote">Самая ранняя видимая дата не означает «первую цивилизацию»: керамика, оседлость, земледелие, города, письменность и государства возникали как разные процессы.</p>
       <div id="source-links" class="source-links"></div>
     </section>
   </main>

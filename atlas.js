@@ -1,8 +1,9 @@
 (function (root, factory) {
-  var api = factory();
+  var chronology = typeof module === 'object' && module.exports ? require('./chronology.js') : root.ParallelWorldsChronology;
+  var api = factory(chronology);
   if (typeof module === 'object' && module.exports) module.exports = api;
   root.ParallelWorldsAtlas = api;
-}(typeof self !== 'undefined' ? self : this, function () {
+}(typeof self !== 'undefined' ? self : this, function (chronology) {
   'use strict';
 
   function activePeriod(track, year) {
@@ -84,14 +85,16 @@
   }
 
   function nextPlaybackYear(year, start, end, step) {
-    var next = Number(year) + Math.max(1, Number(step) || 1);
+    var next = chronology.addHistoricalYears(Number(year), Math.max(1, Number(step) || 1));
     return next > end ? start : next;
   }
 
   function matchesFilters(track, filters) {
     filters = filters || {};
     if (filters.region && filters.region !== 'all' && track.region !== filters.region) return false;
-    if (filters.type && filters.type !== 'all' && track.type !== filters.type) return false;
+    if (filters.type === 'society' && track.type === 'tradition') return false;
+    if (filters.type === 'legacy' && track.type !== 'civilization') return false;
+    if (filters.type && filters.type !== 'all' && filters.type !== 'society' && filters.type !== 'legacy' && track.type !== filters.type) return false;
     var query = String(filters.query || '').trim().toLocaleLowerCase();
     if (!query) return true;
     var searchable = [track.name, track.summary]

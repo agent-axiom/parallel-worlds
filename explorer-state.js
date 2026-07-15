@@ -29,22 +29,45 @@
     return ['ru', 'en', 'zh'].indexOf(value) !== -1 ? value : fallback;
   }
 
+  function normalizeYear(value, direction) {
+    value = Math.round(Number(value));
+    if (!Number.isFinite(value)) return direction < 0 ? -1 : 1;
+    return value === 0 ? (direction < 0 ? -1 : 1) : value;
+  }
+
+  function scaleRange(mode, data) {
+    var breakpoint = data.scale && data.scale.breakpoint || -3500;
+    if (mode === 'deep') return { start: data.range.start, end: breakpoint };
+    if (mode === 'historical') return { start: breakpoint, end: data.range.end };
+    return { start: data.range.start, end: data.range.end };
+  }
+
   function parse(params, defaults, data) {
     var state = Object.assign({}, defaults, { focus: (defaults.focus || []).slice() });
     var view = params.get('view');
     if (view === 'map' || view === 'chronology') state.view = view;
+    var scaleMode = params.get('scale');
+    if (['overview', 'deep', 'historical'].indexOf(scaleMode) !== -1) state.scaleMode = scaleMode;
+    if (state.scaleMode && !params.has('start') && !params.has('end')) {
+      var selectedRange = scaleRange(state.scaleMode, data);
+      state.start = selectedRange.start;
+      state.end = selectedRange.end;
+    }
     if (params.has('q')) state.query = params.get('q').slice(0, 100);
     if ((data.regions || []).some(function (region) { return region.id === params.get('region'); })) state.region = params.get('region');
     if ((data.regions || []).some(function (region) { return region.id === params.get('panel'); })) state.selectedRegion = params.get('panel');
-    if (['all', 'civilization', 'tradition'].indexOf(params.get('type')) !== -1) state.type = params.get('type');
+    var type = params.get('type');
+    if (type === 'civilization') state.type = 'society';
+    else if (['all', 'society', 'archaeological-culture', 'site', 'polity', 'regional-sequence', 'network', 'tradition', 'legacy'].indexOf(type) !== -1) state.type = type;
 
     var start = numberParam(params, 'start');
     var end = numberParam(params, 'end');
     var year = numberParam(params, 'year');
     var zoom = numberParam(params, 'zoom');
-    if (start !== undefined) state.start = clamp(start, data.range.start, data.range.end - 1);
-    if (end !== undefined) state.end = clamp(end, state.start + 1, data.range.end);
-    if (year !== undefined) state.year = clamp(year, state.start, state.end);
+    if (start !== undefined) state.start = clamp(normalizeYear(start, -1), data.range.start, data.range.end - 1);
+    if (end !== undefined) state.end = clamp(normalizeYear(end, 1), state.start + 1, data.range.end);
+    if (year !== undefined) state.year = clamp(normalizeYear(year, state.end < 1 ? -1 : 1), state.start, state.end);
+    else state.year = clamp(normalizeYear(state.year, state.end < 1 ? -1 : 1), state.start, state.end);
     if (zoom !== undefined) state.zoom = clamp(zoom, 75, 240);
     if (params.has('focus')) state.focus = normalizeFocus(params.get('focus'), data.tracks);
     if (params.has('lang')) state.lang = normalizeLocale(params.get('lang'), defaults.lang);
@@ -54,6 +77,7 @@
   function serialize(state, defaults) {
     var params = new URLSearchParams();
     if (state.lang) params.set('lang', state.lang);
+    if (state.scaleMode && state.scaleMode !== defaults.scaleMode) params.set('scale', state.scaleMode);
     if (state.view !== defaults.view) params.set('view', state.view);
     if (state.query) params.set('q', state.query);
     if (state.region !== defaults.region) params.set('region', state.region);

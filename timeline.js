@@ -21,7 +21,9 @@
     var query = normalize(filters.query);
     return tracks.filter(function (track) {
       if (filters.region && filters.region !== 'all' && track.region !== filters.region) return false;
-      if (filters.type && filters.type !== 'all' && track.type !== filters.type) return false;
+      if (filters.type === 'society' && track.type === 'tradition') return false;
+      if (filters.type === 'legacy' && track.type !== 'civilization') return false;
+      if (filters.type && filters.type !== 'all' && filters.type !== 'society' && filters.type !== 'legacy' && track.type !== filters.type) return false;
       return !query || normalize(searchableText(track)).indexOf(query) !== -1;
     });
   }

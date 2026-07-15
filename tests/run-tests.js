@@ -364,6 +364,7 @@ test('atlas selects eligible localized insights and prefers focused tracks', fun
 
 test('playback advances by a fixed historical step and wraps at the visible range', function () {
   assert.strictEqual(atlas.nextPlaybackYear(-500, -3500, 1600, 20), -480);
+  assert.strictEqual(atlas.nextPlaybackYear(-1, -3500, 1600, 1), 1);
   assert.strictEqual(atlas.nextPlaybackYear(1590, -3500, 1600, 20), -3500);
 });
 
@@ -421,7 +422,7 @@ test('explorer state round-trips view, year, filters, and focused tracks', funct
   assert.deepStrictEqual(parsed.focus, ['china', 'byzantium']);
   assert.strictEqual(parsed.query, 'empire');
   assert.strictEqual(parsed.region, 'east-asia');
-  assert.strictEqual(parsed.type, 'civilization');
+  assert.strictEqual(parsed.type, 'society');
   assert.strictEqual(parsed.zoom, 125);
   assert.strictEqual(parsed.lang, 'zh');
   assert.strictEqual(parsed.selectedRegion, 'east-asia');
@@ -446,6 +447,40 @@ test('explorer state rejects invalid values and bounds shared focus', function (
   assert.strictEqual(parsed.zoom, 240);
   assert.strictEqual(parsed.lang, 'en');
   assert.strictEqual(parsed.selectedRegion, '');
+});
+
+test('scale mode state is shareable, bounded, and never restores year zero', function () {
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'en', selectedRegion: '', scaleMode: 'overview'
+  };
+  const deep = explorerState.parse(new URLSearchParams('scale=deep&year=0'), defaults, data);
+  assert.strictEqual(deep.scaleMode, 'deep');
+  assert.strictEqual(deep.start, -20000);
+  assert.strictEqual(deep.end, -3500);
+  assert.strictEqual(deep.year, -3500);
+  const historical = explorerState.parse(new URLSearchParams('scale=historical'), defaults, data);
+  assert.strictEqual(historical.start, -3500);
+  assert.strictEqual(historical.end, 1600);
+  const invalid = explorerState.parse(new URLSearchParams('scale=cosmic'), defaults, data);
+  assert.strictEqual(invalid.scaleMode, 'overview');
+  const custom = explorerState.parse(new URLSearchParams('start=0&end=10'), defaults, data);
+  assert.strictEqual(custom.start, -1);
+  assert.strictEqual(custom.end, 10);
+  assert.strictEqual(explorerState.serialize(deep, defaults).get('scale'), 'deep');
+});
+
+test('page exposes accessible scale modes, evidence note, and evidence rendering hooks', function () {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+  assert.ok(/id="scale-mode"[^>]*role="group"/.test(html));
+  ['overview', 'deep', 'historical'].forEach(function (mode) {
+    assert.ok(new RegExp('data-scale="' + mode + '"').test(html), 'missing scale control ' + mode);
+  });
+  assert.ok(/data-i18n="earliestShownNote"/.test(html));
+  assert.ok(/scale-breakpoint/.test(app));
+  assert.ok(/precision-badge/.test(app));
+  assert.ok(/review-status/.test(app));
 });
 
 test('atlas view renders accessible region controls and bundled world SVG', function () {
