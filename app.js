@@ -366,12 +366,9 @@
     if (!tooltip || tooltip.hidden) return;
     var target = button.getBoundingClientRect();
     var box = tooltip.getBoundingClientRect();
-    var left = target.left + target.width / 2 - box.width / 2;
-    left = Math.max(8, Math.min(left, window.innerWidth - box.width - 8));
-    var top = target.top - box.height - 10;
-    if (top < 8) top = Math.min(window.innerHeight - box.height - 8, target.bottom + 10);
-    tooltip.style.left = Math.round(left) + 'px';
-    tooltip.style.top = Math.round(Math.max(8, top)) + 'px';
+    var position = timeline.tooltipPosition(target, box, { width: window.innerWidth, height: window.innerHeight });
+    tooltip.style.left = position.left + 'px';
+    tooltip.style.top = position.top + 'px';
   }
 
   function showPeriodTooltip(button) {

@@ -91,6 +91,20 @@
     };
   }
 
+  function tooltipPosition(target, box, viewport) {
+    var margin = 8;
+    var gap = 10;
+    var maxLeft = Math.max(margin, Number(viewport.width) - Number(box.width) - margin);
+    var maxTop = Math.max(margin, Number(viewport.height) - Number(box.height) - margin);
+    var left = Number(target.left) + Number(target.width) / 2 - Number(box.width) / 2;
+    var top = Number(target.top) - Number(box.height) - gap;
+    if (top < margin) top = Math.min(maxTop, Number(target.bottom) + gap);
+    return {
+      left: Math.round(clamp(left, margin, maxLeft)),
+      top: Math.round(clamp(top, margin, maxTop))
+    };
+  }
+
   function buildCsv(tracks, options) {
     options = options || {};
     var headers = options.headers || ['Линия', 'Тип', 'Регион', 'Период', 'Начало', 'Конец', 'Примечание'];
@@ -136,6 +150,7 @@
     numericParam: numericParam,
     periodDensity: periodDensity,
     periodTooltipRecord: periodTooltipRecord,
+    tooltipPosition: tooltipPosition,
     visiblePeriods: visiblePeriods,
     yearToPercent: yearToPercent
   };

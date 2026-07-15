@@ -487,6 +487,21 @@ test('period tooltip record preserves full evidence metadata', function () {
   assert.deepStrictEqual(record, { id: 'p1', name: 'Full name', start: -200, end: -100, precision: 'approximate', basis: 'historical' });
 });
 
+test('period tooltip position stays inside the viewport for offscreen targets', function () {
+  const position = timeline.tooltipPosition(
+    { left: 300, right: 340, top: 1180, bottom: 1210, width: 40, height: 30 },
+    { width: 214, height: 88 },
+    { width: 360, height: 800 }
+  );
+  assert.deepStrictEqual(position, { left: 138, top: 704 });
+  const above = timeline.tooltipPosition(
+    { left: 10, right: 30, top: -40, bottom: -10, width: 20, height: 30 },
+    { width: 160, height: 80 },
+    { width: 360, height: 800 }
+  );
+  assert.deepStrictEqual(above, { left: 8, top: 8 });
+});
+
 test('explorer state round-trips view, year, filters, and focused tracks', function () {
   const defaults = {
     view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
