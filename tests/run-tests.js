@@ -10,6 +10,7 @@ const atlas = require(path.join(root, 'atlas.js'));
 const atlasData = require(path.join(root, 'atlas-data.js'));
 const insights = require(path.join(root, 'insights.js'));
 const explorerState = require(path.join(root, 'explorer-state.js'));
+const atlasView = require(path.join(root, 'atlas-view.js'));
 
 let passed = 0;
 
@@ -208,6 +209,37 @@ test('explorer state rejects invalid values and bounds shared focus', function (
   assert.strictEqual(parsed.type, 'all');
   assert.strictEqual(parsed.zoom, 240);
   assert.strictEqual(parsed.lang, 'en');
+});
+
+test('atlas view renders accessible region controls and bundled world SVG', function () {
+  const html = atlasView.renderRegions([{ id: 'east-asia', count: 3, x: 76, y: 40, radius: 14 }], {
+    regionNames: { 'east-asia': 'East Asia' },
+    activeRegionLabel: '{name}: {count} active tracks'
+  });
+  assert.ok(html.indexOf('data-region="east-asia"') !== -1);
+  assert.ok(html.indexOf('aria-label="East Asia: 3 active tracks"') !== -1);
+  assert.ok(html.indexOf('--atlas-x:76%') !== -1);
+  const svg = atlasView.worldSvg('World map');
+  assert.ok(svg.indexOf('<svg') === 0);
+  assert.ok(svg.indexOf('aria-label="World map"') !== -1);
+  assert.strictEqual(svg.indexOf('<script'), -1);
+});
+
+test('atlas view escapes dynamic copy and renders insight or statistics fallback', function () {
+  const hostile = '<img src=x onerror=alert(1)>';
+  const insightHtml = atlasView.renderPanel({
+    insight: { title: hostile, summary: 'Safe & sound', trackIds: ['china', 'greece'] },
+    stats: { tracks: 2, civilizations: 1, traditions: 1, regions: 2 }
+  }, { insightKicker: 'At the same time', openComparison: 'Open comparison', statsFallbackTitle: 'World overview', statsTemplate: '{tracks} tracks · {regions} regions' });
+  assert.strictEqual(insightHtml.indexOf('<img'), -1);
+  assert.ok(insightHtml.indexOf('&lt;img') !== -1);
+  assert.ok(insightHtml.indexOf('data-focus="china,greece"') !== -1);
+  const fallback = atlasView.renderPanel({ insight: null, stats: { tracks: 7, civilizations: 4, traditions: 3, regions: 5 } }, {
+    insightKicker: 'At the same time', openComparison: 'Open comparison', statsFallbackTitle: 'World overview', statsTemplate: '{tracks} tracks · {regions} regions'
+  });
+  assert.ok(fallback.indexOf('World overview') !== -1);
+  assert.ok(fallback.indexOf('7 tracks · 5 regions') !== -1);
+  assert.strictEqual(atlasView.renderRegions([], { regionNames: {}, activeRegionLabel: '{name}: {count}' }), '');
 });
 
 test('locale normalization and interface copy support Russian and English', function () {
