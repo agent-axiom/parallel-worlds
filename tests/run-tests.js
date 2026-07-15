@@ -559,6 +559,17 @@ test('page exposes accessible scale modes, evidence note, and evidence rendering
   assert.ok(/review-status/.test(app));
 });
 
+test('adaptive timeline exposes one shared tooltip and period interaction hooks', function () {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+  assert.ok(/id="period-tooltip"[^>]*role="tooltip"/.test(html));
+  ['data-period', 'periodDensity', 'showPeriodTooltip', 'movePeriodFocus', 'emphasized'].forEach(function (marker) {
+    assert.ok(app.indexOf(marker) !== -1, 'missing adaptive timeline hook ' + marker);
+  });
+  assert.ok(app.indexOf('event-lane') !== -1);
+  assert.ok(app.indexOf('period-lane') !== -1);
+});
+
 test('atlas view renders accessible region controls and bundled world SVG', function () {
   const html = atlasView.renderRegions([{ id: 'east-asia', count: 3, x: 76, y: 40, radius: 14 }], {
     regionNames: { 'east-asia': 'East Asia' },

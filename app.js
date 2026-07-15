@@ -76,6 +76,7 @@
       'export-button', 'range-start', 'range-end', 'year-input', 'year-output', 'contemporary-summary',
       'timeline', 'empty-state', 'reset-button', 'contemporary-list', 'detail-dialog', 'dialog-title',
       'dialog-meta', 'dialog-summary', 'dialog-periods', 'dialog-events', 'dialog-sources', 'dialog-close',
+      'period-tooltip',
       'source-links', 'theme-button', 'language-select', 'share-button', 'toast', 'track-count', 'period-count', 'event-count',
       'filter-toggle', 'filters-content', 'scale-mode',
       'view-map-button', 'view-chronology-button', 'atlas-view', 'chronology-view', 'atlas-map', 'atlas-world',
@@ -318,15 +319,25 @@
     return '<div class="timeline-axis"><div class="axis-corner">' + escapeHtml(t('linePeriod')) + '</div><div class="axis-plot">' + ticks.join('') + breakpoint + '</div></div>';
   }
 
-  function trackHtml(track) {
+  function trackHtml(track, plotPixels) {
     var scale = currentScale();
     var periods = timeline.visiblePeriods(track, state.start, state.end).map(function (period) {
       var left = timeline.yearToPercent(period.clippedStart, scale);
       var width = timeline.yearToPercent(period.clippedEnd, scale) - left;
+      if (width <= 0) return '';
+      var density = timeline.periodDensity(width / 100 * plotPixels);
       var title = period.name + ': ' + formatYear(period.start) + ' — ' + formatYear(period.end) + (period.dating ? ' · ' + precisionLabel(period.dating.precision) : '');
       var openClass = track.continuesBeforeRange && period.clippedStart === state.start ? ' open-start' : '';
-      var badge = period.dating ? '<span class="precision-badge compact ' + escapeHtml(period.dating.precision) + '" aria-label="' + escapeHtml(precisionLabel(period.dating.precision)) + '">' + escapeHtml(precisionSymbol(period.dating.precision)) + '</span>' : '';
-      return '<div class="period' + openClass + '" data-review="' + escapeHtml(track.reviewStatus || 'legacy') + '" style="left:' + left + '%;width:' + Math.max(width, .12) + '%" title="' + escapeHtml(title) + '">' + badge + escapeHtml(period.name) + '</div>';
+      var badge = density === 'wide' && period.dating ? '<span class="precision-badge compact ' + escapeHtml(period.dating.precision) + '" aria-hidden="true">' + escapeHtml(precisionSymbol(period.dating.precision)) + '</span>' : '';
+      var label = density === 'wide' || density === 'medium' ? '<span class="period-label">' + escapeHtml(period.name) + '</span>' : '';
+      var record = timeline.periodTooltipRecord(period);
+      var range = formatYear(record.start) + ' — ' + formatYear(record.end);
+      var precision = record.precision ? precisionLabel(record.precision) : '';
+      var basis = record.basis ? basisLabel(record.basis) : '';
+      return '<button class="period period-density-' + density + openClass + '" type="button" data-track="' + escapeHtml(track.id) + '" data-period="' + escapeHtml(record.id) + '" ' +
+        'data-review="' + escapeHtml(track.reviewStatus || 'legacy') + '" data-tooltip-name="' + escapeHtml(record.name) + '" data-tooltip-range="' + escapeHtml(t('periodTooltipDates', { range: range })) + '" ' +
+        'data-tooltip-precision="' + escapeHtml(precision ? t('periodTooltipPrecision', { precision: precision }) : '') + '" data-tooltip-basis="' + escapeHtml(basis ? t('periodTooltipBasis', { basis: basis }) : '') + '" ' +
+        'style="left:' + left + '%;width:' + Math.max(width, .12) + '%" title="' + escapeHtml(title) + '" aria-label="' + escapeHtml(title) + '" aria-describedby="period-tooltip" tabindex="-1">' + badge + label + '</button>';
     }).join('');
     var events = track.events.filter(function (event) { return event.year >= state.start && event.year <= state.end; }).map(function (event) {
       var left = timeline.yearToPercent(event.year, scale);
@@ -339,18 +350,90 @@
     return '<div class="track-row ' + track.type + focusClass + '" role="listitem" style="--region-color:' + regionColors[track.region] + '">' +
       '<button class="track-label" type="button" data-track="' + track.id + '" title="' + escapeHtml(t('openDetails', { name: track.name })) + '">' +
       '<span class="track-label-marker"></span><span class="track-label-text"><strong>' + escapeHtml(track.name) + '</strong><small>' + escapeHtml(regionNames[track.region]) + ' · ' + escapeHtml(localizedType) + '</small></span></button>' +
-      '<div class="track-plot">' + periods + events + '<span class="current-year-line" style="left:' + yearLeft + '%"></span></div></div>';
+      '<div class="track-plot"><div class="event-lane">' + events + '</div><div class="period-lane">' + periods + '<span class="current-year-line" style="left:' + yearLeft + '%"></span></div></div></div>';
+  }
+
+  function hidePeriodTooltip() {
+    if (!elements['period-tooltip']) return;
+    elements['period-tooltip'].hidden = true;
+    elements['period-tooltip'].style.left = '';
+    elements['period-tooltip'].style.top = '';
+  }
+
+  function positionPeriodTooltip(button) {
+    var tooltip = elements['period-tooltip'];
+    if (!tooltip || tooltip.hidden) return;
+    var target = button.getBoundingClientRect();
+    var box = tooltip.getBoundingClientRect();
+    var left = target.left + target.width / 2 - box.width / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - box.width - 8));
+    var top = target.top - box.height - 10;
+    if (top < 8) top = Math.min(window.innerHeight - box.height - 8, target.bottom + 10);
+    tooltip.style.left = Math.round(left) + 'px';
+    tooltip.style.top = Math.round(Math.max(8, top)) + 'px';
+  }
+
+  function showPeriodTooltip(button) {
+    var tooltip = elements['period-tooltip'];
+    var lines = [button.dataset.tooltipName, button.dataset.tooltipRange, button.dataset.tooltipPrecision, button.dataset.tooltipBasis].filter(Boolean);
+    tooltip.textContent = lines.join('\n');
+    tooltip.hidden = false;
+    positionPeriodTooltip(button);
+  }
+
+  function movePeriodFocus(button, key) {
+    var row = button.closest('.track-row');
+    var periods = Array.prototype.slice.call(row.querySelectorAll('.period[data-period]'));
+    var index = periods.indexOf(button);
+    var target = null;
+    if (key === 'ArrowRight') target = periods[Math.min(periods.length - 1, index + 1)];
+    if (key === 'ArrowLeft') target = periods[Math.max(0, index - 1)];
+    if (key === 'Home') target = periods[0];
+    if (key === 'End') target = periods[periods.length - 1];
+    if (key === 'Escape') {
+      button.tabIndex = -1;
+      hidePeriodTooltip();
+      row.querySelector('.track-label').focus();
+      return true;
+    }
+    if (!target) return false;
+    periods.forEach(function (period) { period.tabIndex = period === target ? 0 : -1; });
+    target.focus();
+    return true;
   }
 
   function renderTimeline() {
     var tracks = filteredTracks();
     var baseWidth = 1320;
-    document.documentElement.style.setProperty('--plot-width', Math.round(baseWidth * state.zoom / 100) + 'px');
-    elements.timeline.innerHTML = axisHtml() + tracks.map(trackHtml).join('');
+    var plotPixels = Math.round(baseWidth * state.zoom / 100);
+    hidePeriodTooltip();
+    document.documentElement.style.setProperty('--plot-width', plotPixels + 'px');
+    elements.timeline.innerHTML = axisHtml() + tracks.map(function (track) { return trackHtml(track, plotPixels); }).join('');
     elements.timeline.hidden = tracks.length === 0;
     elements['empty-state'].hidden = tracks.length !== 0;
-    Array.prototype.forEach.call(elements.timeline.querySelectorAll('[data-track]'), function (button) {
+    Array.prototype.forEach.call(elements.timeline.querySelectorAll('.track-label[data-track]'), function (button) {
       button.addEventListener('click', function () { openDetails(button.dataset.track); });
+      button.addEventListener('keydown', function (event) {
+        if (event.key !== 'ArrowRight') return;
+        var first = button.closest('.track-row').querySelector('.period[data-period]');
+        if (!first) return;
+        event.preventDefault();
+        first.tabIndex = 0;
+        first.focus();
+      });
+    });
+    Array.prototype.forEach.call(elements.timeline.querySelectorAll('.period[data-period]'), function (button) {
+      button.addEventListener('click', function (event) {
+        event.stopPropagation();
+        openDetails(button.dataset.track, button.dataset.period);
+      });
+      button.addEventListener('pointerenter', function () { showPeriodTooltip(button); });
+      button.addEventListener('pointerleave', hidePeriodTooltip);
+      button.addEventListener('focus', function () { showPeriodTooltip(button); });
+      button.addEventListener('blur', hidePeriodTooltip);
+      button.addEventListener('keydown', function (event) {
+        if (movePeriodFocus(button, event.key)) event.preventDefault();
+      });
     });
   }
 
@@ -369,14 +452,15 @@
     });
   }
 
-  function openDetails(id) {
+  function openDetails(id, periodId) {
     var track = activeData.tracks.find(function (item) { return item.id === id; });
     if (!track) return;
     elements['dialog-title'].textContent = track.name;
     elements['dialog-meta'].innerHTML = '<span>' + escapeHtml(regionNames[track.region]) + ' · ' + escapeHtml(typeLabel(track.type)) + '</span>' + reviewStatusHtml(track);
     elements['dialog-summary'].textContent = track.summary;
     elements['dialog-periods'].innerHTML = track.periods.map(function (period) {
-      return '<li><strong>' + escapeHtml(period.name) + '</strong><span>' + escapeHtml(formatYear(period.start)) + ' — ' + escapeHtml(formatYear(period.end)) + '</span>' +
+      var selected = periodId && period.id === periodId;
+      return '<li data-period="' + escapeHtml(period.id || '') + '" class="' + (selected ? 'emphasized' : '') + '"' + (selected ? ' tabindex="-1" aria-label="' + escapeHtml(t('selectedPeriodState') + ': ' + period.name) + '"' : '') + '><strong>' + escapeHtml(period.name) + '</strong><span>' + escapeHtml(formatYear(period.start)) + ' — ' + escapeHtml(formatYear(period.end)) + '</span>' +
         (period.note ? '<p>' + escapeHtml(period.note) + '</p>' : '') + evidenceHtml(period) + '</li>';
     }).join('');
     elements['dialog-events'].innerHTML = track.events.slice().sort(function (a, b) { return a.year - b.year; }).map(function (event) {
@@ -386,6 +470,11 @@
     elements['dialog-sources'].innerHTML = '<strong>' + escapeHtml(t('detailsSources')) + ' </strong>' + sourceLinksHtml(track.sources);
     if (typeof elements['detail-dialog'].showModal === 'function') elements['detail-dialog'].showModal();
     else elements['detail-dialog'].setAttribute('open', '');
+    var emphasized = elements['dialog-periods'].querySelector('.emphasized');
+    if (emphasized) {
+      if (typeof emphasized.scrollIntoView === 'function') emphasized.scrollIntoView({ block: 'nearest' });
+      emphasized.focus();
+    }
   }
 
   function closeDetails() {
