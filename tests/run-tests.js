@@ -329,6 +329,9 @@ test('atlas geography covers every historical track with valid coordinates', fun
 
 test('editorial comparisons are valid and complete in three locales', function () {
   assert.ok(insights.length >= 30);
+  ['gobekli-jomon', 'catalhoyuk-mehrgarh', 'liangzhu-uruk'].forEach(function (id) {
+    assert.ok(insights.some(function (item) { return item.id === id; }), 'missing reviewed deep-time comparison ' + id);
+  });
   const insightIds = new Set();
   insights.forEach(function (insight) {
     assert.ok(insight.id && insight.start < insight.end, 'invalid insight range');
@@ -501,16 +504,17 @@ test('atlas view escapes dynamic copy and renders insight or statistics fallback
   const hostile = '<img src=x onerror=alert(1)>';
   const insightHtml = atlasView.renderPanel({
     insight: { title: hostile, summary: 'Safe & sound', trackIds: ['china', 'greece'] },
-    stats: { tracks: 2, civilizations: 1, traditions: 1, regions: 2 }
-  }, { insightKicker: 'At the same time', openComparison: 'Open comparison', statsFallbackTitle: 'World overview', statsTemplate: '{tracks} tracks · {regions} regions' });
+    stats: { tracks: 2, societies: 1, traditions: 1, regions: 2 }
+  }, { insightKicker: 'At the same time', openComparison: 'Open comparison', statsFallbackTitle: 'World overview', statsTemplate: '{tracks} tracks · {regions} regions', statSocieties: 'societies' });
   assert.strictEqual(insightHtml.indexOf('<img'), -1);
   assert.ok(insightHtml.indexOf('&lt;img') !== -1);
   assert.ok(insightHtml.indexOf('data-focus="china,greece"') !== -1);
-  const fallback = atlasView.renderPanel({ insight: null, stats: { tracks: 7, civilizations: 4, traditions: 3, regions: 5 } }, {
-    insightKicker: 'At the same time', openComparison: 'Open comparison', statsFallbackTitle: 'World overview', statsTemplate: '{tracks} tracks · {regions} regions'
+  const fallback = atlasView.renderPanel({ insight: null, stats: { tracks: 7, societies: 4, traditions: 3, regions: 5 } }, {
+    insightKicker: 'At the same time', openComparison: 'Open comparison', statsFallbackTitle: 'World overview', statsTemplate: '{tracks} tracks · {regions} regions', statSocieties: 'societies'
   });
   assert.ok(fallback.indexOf('World overview') !== -1);
   assert.ok(fallback.indexOf('7 tracks · 5 regions') !== -1);
+  assert.ok(fallback.indexOf('<strong>4</strong><small>societies</small>') !== -1);
   assert.strictEqual(atlasView.renderRegions([], { regionNames: {}, activeRegionLabel: '{name}: {count}' }), '');
 });
 

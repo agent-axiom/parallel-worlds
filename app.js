@@ -249,7 +249,7 @@
       statsFallbackTitle: t('statsFallbackTitle'),
       statsTemplate: t('statsTemplate'),
       statTracks: t('statTracks'),
-      statCivilizations: t('statCivilizations'),
+      statSocieties: t('statSocieties'),
       statTraditions: t('statTraditions'),
       noRegionTracks: t('noRegionTracks')
     };

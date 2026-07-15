@@ -43,7 +43,7 @@
   function statsHtml(stats, copy) {
     return '<div class="atlas-stats" aria-label="' + escapeHtml(copy.statsFallbackTitle) + '">' +
       '<span><strong>' + Number(stats.tracks || 0) + '</strong><small>' + escapeHtml(copy.statTracks || '') + '</small></span>' +
-      '<span><strong>' + Number(stats.civilizations || 0) + '</strong><small>' + escapeHtml(copy.statCivilizations || '') + '</small></span>' +
+      '<span><strong>' + Number(stats.societies || 0) + '</strong><small>' + escapeHtml(copy.statSocieties || '') + '</small></span>' +
       '<span><strong>' + Number(stats.traditions || 0) + '</strong><small>' + escapeHtml(copy.statTraditions || '') + '</small></span>' +
       '</div>';
   }

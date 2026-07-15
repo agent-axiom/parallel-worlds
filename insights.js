@@ -21,6 +21,18 @@
   }
 
   return [
+    insight('gobekli-jomon', -9600, -8200, ['gobekli-tepe', 'jomon'],
+      ['Гёбекли-Тепе и ранний Дзёмон', 'Монументальные комплексы Верхней Месопотамии создавались в те тысячелетия, когда сообщества Японского архипелага уже пользовались керамикой. Это сопоставление времени, а не свидетельство контакта.'],
+      ['Göbekli Tepe and early Jōmon', 'Monumental enclosures were built in Upper Mesopotamia during millennia when communities in the Japanese archipelago already used pottery. This compares chronology; it does not imply contact.'],
+      ['哥贝克力石阵与早期绳纹', '上美索不达米亚建造纪念性建筑群的数千年间，日本列岛社群已在使用陶器。这只是年代对照，并不意味着彼此接触。'], ['unesco-gobekli-2018', 'met-jomon-2002']),
+    insight('catalhoyuk-mehrgarh', -7000, -6200, ['catalhoyuk', 'mehrgarh'],
+      ['Чатал-Хююк и Мергарх', 'Плотно застроенное поселение Чатал-Хююк существовало одновременно с ранней производящей экономикой и последующей поселенческой последовательностью Мергарха.'],
+      ['Çatalhöyük and Mehrgarh', 'Çatalhöyük’s densely built settlement overlapped with early food production and the continuing settlement sequence at Mehrgarh.'],
+      ['恰塔霍裕克与梅尔伽赫', '恰塔霍裕克的密集聚落与梅尔伽赫的早期食物生产及其持续聚落序列在年代上重叠。'], ['unesco-catalhoyuk-2012', 'kenoyer-indus-2011']),
+    insight('liangzhu-uruk', -3300, -3100, ['liangzhu', 'uruk'],
+      ['Лянчжу и Урук', 'Городской комплекс Лянчжу в низовьях Янцзы и крупный центр Урука в южной Месопотамии существовали в пересекающихся хронологических рамках. Их устройство и источниковая база различны.'],
+      ['Liangzhu and Uruk', 'The Liangzhu urban complex in the lower Yangtze and the major center of Uruk in southern Mesopotamia occupied overlapping chronological frames. Their organization and evidence differ.'],
+      ['良渚与乌鲁克', '长江下游的良渚城市综合体与美索不达米亚南部的乌鲁克大型中心在年代上有所重叠；两者的社会组织与证据基础并不相同。'], ['unesco-liangzhu-2019', 'met-uruk-2003']),
     insight('sumer-egypt-cities', -2900, -2700, ['sumer', 'egypt'],
       ['Шумерские города-государства и ранний Египет', 'Раннединастические города южной Месопотамии существовали в те же века, когда вдоль Нила укреплялось раннее государство.'],
       ['Sumerian city-states and early Egypt', 'Early Dynastic cities in southern Mesopotamia existed while an early state consolidated along the Nile.'],
