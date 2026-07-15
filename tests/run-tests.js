@@ -553,9 +553,18 @@ test('atlas view renders accessible region controls and bundled world SVG', func
   assert.ok(html.indexOf('data-region="east-asia"') !== -1);
   assert.ok(html.indexOf('aria-label="East Asia: 3 active tracks"') !== -1);
   assert.ok(html.indexOf('--atlas-x:76%') !== -1);
-  const svg = atlasView.worldSvg('World map');
+  const worldMap = require(path.join(root, 'world-map-data.js'));
+  const svg = atlasView.worldSvg(worldMap, 'World map', {
+    from: { x: 25, y: 40 }, to: { x: 75, y: 35 }, title: 'Alpha and Beta'
+  }, { comparisonConnectorLabel: 'Comparison: {title}' });
   assert.ok(svg.indexOf('<svg') === 0);
   assert.ok(svg.indexOf('aria-label="World map"') !== -1);
+  assert.ok(svg.indexOf('class="atlas-ocean"') !== -1);
+  assert.ok(svg.indexOf('class="atlas-coast atlas-coast-glow"') !== -1);
+  assert.ok(svg.indexOf('class="atlas-coast atlas-coast-line"') !== -1);
+  assert.ok(svg.indexOf('class="atlas-comparison"') !== -1);
+  assert.ok(svg.indexOf('aria-label="Comparison: Alpha and Beta"') !== -1);
+  assert.strictEqual(atlasView.worldSvg(worldMap, 'World map', null, {}).indexOf('atlas-comparison'), -1);
   assert.strictEqual(svg.indexOf('<script'), -1);
 });
 

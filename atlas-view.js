@@ -17,17 +17,37 @@
     });
   }
 
-  function worldSvg(label) {
-    return '<svg class="atlas-world" viewBox="0 0 1000 520" role="img" aria-label="' + escapeHtml(label) + '" preserveAspectRatio="xMidYMid meet">' +
-      '<g class="atlas-graticule" aria-hidden="true"><path d="M0 130H1000M0 260H1000M0 390H1000M250 0V520M500 0V520M750 0V520"/></g>' +
-      '<g class="atlas-land" aria-hidden="true">' +
-      '<path d="M72 114L128 76l88 13 64 47-13 52-50 19-16 55-55 13-31-42-54-28-24-56z"/>' +
-      '<path d="M223 286l46 18 31 54-12 76-35 66-25-34 5-64-28-64z"/>' +
-      '<path d="M431 101l68-31 103 18 53 30 65-10 96 34 49 56-26 43-77-5-46 30-69-23-57 16-45-31-53 11-61-37-42-47z"/>' +
-      '<path d="M487 258l82-13 55 47-9 81-48 104-48-29-7-79-41-61z"/>' +
-      '<path d="M790 373l61-25 75 25 8 47-61 28-76-20z"/>' +
-      '<path d="M888 277l19-17 20 14-7 24-23 7z"/>' +
-      '</g></svg>';
+  function safePath(value) {
+    value = String(value || '');
+    return /^[MLZ0-9.\-\s]+$/i.test(value) ? value : '';
+  }
+
+  function comparisonPath(connector, copy) {
+    if (!connector || !connector.from || !connector.to) return '';
+    var x1 = Number(connector.from.x) * 10;
+    var y1 = Number(connector.from.y) * 5.2;
+    var x2 = Number(connector.to.x) * 10;
+    var y2 = Number(connector.to.y) * 5.2;
+    if (![x1, y1, x2, y2].every(Number.isFinite)) return '';
+    var controlX = (x1 + x2) / 2;
+    var controlY = Math.max(20, (y1 + y2) / 2 - 36);
+    var label = template(copy && copy.comparisonConnectorLabel, { title: connector.title || '' });
+    return '<g class="atlas-comparison" role="img" aria-label="' + escapeHtml(label) + '">' +
+      '<path d="M' + x1.toFixed(1) + ' ' + y1.toFixed(1) + 'Q' + controlX.toFixed(1) + ' ' + controlY.toFixed(1) + ' ' + x2.toFixed(1) + ' ' + y2.toFixed(1) + '"/></g>';
+  }
+
+  function worldSvg(mapData, label, connector, copy) {
+    mapData = mapData || {};
+    var viewBox = Array.isArray(mapData.viewBox) && mapData.viewBox.length === 4 ? mapData.viewBox.join(' ') : '0 0 1000 520';
+    var land = safePath(mapData.landPath);
+    var graticule = safePath(mapData.graticulePath) || 'M0 130L1000 130M0 260L1000 260M0 390L1000 390M250 0L250 520M500 0L500 520M750 0L750 520';
+    var coast = land ? '<path class="atlas-coast atlas-coast-glow" d="' + land + '"/><path class="atlas-coast atlas-coast-line" d="' + land + '"/>' : '';
+    return '<svg class="atlas-world" viewBox="' + escapeHtml(viewBox) + '" role="img" aria-label="' + escapeHtml(label) + '" preserveAspectRatio="xMidYMid meet">' +
+      '<defs><linearGradient id="atlas-link-gradient" x1="0" y1="0" x2="1" y2="0"><stop offset="0"/><stop offset=".5"/><stop offset="1"/></linearGradient></defs>' +
+      '<rect class="atlas-ocean" width="1000" height="520" rx="30"/>' +
+      '<path class="atlas-graticule" aria-hidden="true" d="' + graticule + '"/>' +
+      (land ? '<path class="atlas-land" aria-hidden="true" d="' + land + '"/>' : '') + coast +
+      comparisonPath(connector, copy || {}) + '</svg>';
   }
 
   function renderRegions(regions, copy) {
@@ -75,6 +95,7 @@
     renderPanel: renderPanel,
     renderRegionList: renderRegionList,
     renderRegions: renderRegions,
+    safePath: safePath,
     worldSvg: worldSvg
   };
 }));

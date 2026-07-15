@@ -6,6 +6,7 @@
   var timeline = window.ParallelTimeline;
   var i18n = window.ParallelWorldsI18n;
   var atlasData = window.PARALLEL_WORLDS_ATLAS_DATA;
+  var worldMapData = window.PARALLEL_WORLDS_MAP_DATA;
   var insights = window.PARALLEL_WORLDS_INSIGHTS;
   var atlas = window.ParallelWorldsAtlas;
   var explorerState = window.ParallelWorldsExplorerState;
@@ -244,6 +245,7 @@
     return {
       regionNames: regionNames,
       activeRegionLabel: t('activeRegionLabel'),
+      comparisonConnectorLabel: t('comparisonConnectorLabel'),
       insightKicker: t('insightKicker'),
       openComparison: t('openComparison'),
       statsFallbackTitle: t('statsFallbackTitle'),
@@ -267,7 +269,7 @@
       focusIds: state.focus
     });
     var copy = atlasCopy();
-    elements['atlas-world'].innerHTML = atlasView.worldSvg(t('atlasAria'));
+    elements['atlas-world'].innerHTML = atlasView.worldSvg(worldMapData, t('atlasAria'), model.comparisonConnector, copy);
     elements['atlas-regions'].innerHTML = atlasView.renderRegions(model.regions, copy);
     elements['atlas-map-summary'].textContent = t('activeLines', { count: model.stats.tracks, year: formatYear(state.year) });
 
