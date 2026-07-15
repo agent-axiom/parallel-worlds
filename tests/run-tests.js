@@ -116,6 +116,26 @@ test('academic data shell and source URL validation are explicit', function () {
   assert.strictEqual(quality.isGenericHomepage('https://www.metmuseum.org/essays/uruk-the-first-city'), false);
 });
 
+test('reviewed source registry covers every first-release region with exact records', function () {
+  const required = [
+    'science-xianrendong-2012', 'met-east-asia-neolithic-2000', 'unesco-liangzhu-2019', 'met-jomon-2002',
+    'cambridge-natufian-2017', 'radiocarbon-near-east-2001', 'unesco-gobekli-2018', 'unesco-catalhoyuk-2012',
+    'british-early-egypt', 'kenoyer-indus-2011', 'cambridge-mesolithic-europe-2008',
+    'nature-americas-2020', 'nature-madjedbebe-2022', 'nature-lapita-2022',
+    'met-korea-1998', 'nm-korea-unified-silla', 'met-china-three-kingdoms', 'met-uruk-2003'
+  ];
+  required.forEach(function (id) {
+    const source = academicData.sources[id];
+    assert.ok(source, 'missing source ' + id);
+    ['tier', 'kind', 'title', 'publisher', 'year', 'url', 'accessed'].forEach(function (field) {
+      assert.ok(source[field], id + ' missing ' + field);
+    });
+    assert.ok(/^https:\/\//.test(source.url), id + ' must use HTTPS');
+    assert.strictEqual(quality.isGenericHomepage(source.url), false, id + ' uses a generic homepage');
+  });
+  assert.deepStrictEqual(quality.validateSources(academicData.sources), []);
+});
+
 test('dataset covers the requested world history scope', function () {
   assert.strictEqual(data.range.start, -20000);
   assert.strictEqual(data.range.end, 1600);
