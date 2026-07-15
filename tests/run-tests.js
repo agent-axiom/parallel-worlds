@@ -6,6 +6,7 @@ const root = path.resolve(__dirname, '..');
 const data = require(path.join(root, 'data.js'));
 const timeline = require(path.join(root, 'timeline.js'));
 const i18n = require(path.join(root, 'i18n.js'));
+const atlas = require(path.join(root, 'atlas.js'));
 
 let passed = 0;
 
@@ -77,6 +78,35 @@ test('year projection and active-track lookup handle BCE and CE', function () {
   const active = timeline.activeTracks(data.tracks, 1200).map(function (track) { return track.id; });
   assert.ok(active.indexOf('byzantium') !== -1);
   assert.ok(active.indexOf('inca') === -1);
+});
+
+test('atlas projects active centers and aggregates filtered regions', function () {
+  const tracks = [
+    { id: 'alpha', region: 'east-asia', type: 'civilization', periods: [{ start: -600, end: -400 }] },
+    { id: 'beta', region: 'east-asia', type: 'tradition', periods: [{ start: -550, end: -300 }] },
+    { id: 'gamma', region: 'americas', type: 'civilization', periods: [{ start: 100, end: 500 }] }
+  ];
+  const geography = {
+    tracks: {
+      alpha: [{ id: 'alpha-core', x: 72, y: 38, start: -600, end: -400 }],
+      beta: [{ id: 'beta-core', x: 70, y: 39, start: -550, end: -300 }]
+    }
+  };
+  const projected = atlas.projectActiveCenters(tracks, -500, geography);
+  assert.deepStrictEqual(projected.map(function (item) { return item.track.id; }), ['alpha', 'beta']);
+  assert.deepStrictEqual(atlas.aggregateRegions(projected), [
+    { id: 'east-asia', count: 2, civilizations: 1, traditions: 1, trackIds: ['alpha', 'beta'] }
+  ]);
+});
+
+test('atlas projection handles boundaries and missing optional geography', function () {
+  const track = { id: 'alpha', region: 'west-asia', type: 'civilization', periods: [{ start: -100, end: 100 }] };
+  const geography = { tracks: { alpha: [{ id: 'core', x: 50, y: 40, start: -100, end: 100 }] } };
+  assert.strictEqual(atlas.projectActiveCenters([track], -100, geography).length, 1);
+  assert.strictEqual(atlas.projectActiveCenters([track], 100, geography).length, 1);
+  assert.deepStrictEqual(atlas.projectActiveCenters([track], 101, geography), []);
+  assert.deepStrictEqual(atlas.projectActiveCenters([track], 0, { tracks: {} }), []);
+  assert.deepStrictEqual(atlas.projectActiveCenters([track], 0, {}), []);
 });
 
 test('missing URL numbers stay absent instead of becoming year zero', function () {
