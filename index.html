@@ -18,7 +18,14 @@
         <span data-i18n="siteName">Параллельные миры</span>
       </a>
       <div class="topbar-actions">
-        <button class="icon-button language-button" id="language-button" type="button" title="Switch to English" data-i18n="languageButton" data-i18n-title="languageTitle" data-i18n-aria="languageTitle">EN</button>
+        <label class="language-control">
+          <span class="sr-only" data-i18n="languageTitle">Переключить язык</span>
+          <select id="language-select" aria-label="Переключить язык" data-i18n-aria="languageTitle">
+            <option value="ru">RU</option>
+            <option value="en">EN</option>
+            <option value="zh">中文</option>
+          </select>
+        </label>
         <button class="icon-button" id="share-button" type="button" title="Скопировать ссылку" data-i18n="share" data-i18n-title="shareTitle">Ссылка</button>
         <button class="icon-button" id="theme-button" type="button" title="Сменить тему" aria-label="Сменить тему" data-i18n-title="themeTitle" data-i18n-aria="themeTitle">◐</button>
       </div>

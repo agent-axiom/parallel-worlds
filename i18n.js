@@ -11,7 +11,7 @@
       pageTitle: 'Параллельные миры — сравнительная шкала истории',
       metaDescription: 'Интерактивная сравнительная шкала цивилизаций и религий от 3500 года до н. э. до 1600 года н. э.',
       skipTimeline: 'К шкале времени', mainNav: 'Основная навигация', brandAria: 'Параллельные миры — главная',
-      share: 'Ссылка', shareTitle: 'Скопировать ссылку', themeTitle: 'Сменить тему', languageTitle: 'Switch to English', languageButton: 'EN',
+      share: 'Ссылка', shareTitle: 'Скопировать ссылку', themeTitle: 'Сменить тему', languageTitle: 'Выбрать язык', languageButton: 'EN',
       heroEyebrow: 'Сравнительная хронология · 3500 до н. э. — 1600 н. э.', heroTitleLead: 'История происходила', heroTitleEm: 'одновременно',
       heroLede: 'Сопоставьте Шумер и Египет, Византию и Китай, майя, ацтеков и инков — вместе с религиозными и философскими традициями, которые пересекали границы государств.',
       statsAria: 'Статистика набора данных', statTracks: 'исторических линий', statPeriods: 'периодов', statEvents: 'ориентиров',
@@ -37,7 +37,7 @@
       pageTitle: 'Parallel Worlds — a comparative timeline of history',
       metaDescription: 'An interactive comparative timeline of civilizations and religions from 3500 BCE to 1600 CE.',
       skipTimeline: 'Skip to the timeline', mainNav: 'Main navigation', brandAria: 'Parallel Worlds — home',
-      share: 'Share', shareTitle: 'Copy link', themeTitle: 'Switch theme', languageTitle: 'Переключить на русский', languageButton: 'RU',
+      share: 'Share', shareTitle: 'Copy link', themeTitle: 'Switch theme', languageTitle: 'Choose language', languageButton: 'RU',
       heroEyebrow: 'Comparative chronology · 3500 BCE — 1600 CE', heroTitleLead: 'History happened', heroTitleEm: 'at the same time',
       heroLede: 'Compare Sumer and Egypt, Byzantium and China, the Maya, Aztecs, and Inca — alongside the religious and philosophical traditions that crossed the borders of states.',
       statsAria: 'Dataset statistics', statTracks: 'historical tracks', statPeriods: 'periods', statEvents: 'milestones',
@@ -57,6 +57,32 @@
       activeLines: '{count} tracks active in {year}', noContemporaries: 'No tracks in the current selection cover this year.',
       linkCopied: 'Link copied', copyLinkPrompt: 'Copy this link',
       csvFilename: 'parallel-worlds-en.csv', csvLine: 'Track', csvType: 'Type', csvRegion: 'Region', csvPeriod: 'Period', csvStart: 'Start', csvEnd: 'End', csvNote: 'Note'
+    },
+    zh: {
+      siteName: '平行世界',
+      pageTitle: '平行世界——世界历史对照时间轴',
+      metaDescription: '一条从公元前3500年到公元1600年的文明与宗教互动对照时间轴。',
+      skipTimeline: '跳到时间轴', mainNav: '主导航', brandAria: '平行世界——首页',
+      share: '分享', shareTitle: '复制链接', themeTitle: '切换主题', languageTitle: '切换语言', languageButton: '中文',
+      heroEyebrow: '对照年表 · 公元前3500年—公元1600年', heroTitleLead: '历史发生在', heroTitleEm: '同一时间',
+      heroLede: '把苏美尔与埃及、拜占庭与中国、玛雅、阿兹特克和印加放在同一条时间轴上，也看看那些跨越国界的宗教与哲学传统。',
+      statsAria: '数据集统计', statTracks: '历史线', statPeriods: '时期', statEvents: '里程碑',
+      controlsAria: '时间轴控制', searchLabel: '搜索', searchPlaceholder: '搜索文明、时期或事件…',
+      region: '地区', trackType: '类型', allTypes: '所有类型', civilizationsStates: '文明与国家', religionsTraditions: '宗教与传统', zoom: '缩放',
+      quickRange: '快速范围', exportCsv: '导出 CSV ↓', from: '从', to: '到',
+      timelineKicker: '时间的层次', timelineHeading: '谁生活在同一时代？', legendCivilizations: '文明', legendTraditions: '传统',
+      selectedYear: '所选年份', selectYear: '选择年份', yearHint: '移动滑块，查看同一时代的社会。',
+      timelineAria: '横向历史对照时间轴', emptyTitle: '未找到结果', emptyText: '请更换搜索词或重置筛选条件。', resetFilters: '重置筛选',
+      contemporariesKicker: '单年视图', contemporariesHeading: '同时登场', contemporariesText: '所选年份落入其任一历史时期的社会与传统。',
+      methodKicker: '如何阅读时间轴', methodHeading: '日期是路标，不是高墙',
+      methodText: '时期边界只是近似值：文化实践不会在某一年突然停止，同一传统在不同地区的发展也并不一致。本时间轴用于比较宏观年代框架；有争议或依据传统的日期会在详情卡片中标明。',
+      footer: '平行世界 · 开放的世界历史对照年表', sourceCode: '源代码', close: '关闭',
+      detailsPeriods: '时期', detailsEvents: '里程碑', detailsSources: '概览来源：',
+      linePeriod: '历史线 / 时期', tradition: '传统', civilization: '文明',
+      traditionMeta: '宗教 / 传统', civilizationMeta: '文明 / 社会', openDetails: '查看详情：{name}',
+      activeLines: '{year}共有{count}条历史线活跃', noContemporaries: '当前筛选中没有覆盖这一年份的历史线。',
+      linkCopied: '链接已复制', copyLinkPrompt: '复制此链接',
+      csvFilename: 'parallel-worlds-zh.csv', csvLine: '历史线', csvType: '类型', csvRegion: '地区', csvPeriod: '时期', csvStart: '开始', csvEnd: '结束', csvNote: '说明'
     }
   };
 
@@ -66,6 +92,17 @@
     'southeast-asia': 'Southeast Asia', oceania: 'Oceania', americas: 'The Americas'
   };
   var presetNames = { all: 'Full timeline', bronze: 'Bronze Age', classical: 'Classical world', medieval: 'Global Middle Ages', americas: 'Pre-Columbian Americas' };
+  var chineseRegionNames = {
+    all: '所有地区', mesopotamia: '美索不达米亚', 'west-asia': '西亚', africa: '非洲', mediterranean: '地中海',
+    'south-asia': '南亚', 'east-asia': '东亚', 'central-asia': '中亚与草原',
+    'southeast-asia': '东南亚', oceania: '大洋洲', americas: '美洲'
+  };
+  var chinesePresetNames = { all: '完整时间轴', bronze: '青铜时代', classical: '古典世界', medieval: '全球中世纪', americas: '前哥伦布时代的美洲' };
+  var locales = [
+    { id: 'ru', htmlLang: 'ru', label: 'RU' },
+    { id: 'en', htmlLang: 'en', label: 'EN' },
+    { id: 'zh', htmlLang: 'zh-CN', label: '中文' }
+  ];
 
   function tr(name, summary, periods, events, notes) {
     return { name: name, summary: summary, periods: periods, events: events, notes: notes || [] };
@@ -223,8 +260,162 @@
       ['Ceremonial plazas at Caral', 'Oracle of Chavín de Huántar', 'Inca state cult'])
   };
 
+  var chineseTracks = {
+    sumer: tr('苏美尔', '美索不达米亚南部的城邦文明，以楔形文字和早期神庙经济著称。',
+      ['乌鲁克时期', '早王朝时期', '苏美尔复兴', '晚期苏美尔传统'],
+      ['早期楔形文字泥板', '乌尔王陵', '乌尔第三王朝开始'],
+      ['最早的城市中心兴起。', '乌尔、乌鲁克、拉加什及相互竞争的王朝。', '乌尔第三王朝。', '苏美尔语继续用于学校和祭祀。']),
+    akkadia: tr('阿卡德', '美索不达米亚最早的大型领土国家，并留下持久的阿卡德语传统。',
+      ['帝国前的阿卡德', '萨尔贡帝国', '危机与古提人统治', '阿卡德遗产'],
+      ['萨尔贡建立阿卡德帝国', '纳拉姆辛统治', '阿卡德王朝终结']),
+    babylonia: tr('巴比伦尼亚', '美索不达米亚南部的国家治理、学术与书写文化中心。',
+      ['古巴比伦时期', '加喜特巴比伦尼亚', '中、晚巴比伦时期', '新巴比伦帝国'],
+      ['汉谟拉比即位', '巴比伦第一王朝覆灭', '居鲁士二世攻占巴比伦'], ['包括汉谟拉比统治时期。']),
+    assyria: tr('亚述', '美索不达米亚北部国家，后来成为铁器时代的重要帝国。',
+      ['古亚述时期', '中亚述国家', '新亚述帝国', '亚述文化遗产'],
+      ['安纳托利亚的贸易殖民地', '亚述那西尔帕二世统治', '尼尼微陷落']),
+    hittites: tr('赫梯与安纳托利亚', '从赫梯国家到铁器时代继承者的安纳托利亚诸王国。',
+      ['哈梯与早期安纳托利亚', '古赫梯王国', '赫梯帝国', '新赫梯诸国'],
+      ['赫梯王国形成', '卡迭石战役', '帝国瓦解']),
+    egypt: tr('古埃及', '以尼罗河为中心、拥有漫长王朝传统和成熟文字体系的文明。',
+      ['早王朝时期', '古王国', '中王国', '新王国与后期王朝'],
+      ['上下埃及统一', '吉萨金字塔', '图坦卡蒙去世']),
+    nubia: tr('努比亚与库施', '埃及以南的尼罗河社会，包括克尔玛、纳帕塔和麦罗埃。',
+      ['克尔玛文化', '埃及统治下的努比亚', '纳帕塔王国', '麦罗埃王国'],
+      ['克尔玛繁荣', '库施第二十五王朝统治埃及', '麦罗埃衰落']),
+    phoenicia: tr('腓尼基与黎凡特', '地中海东岸港口城市，以字母文字和远距离海上贸易闻名。',
+      ['迦南城市', '腓尼基城邦', '波斯统治下的黎凡特', '希腊化与罗马时期的黎凡特'],
+      ['推罗和西顿崛起', '迦太基传统建城年份', '亚历山大围攻推罗']),
+    israel_judah: tr('以色列与犹大', '第一圣殿和第二圣殿时期的古代黎凡特王国与社群。',
+      ['早期以色列', '以色列与犹大王国', '波斯时期的耶胡德', '希腊化与罗马时期的犹地亚'],
+      ['耶路撒冷成为王权中心', '第一圣殿被毁', '第二圣殿被毁']),
+    persia: tr('伊朗与波斯', '从米底、阿契美尼德到萨珊的伊朗帝国传统。',
+      ['米底王国', '阿契美尼德帝国', '帕提亚帝国', '萨珊帝国'],
+      ['居鲁士二世建立阿契美尼德帝国', '波斯波利斯陷落', '萨珊国家兴起']),
+    greece: tr('古希腊', '爱琴海文化、城邦、希腊化王国与希腊知识传统。',
+      ['爱琴海青铜时代', '古风时期', '古典时期', '希腊化世界'],
+      ['首届奥林匹克运动会的传统年份', '克里斯提尼在雅典改革', '亚历山大大帝去世']),
+    rome: tr('古罗马', '从城邦、共和国发展为地中海帝国。',
+      ['王政时期', '罗马共和国', '元首制', '晚期罗马帝国'],
+      ['共和国建立', '奥古斯都取得最高权力', '西罗马帝国终结']),
+    byzantium: tr('拜占庭帝国', '以君士坦丁堡为中心的东罗马帝国。',
+      ['早期拜占庭时期', '中期拜占庭时期', '拉丁占领与继承国家', '巴列奥略王朝复兴'],
+      ['君士坦丁堡建立', '圣索菲亚大教堂落成', '君士坦丁堡陷落']),
+    steppe: tr('斯基泰人与草原帝国', '蒙古时代前后欧亚草原上的游牧与半定居社会。',
+      ['印度—伊朗草原文化', '斯基泰—塞种世界', '匈人联盟', '突厥与蒙古帝国'],
+      ['斯基泰动物纹风格传播', '第一突厥汗国', '成吉思汗被推举']),
+    indus: tr('印度河文明', '以哈拉帕和摩亨佐-达罗为中心的印度河流域城市文明。',
+      ['早期哈拉帕时期', '成熟哈拉帕时期', '晚期哈拉帕时期', '后哈拉帕文化'],
+      ['成熟城市阶段开始', '印度河城市网络繁荣', '去城市化开始']),
+    india: tr('印度诸国', '从十六雄国到莫卧儿帝国的南亚政治史。',
+      ['十六雄国', '孔雀帝国', '贵霜与笈多', '地区苏丹国与莫卧儿'],
+      ['孔雀帝国建立', '阿育王即位', '莫卧儿帝国建立']),
+    china: tr('中国', '东亚历代王朝与地区国家的延续。',
+      ['商与西周', '东周', '秦汉', '隋、唐、宋、元、明'],
+      ['秦统一中国', '唐朝建立', '明朝建立']),
+    korea: tr('朝鲜半岛', '从古朝鲜、三国到朝鲜王朝的半岛国家。',
+      ['古朝鲜与早期社会', '三国时期', '新罗与高丽', '朝鲜王朝早期'],
+      ['汉四郡设立', '新罗统一', '朝鲜王朝建立']),
+    japan: tr('日本', '从绳文社会到武士时代诸政权的日本列岛。',
+      ['绳文晚期', '弥生时代', '古坟与奈良时代', '平安、镰仓与室町时代'],
+      ['弥生稻作传播', '定都奈良', '镰仓幕府']),
+    central_asia: tr('中亚', '位于伊朗、印度、中国和草原之间的绿洲与贸易国家。',
+      ['巴克特里亚与粟特', '希腊—巴克特里亚与贵霜', '粟特贸易网络', '突厥—波斯汗国'],
+      ['亚历山大远征粟特', '贵霜帝国繁荣', '蒙古征服中亚']),
+    southeast_asia: tr('东南亚大陆', '湄公河、伊洛瓦底江和红河流域的国家。',
+      ['青铜与铁器时代文化', '扶南与早期曼荼罗政体', '真腊、蒲甘与吴哥', '阿瑜陀耶与晚期吴哥'],
+      ['吴哥国家开端', '蒲甘王国建立', '阿瑜陀耶建立']),
+    indonesia: tr('海洋东南亚', '印度尼西亚群岛的航海社会与贸易国家。',
+      ['南岛语族扩张', '早期港口王国', '室利佛逝与马打兰', '满者伯夷与伊斯兰苏丹国'],
+      ['室利佛逝早期铭文', '满者伯夷建立', '马六甲陷落']),
+    oceania: tr('大洋洲', '横跨美拉尼西亚、密克罗尼西亚和波利尼西亚的迁徙与岛屿社会。',
+      ['拉皮塔文化', '西波利尼西亚定居', '东波利尼西亚航海', '后期岛屿社会'],
+      ['汤加与萨摩亚定居', '中部波利尼西亚定居', '毛利人定居新西兰']),
+    maya: tr('玛雅', '以文字、历法和城邦网络著称的中部美洲文明。',
+      ['前古典期', '早期古典期', '晚期古典期', '后古典期'],
+      ['早期玛雅铭文', '蒂卡尔政治转折', '奇琴伊察繁荣']),
+    teotihuacan: tr('特奥蒂瓦坎与墨西哥中部', '古典期中部美洲最大的城市中心及其地区继承者。',
+      ['城市形成', '早期繁荣', '帝国时期的特奥蒂瓦坎', '衰落与遗产'],
+      ['城市大规模重建', '干预蒂卡尔', '城市衰落开始']),
+    aztec: tr('墨西加与阿兹特克帝国', '以后古典期特诺奇蒂特兰为中心的墨西哥中部国家。',
+      ['墨西加迁徙', '早期特诺奇蒂特兰', '三方同盟', '帝国晚期与征服'],
+      ['特诺奇蒂特兰传统建城年份', '三方同盟形成', '特诺奇蒂特兰陷落']),
+    andes: tr('古代安第斯', '印加帝国兴起前的安第斯中部文化地平线。',
+      ['卡拉尔与早期中心', '查文与早期地平线', '莫切、纳斯卡与蒂瓦纳科', '瓦里与后期地区王国'],
+      ['卡拉尔纪念性中心', '查文繁荣', '瓦里与蒂瓦纳科衰落']),
+    inca: tr('印加', '塔万廷苏尤，前哥伦布时期南美洲最大的国家。',
+      ['早期库斯科', '地区王国', '帝国扩张', '帝国晚期与征服'],
+      ['帕查库特克开始扩张', '图帕克·印加·尤潘基统治', '西班牙人占领库斯科']),
+    north_america: tr('古代北美', '筑丘、普韦布洛祖先与密西西比文化社会。',
+      ['古风期社会', '阿德纳与霍普韦尔', '普韦布洛祖先', '密西西比文化'],
+      ['霍普韦尔仪式网络', '卡霍基亚繁荣', '普韦布洛聚落重组']),
+    ethiopia: tr('埃塞俄比亚与阿克苏姆', '与红海和非洲内陆相连的非洲之角国家。',
+      ['前阿克苏姆文化', '早期阿克苏姆', '基督教阿克苏姆', '扎格维与所罗门王朝'],
+      ['阿克苏姆进入红海贸易', '埃扎纳国王皈依基督教', '所罗门王朝开始']),
+    west_africa: tr('西非', '萨赫勒与森林地带的城市和帝国传统。',
+      ['诺克与早期冶金', '古加纳', '马里', '桑海与贝宁'],
+      ['诺克陶俑', '马里帝国兴起', '曼萨·穆萨前往麦加朝觐']),
+    mesopotamian_religion: tr('美索不达米亚宗教', '苏美尔、阿卡德、巴比伦和亚述城市的多神教崇拜。',
+      ['早期城市崇拜', '苏美尔—阿卡德神系', '巴比伦体系化', '晚期神庙传统'],
+      ['乌鲁克神庙群', '马尔杜克崇拜形成', '亚述巴尼拔图书馆']),
+    egyptian_religion: tr('古埃及宗教', '尼罗河诸神崇拜、神圣王权与来世观念。',
+      ['早王朝祭祀', '金字塔文与奥西里斯', '新王国神庙宗教', '后期与希腊—罗马传统'],
+      ['最早的金字塔文', '阿蒙祭司阶层崛起', '最后一则已知象形文字铭文']),
+    greek_religion: tr('古希腊宗教', '奥林匹斯诸神、秘仪、神谕与城邦节庆。',
+      ['爱琴海前身', '古风祭祀', '古典城邦宗教', '希腊化融合'],
+      ['奥林匹亚泛希腊运动会', '德尔斐神谕繁荣', '秘仪崇拜传播']),
+    roman_religion: tr('罗马宗教', '罗马国家与家庭崇拜，以及后来的皇帝崇拜与晚期融合。',
+      ['早期意大利祭祀', '共和国宗教', '皇帝崇拜', '晚期古代宗教融合'],
+      ['共和国祭司团', '奥古斯都成为大祭司长', '公共异教祭祀被禁止']),
+    hinduism: tr('吠陀与印度教传统', '多样的吠陀、婆罗门教和印度教思想与实践。',
+      ['早期吠陀传统', '晚期吠陀时期', '史诗与往世书传统', '神庙印度教与虔信运动'],
+      ['《梨俱吠陀》早期赞歌形成', '早期奥义书', '虔信传统扩展']),
+    buddhism: tr('佛教', '源自佛陀的教义、僧团与仪式传统。',
+      ['早期僧团', '帝国赞助与部派', '大乘与丝绸之路', '亚洲地区传统'],
+      ['早期佛教僧团', '阿育王护持', '佛教传入中国的传统年份']),
+    jainism: tr('耆那教', '以非暴力、苦行与解脱为核心的印度沙门传统。',
+      ['渡津者传统', '大雄的僧团', '教派形成', '神庙与学术中心'],
+      ['大雄活动', '空衣派与白衣派分化', '戈默特什瓦尔雕像']),
+    zoroastrianism: tr('祆教', '与《阿维斯陀》和阿胡拉·马兹达崇拜相关的伊朗宗教传统。',
+      ['早期阿维斯陀传统', '阿契美尼德时期', '帕提亚发展', '萨珊制度化'],
+      ['《伽萨》的传统早期年代', '王室铭文中的阿胡拉·马兹达', '萨珊对祭司阶层的支持']),
+    judaism: tr('犹太教', '犹太民族、经典与拉比文化的独一神传统。',
+      ['古代以色列宗教', '巴比伦之囚与第二圣殿', '早期拉比时期', '中世纪社群'],
+      ['巴比伦之囚', '第二圣殿被毁', '《巴比伦塔木德》定稿']),
+    christianity: tr('基督教', '兴起于罗马犹地亚并传播至欧亚和非洲的宗教。',
+      ['早期基督教', '帝国教会', '东西方传统', '中世纪基督教'],
+      ['最早的基督徒社群出现', '米兰敕令确立宽容', '东西教会大分裂的传统年份']),
+    islam: tr('伊斯兰教', '兴起于阿拉伯半岛、以《古兰经》和穆斯林共同体为核心的独一神传统。',
+      ['先知时期', '正统哈里发与倭马亚', '阿拔斯时代', '地区帝国与苏丹国'],
+      ['按传统《古兰经》启示开始', '迁徙麦地那', '阿拔斯哈里发国开始']),
+    manichaeism: tr('摩尼教', '先知摩尼创立、从罗马世界传播到中国的普世宗教。',
+      ['摩尼传教', '向东西传播', '中亚社群', '后期中国社群'],
+      ['摩尼开始公开传教', '回鹘人的摩尼教', '社群在中国南方延续']),
+    sikhism: tr('锡克教', '旁遮普地区以古鲁、服务和共同体为核心的独一神传统。',
+      ['北印度虔信环境', '古鲁那纳克生平', '早期古鲁', '共同体形成'],
+      ['古鲁那纳克出生', '按传统开始传教', '阿姆利则成为共同体中心']),
+    confucianism: tr('儒家传统', '东亚的伦理、政治与教育传统。',
+      ['孔子与弟子', '百家争鸣', '汉代国家经典', '宋明理学'],
+      ['孔子传统出生年份', '经典获得帝国认可', '朱熹活动']),
+    daoism: tr('道教', '关于“道”的中国哲学、仪式与社群传统。',
+      ['早期道家文本', '天师道', '上清与灵宝', '帝国与宫观派别'],
+      ['《道德经》形成', '天师道传统启示年份', '北天师道获得认可']),
+    shinto: tr('神道', '日本的神祇崇拜、神社实践与皇室礼仪。',
+      ['史前神祇崇拜', '古坟仪式', '与佛教融合', '中世纪神道流派'],
+      ['古坟仪式群', '《古事记》编成', '《延喜式》礼仪法典']),
+    mesoamerican_religion: tr('中部美洲宗教', '中部美洲各民族多样的历法、祭祀与神庙传统。',
+      ['奥尔梅克宗教体系', '古典期城市崇拜', '托尔特克与玛雅传统', '后古典期晚期崇拜'],
+      ['奥尔梅克仪式中心', '玛雅神庙中心繁荣', '特诺奇蒂特兰大神庙落成']),
+    andean_religion: tr('安第斯宗教', '安第斯中部的山岳、祖先与地区圣所崇拜。',
+      ['早期仪式中心', '查文地平线', '地区崇拜', '瓦里、蒂瓦纳科与印加崇拜'],
+      ['卡拉尔仪式广场', '查文德万塔尔神谕', '印加国家崇拜'])
+  };
+
   function normalizeLocale(value) {
-    return String(value || '').toLowerCase().indexOf('ru') === 0 ? 'ru' : 'en';
+    var locale = String(value || '').toLowerCase();
+    if (locale.indexOf('ru') === 0) return 'ru';
+    if (locale === 'zh' || locale === 'zh-cn' || locale === 'zh-sg' || locale === 'zh-hans' || locale.indexOf('zh-hans-') === 0) return 'zh';
+    return 'en';
   }
 
   function text(locale, key, values) {
@@ -237,9 +428,11 @@
   }
 
   function localizeTrack(track, locale) {
-    if (normalizeLocale(locale) === 'ru') return track;
-    var translated = englishTracks[track.id];
-    if (!translated) throw new Error('Missing English translation for ' + track.id);
+    var lang = normalizeLocale(locale);
+    if (lang === 'ru') return track;
+    var translations = lang === 'zh' ? chineseTracks : englishTracks;
+    var translated = translations[track.id];
+    if (!translated) throw new Error('Missing ' + lang + ' translation for ' + track.id);
     return Object.assign({}, track, {
       name: translated.name,
       summary: translated.summary,
@@ -253,15 +446,19 @@
   }
 
   function localizeData(data, locale) {
-    if (normalizeLocale(locale) === 'ru') return data;
+    var lang = normalizeLocale(locale);
+    if (lang === 'ru') return data;
+    var localizedRegions = lang === 'zh' ? chineseRegionNames : regionNames;
+    var localizedPresets = lang === 'zh' ? chinesePresetNames : presetNames;
     return Object.assign({}, data, {
-      regions: data.regions.map(function (region) { return Object.assign({}, region, { name: regionNames[region.id] }); }),
-      presets: data.presets.map(function (preset) { return Object.assign({}, preset, { name: presetNames[preset.id] }); }),
-      tracks: data.tracks.map(function (track) { return localizeTrack(track, 'en'); })
+      regions: data.regions.map(function (region) { return Object.assign({}, region, { name: localizedRegions[region.id] }); }),
+      presets: data.presets.map(function (preset) { return Object.assign({}, preset, { name: localizedPresets[preset.id] }); }),
+      tracks: data.tracks.map(function (track) { return localizeTrack(track, lang); })
     });
   }
 
   return {
+    locales: locales,
     localizeData: localizeData,
     localizeTrack: localizeTrack,
     normalizeLocale: normalizeLocale,

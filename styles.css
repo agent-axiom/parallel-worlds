@@ -121,11 +121,17 @@ a { color: inherit; }
   letter-spacing: .04em;
 }
 .icon-button:hover, .text-button:hover { color: var(--accent); }
-.language-button {
-  min-width: 2.7rem;
+.language-control select {
+  min-width: 4.2rem;
   border: 1px solid var(--rule-strong);
   border-radius: 99px;
-  padding-inline: .65rem;
+  background: transparent;
+  color: var(--ink);
+  padding: .58rem 1.8rem .58rem .7rem;
+  font: inherit;
+  font-size: .75rem;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .hero-grid {

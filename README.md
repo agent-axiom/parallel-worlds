@@ -2,7 +2,7 @@
 
 Интерактивная сравнительная шкала цивилизаций, государств, культур, религий и философских традиций от 3500 года до н. э. до 1600 года н. э.
 
-**Сайт:** [Русская версия](https://agent-axiom.github.io/parallel-worlds/?lang=ru) · [English version](https://agent-axiom.github.io/parallel-worlds/?lang=en)
+**Сайт:** [Русская версия](https://agent-axiom.github.io/parallel-worlds/?lang=ru) · [English version](https://agent-axiom.github.io/parallel-worlds/?lang=en) · [简体中文](https://agent-axiom.github.io/parallel-worlds/?lang=zh)
 
 ## Возможности
 
@@ -14,7 +14,9 @@
 - подробные карточки и обзорные источники;
 - светлая и тёмная темы, URL-состояние и экспорт CSV;
 - адаптивный интерфейс без runtime-зависимостей.
-- полная русская и английская локализация интерфейса и исторических данных.
+- полная русская, английская и китайская локализация интерфейса и исторических данных.
+
+Рекомендации по следующим локалям описаны в [языковой стратегии](docs/LANGUAGE_ROADMAP.md).
 
 ## Посты для публикации
 

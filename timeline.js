@@ -35,7 +35,9 @@
   }
 
   function formatYear(year, locale) {
-    var english = String(locale || 'ru').toLowerCase().indexOf('en') === 0;
+    var lang = String(locale || 'ru').toLowerCase();
+    if (lang.indexOf('zh') === 0) return year < 0 ? '公元前' + Math.abs(year) + '年' : '公元' + (year === 0 ? 1 : year) + '年';
+    var english = lang.indexOf('en') === 0;
     if (year < 0) return Math.abs(year) + (english ? ' BCE' : ' до н. э.');
     return (year === 0 ? 1 : year) + (english ? ' CE' : ' н. э.');
   }

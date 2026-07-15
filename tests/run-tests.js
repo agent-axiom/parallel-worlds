@@ -96,6 +96,29 @@ test('locale normalization and interface copy support Russian and English', func
   assert.strictEqual(i18n.text('xx', 'siteName'), 'Parallel Worlds');
 });
 
+test('locale metadata and normalization support Simplified Chinese', function () {
+  assert.strictEqual(i18n.normalizeLocale('zh'), 'zh');
+  assert.strictEqual(i18n.normalizeLocale('zh-CN'), 'zh');
+  assert.strictEqual(i18n.normalizeLocale('zh-SG'), 'zh');
+  assert.strictEqual(i18n.normalizeLocale('zh-TW'), 'en');
+  assert.deepStrictEqual(i18n.locales.map(function (locale) { return locale.id; }), ['ru', 'en', 'zh']);
+  assert.strictEqual(i18n.locales.find(function (locale) { return locale.id === 'zh'; }).htmlLang, 'zh-CN');
+  assert.strictEqual(i18n.text('zh', 'siteName'), '平行世界');
+});
+
+test('Simplified Chinese covers every interface key used by the site', function () {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+  const keys = new Set();
+  html.replace(/data-i18n(?:-[a-z]+)?="([^"]+)"/g, function (_, key) { keys.add(key); return _; });
+  app.replace(/\bt\('([^']+)'/g, function (_, key) { keys.add(key); return _; });
+  keys.forEach(function (key) {
+    const value = i18n.text('zh', key, { name: '名称', count: 1, year: '公元1年' });
+    assert.notStrictEqual(value, i18n.text('en', key), 'Chinese falls back to English for ' + key);
+    if (key !== 'csvFilename') assert.ok(/[\u3400-\u9fff]/.test(value), 'missing Chinese interface copy for ' + key);
+  });
+});
+
 test('English localization covers every historical track, period, note, and event', function () {
   const english = i18n.localizeData(data, 'en');
   assert.strictEqual(english.tracks.length, data.tracks.length);
@@ -124,6 +147,30 @@ test('English localization covers every historical track, period, note, and even
   });
 });
 
+test('Simplified Chinese localization covers every historical track, period, note, and event', function () {
+  const chinese = i18n.localizeData(data, 'zh');
+  assert.strictEqual(chinese.tracks.length, data.tracks.length);
+  assert.strictEqual(chinese.tracks.find(function (track) { return track.id === 'china'; }).name, '中国');
+  assert.strictEqual(chinese.tracks.find(function (track) { return track.id === 'babylonia'; }).periods[0].name, '古巴比伦时期');
+  assert.strictEqual(chinese.tracks.find(function (track) { return track.id === 'egypt'; }).events[1].title, '吉萨金字塔');
+
+  chinese.tracks.forEach(function (track, trackIndex) {
+    const original = data.tracks[trackIndex];
+    assert.strictEqual(track.periods.length, original.periods.length, 'Chinese period count drift for ' + track.id);
+    assert.strictEqual(track.events.length, original.events.length, 'Chinese event count drift for ' + track.id);
+    [track.name, track.summary].forEach(function (value) {
+      assert.ok(/[\u3400-\u9fff]/.test(value), 'missing Chinese track copy for ' + track.id);
+    });
+    track.periods.forEach(function (period, index) {
+      assert.ok(/[\u3400-\u9fff]/.test(period.name), 'missing Chinese period ' + track.id + ':' + index);
+      if (original.periods[index].note) assert.ok(/[\u3400-\u9fff]/.test(period.note), 'missing Chinese note ' + track.id + ':' + index);
+    });
+    track.events.forEach(function (event, index) {
+      assert.ok(/[\u3400-\u9fff]/.test(event.title), 'missing Chinese event ' + track.id + ':' + index);
+    });
+  });
+});
+
 test('localized data drives English search and era notation', function () {
   const english = i18n.localizeData(data, 'en');
   const result = timeline.filterTracks(english.tracks, { query: 'Old Babylonian', region: 'all', type: 'all' });
@@ -132,6 +179,15 @@ test('localized data drives English search and era notation', function () {
   assert.strictEqual(timeline.formatYear(0, 'en'), '1 CE');
   assert.strictEqual(timeline.formatYear(1453, 'en'), '1453 CE');
   assert.strictEqual(timeline.formatYear(-753, 'ru'), '753 до н. э.');
+});
+
+test('localized data drives Chinese search and era notation', function () {
+  const chinese = i18n.localizeData(data, 'zh');
+  const result = timeline.filterTracks(chinese.tracks, { query: '古巴比伦', region: 'all', type: 'all' });
+  assert.deepStrictEqual(result.map(function (track) { return track.id; }), ['babylonia']);
+  assert.strictEqual(timeline.formatYear(-753, 'zh'), '公元前753年');
+  assert.strictEqual(timeline.formatYear(0, 'zh'), '公元1年');
+  assert.strictEqual(timeline.formatYear(1453, 'zh'), '公元1453年');
 });
 
 test('CSV export accepts localized headers, types, regions, and historical copy', function () {
@@ -146,6 +202,18 @@ test('CSV export accepts localized headers, types, regions, and historical copy'
   assert.ok(csv.indexOf('"Babylonia","civilization","Mesopotamia","Old Babylonian period"') !== -1);
 });
 
+test('CSV export supports Chinese headers and values', function () {
+  const chinese = i18n.localizeData(data, 'zh');
+  const babylonia = chinese.tracks.filter(function (track) { return track.id === 'babylonia'; });
+  const csv = timeline.buildCsv(babylonia, {
+    headers: ['历史线', '类型', '地区', '时期', '开始', '结束', '说明'],
+    typeNames: { civilization: '文明', tradition: '传统' },
+    regionNames: { mesopotamia: '美索不达米亚' }
+  });
+  assert.ok(csv.indexOf('"历史线","类型","地区"') === 0);
+  assert.ok(csv.indexOf('"巴比伦尼亚","文明","美索不达米亚","古巴比伦时期"') !== -1);
+});
+
 test('required static site and Pages files exist and use relative assets', function () {
   ['index.html', 'styles.css', 'app.js', 'data.js', 'i18n.js', 'timeline.js', '.nojekyll',
     '.github/workflows/deploy-pages.yml', 'scripts/validate.sh', 'README.md']
@@ -156,12 +224,15 @@ test('required static site and Pages files exist and use relative assets', funct
   });
   assert.ok(html.indexOf('id="timeline"') !== -1);
   assert.ok(html.indexOf('id="detail-dialog"') !== -1);
-  assert.ok(html.indexOf('id="language-button"') !== -1);
+  assert.ok(html.indexOf('id="language-select"') !== -1);
+  assert.ok(html.indexOf('<option value="zh">中文</option>') !== -1);
+  assert.strictEqual(html.indexOf('id="language-button"'), -1, 'binary language toggle should be removed');
   assert.ok(html.indexOf('data-i18n="heroTitleLead"') !== -1);
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/deploy-pages.yml'), 'utf8');
   assert.ok(workflow.indexOf('i18n.js') !== -1, 'Pages artifact does not include i18n.js');
   const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
   assert.ok(app.indexOf("params.set('lang', state.lang)") !== -1, 'language is not persisted in URL state');
+  assert.ok(app.indexOf("i18n.locales.some") !== -1, 'app does not validate locales through the locale registry');
 });
 
 test('concise Russian and English launch posts include public links', function () {
@@ -172,6 +243,15 @@ test('concise Russian and English launch posts include public links', function (
     assert.ok(post.indexOf('https://agent-axiom.github.io/parallel-worlds/') !== -1, 'missing site link in ' + filename);
     assert.ok(post.indexOf('https://github.com/agent-axiom/parallel-worlds') !== -1, 'missing repository link in ' + filename);
     assert.ok(post.split(/\s+/).length <= 130, filename + ' is not concise');
+  });
+});
+
+test('language roadmap records evidence-based priorities beyond Chinese', function () {
+  const roadmapPath = path.join(root, 'docs', 'LANGUAGE_ROADMAP.md');
+  assert.ok(fs.existsSync(roadmapPath), 'missing language roadmap');
+  const roadmap = fs.readFileSync(roadmapPath, 'utf8');
+  ['Spanish', 'Arabic', 'Portuguese', '10%'].forEach(function (marker) {
+    assert.ok(roadmap.indexOf(marker) !== -1, 'missing roadmap marker: ' + marker);
   });
 });
 

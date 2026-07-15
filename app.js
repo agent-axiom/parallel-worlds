@@ -12,11 +12,15 @@
     'southeast-asia': '#258074', oceania: '#397e9c', americas: '#75609b'
   };
 
+  function isSupportedLocale(value) {
+    return i18n.locales.some(function (locale) { return locale.id === value; });
+  }
+
   function initialLocale() {
     var requested = new URLSearchParams(window.location.search).get('lang');
-    if (requested === 'ru' || requested === 'en') return requested;
+    if (isSupportedLocale(requested)) return requested;
     var saved = localStorage.getItem('parallel-worlds-language');
-    if (saved === 'ru' || saved === 'en') return saved;
+    if (isSupportedLocale(saved)) return saved;
     return i18n.normalizeLocale(navigator.language || 'en');
   }
 
@@ -35,7 +39,7 @@
 
   function readUrlState() {
     var params = new URLSearchParams(window.location.search);
-    if (params.get('lang') === 'ru' || params.get('lang') === 'en') state.lang = params.get('lang');
+    if (isSupportedLocale(params.get('lang'))) state.lang = params.get('lang');
     if (params.has('q')) state.query = params.get('q').slice(0, 100);
     if (rawData.regions.some(function (region) { return region.id === params.get('region'); })) state.region = params.get('region');
     if (['all', 'civilization', 'tradition'].indexOf(params.get('type')) !== -1) state.type = params.get('type');
@@ -75,7 +79,7 @@
       'export-button', 'range-start', 'range-end', 'year-input', 'year-output', 'contemporary-summary',
       'timeline', 'empty-state', 'reset-button', 'contemporary-list', 'detail-dialog', 'dialog-title',
       'dialog-meta', 'dialog-summary', 'dialog-periods', 'dialog-events', 'dialog-sources', 'dialog-close',
-      'source-links', 'theme-button', 'language-button', 'share-button', 'toast', 'track-count', 'period-count', 'event-count']
+      'source-links', 'theme-button', 'language-select', 'share-button', 'toast', 'track-count', 'period-count', 'event-count']
       .forEach(function (id) { elements[id] = get(id); });
   }
 
@@ -92,7 +96,8 @@
   }
 
   function applyStaticCopy() {
-    document.documentElement.lang = state.lang;
+    var locale = i18n.locales.find(function (item) { return item.id === state.lang; });
+    document.documentElement.lang = locale ? locale.htmlLang : state.lang;
     document.title = t('pageTitle');
     document.querySelector('meta[name="description"]').setAttribute('content', t('metaDescription'));
     Array.prototype.forEach.call(document.querySelectorAll('[data-i18n]'), function (element) {
@@ -142,6 +147,7 @@
     elements['year-input'].max = state.end;
     elements['year-input'].value = state.year;
     elements['year-output'].textContent = formatYear(state.year);
+    elements['language-select'].value = state.lang;
     document.documentElement.dataset.theme = state.theme;
     document.querySelector('meta[name="theme-color"]').setAttribute('content', state.theme === 'dark' ? '#191d1b' : '#f1eadb');
     Array.prototype.forEach.call(elements['preset-buttons'].children, function (button) {
@@ -304,8 +310,9 @@
       render();
     });
     elements['export-button'].addEventListener('click', downloadCsv);
-    elements['language-button'].addEventListener('click', function () {
-      state.lang = state.lang === 'ru' ? 'en' : 'ru';
+    elements['language-select'].addEventListener('change', function (event) {
+      if (!isSupportedLocale(event.target.value)) return;
+      state.lang = event.target.value;
       state.query = '';
       localStorage.setItem('parallel-worlds-language', state.lang);
       render();
