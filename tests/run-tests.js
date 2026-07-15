@@ -4,6 +4,8 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const data = require(path.join(root, 'data.js'));
+const academicData = require(path.join(root, 'academic-data.js'));
+const quality = require(path.join(root, 'data-quality.js'));
 const chronology = require(path.join(root, 'chronology.js'));
 const timeline = require(path.join(root, 'timeline.js'));
 const i18n = require(path.join(root, 'i18n.js'));
@@ -68,8 +70,54 @@ test('adaptive chronology ticks never manufacture year zero', function () {
   assert.strictEqual(chronology.recommendedStep(chronology.createScale(-3500, 1600, 'historical')), 20);
 });
 
+test('academic schema accepts sourced reviewed records and rejects missing evidence', function () {
+  const sources = {
+    exact: {
+      id: 'exact', tier: 'A', kind: 'peer-reviewed-article', title: 'Exact chronology',
+      publisher: 'Journal of Tests', year: 2025, url: 'https://doi.org/10.1000/example', accessed: '2026-07-15'
+    }
+  };
+  const copy = {
+    ru: { name: 'Запись', summary: 'Описание' },
+    en: { name: 'Record', summary: 'Description' },
+    zh: { name: '记录', summary: '说明' }
+  };
+  const recordCopy = {
+    ru: { name: 'Период', note: 'Примечание' },
+    en: { name: 'Period', note: 'Note' },
+    zh: { name: '时期', note: '说明' }
+  };
+  const eventCopy = {
+    ru: { title: 'Событие', note: 'Примечание' },
+    en: { title: 'Event', note: 'Note' },
+    zh: { title: '事件', note: '说明' }
+  };
+  const track = {
+    id: 'reviewed-fixture', region: 'east-asia', type: 'site', reviewStatus: 'reviewed', copy: copy,
+    periods: [{ id: 'reviewed-period', start: -12000, end: -11000, dating: { precision: 'range', basis: 'radiocarbon', original: '12,000–11,000 BCE' }, sourceIds: ['exact'], copy: recordCopy }],
+    events: [{ id: 'reviewed-event', year: -11500, dating: { precision: 'approximate', basis: 'radiocarbon' }, sourceIds: ['exact'], copy: eventCopy }]
+  };
+  assert.deepStrictEqual(quality.validateReviewedTrack(track, sources, { start: -20000, end: 1600 }), []);
+
+  const missingSources = JSON.parse(JSON.stringify(track));
+  missingSources.periods[0].sourceIds = [];
+  assert.ok(quality.validateReviewedTrack(missingSources, sources, { start: -20000, end: 1600 }).some(function (issue) { return issue.code === 'missing-source'; }));
+
+  const yearZero = JSON.parse(JSON.stringify(track));
+  yearZero.events[0].year = 0;
+  assert.ok(quality.validateReviewedTrack(yearZero, sources, { start: -20000, end: 1600 }).some(function (issue) { return issue.code === 'year-zero'; }));
+});
+
+test('academic data shell and source URL validation are explicit', function () {
+  assert.deepStrictEqual(academicData.tracks, []);
+  assert.deepStrictEqual(academicData.patches, {});
+  assert.strictEqual(academicData.scale.breakpoint, -3500);
+  assert.strictEqual(quality.isGenericHomepage('https://www.metmuseum.org/'), true);
+  assert.strictEqual(quality.isGenericHomepage('https://www.metmuseum.org/essays/uruk-the-first-city'), false);
+});
+
 test('dataset covers the requested world history scope', function () {
-  assert.strictEqual(data.range.start, -3500);
+  assert.strictEqual(data.range.start, -20000);
   assert.strictEqual(data.range.end, 1600);
   assert.ok(data.tracks.length >= 49, 'expected at least 49 tracks');
   const ids = data.tracks.map(function (track) { return track.id; });

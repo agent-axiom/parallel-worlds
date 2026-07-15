@@ -1,8 +1,9 @@
 (function (root, factory) {
-  var data = factory();
+  var academic = typeof module === 'object' && module.exports ? require('./academic-data.js') : root.PARALLEL_WORLDS_ACADEMIC_DATA;
+  var data = factory(academic || { sources: {}, tracks: [], patches: {}, scale: {} });
   if (typeof module === 'object' && module.exports) module.exports = data;
   root.PARALLEL_WORLDS_DATA = data;
-}(typeof self !== 'undefined' ? self : this, function () {
+}(typeof self !== 'undefined' ? self : this, function (academic) {
   'use strict';
 
   function p(name, start, end, note) {
@@ -22,7 +23,8 @@
       summary: summary,
       periods: periods,
       events: events,
-      sources: [source]
+      sources: [source],
+      reviewStatus: 'legacy'
     };
   }
 
@@ -185,8 +187,14 @@
     ], [e(-2600, 'Церемониальные площади Караля'), e(-500, 'Оракул Чавин-де-Уантар'), e(1438, 'Государственный культ инков')], 'smarthistory')
   ];
 
+  sources = Object.assign({}, sources, academic.sources || {});
+  tracks = tracks.map(function (track) {
+    return academic.patches && academic.patches[track.id] ? Object.assign({}, track, academic.patches[track.id]) : track;
+  }).concat(academic.tracks || []);
+
   return {
-    range: { start: -3500, end: 1600 },
+    range: { start: -20000, end: 1600 },
+    scale: Object.assign({ breakpoint: -3500, deepWeight: 0.30 }, academic.scale || {}),
     regions: [
       { id: 'all', name: 'Все регионы' },
       { id: 'mesopotamia', name: 'Месопотамия' },
@@ -201,7 +209,7 @@
       { id: 'americas', name: 'Америки' }
     ],
     presets: [
-      { id: 'all', name: 'Вся шкала', start: -3500, end: 1600 },
+      { id: 'all', name: 'Вся шкала', start: -20000, end: 1600 },
       { id: 'bronze', name: 'Бронзовый век', start: -3300, end: -1200 },
       { id: 'classical', name: 'Классический мир', start: -800, end: 500 },
       { id: 'medieval', name: 'Глобальное Средневековье', start: 500, end: 1500 },
