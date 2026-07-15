@@ -388,6 +388,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 }
 .atlas-region::after { animation: atlas-pulse 3.4s ease-out infinite; }
 .atlas-region:hover::before, .atlas-region:focus-visible::before { background: rgba(224, 108, 67, .28); border-color: #efaf6e; }
+.atlas-region.selected::before { background: rgba(224, 108, 67, .38); border-color: #ffd29b; box-shadow: 0 0 0 5px rgba(255, 210, 155, .1), 0 0 38px rgba(224, 108, 67, .45); }
 .atlas-region span {
   position: relative;
   z-index: 1;
@@ -574,6 +575,8 @@ h2 { font: 500 clamp(2rem, 4.5vw, 4.2rem)/.98 Georgia, serif; letter-spacing: -.
 
 .track-row { min-height: var(--row-height); border-bottom: 1px solid var(--rule); }
 .track-row:last-child { border-bottom: 0; }
+.track-row.focused { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.track-row.focused .track-label { box-shadow: inset 3px 0 var(--accent); }
 .track-label {
   position: sticky;
   left: 0;

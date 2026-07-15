@@ -82,9 +82,73 @@
     return Object.assign({}, selected, copy);
   }
 
+  function nextPlaybackYear(year, start, end, step) {
+    var next = Number(year) + Math.max(1, Number(step) || 1);
+    return next > end ? start : next;
+  }
+
+  function matchesFilters(track, filters) {
+    filters = filters || {};
+    if (filters.region && filters.region !== 'all' && track.region !== filters.region) return false;
+    if (filters.type && filters.type !== 'all' && track.type !== filters.type) return false;
+    var query = String(filters.query || '').trim().toLocaleLowerCase();
+    if (!query) return true;
+    var searchable = [track.name, track.summary]
+      .concat((track.periods || []).reduce(function (values, period) { return values.concat(period.name, period.note || ''); }, []))
+      .concat((track.events || []).reduce(function (values, event) { return values.concat(event.title, event.note || ''); }, []))
+      .join(' ').toLocaleLowerCase();
+    return searchable.indexOf(query) !== -1;
+  }
+
+  function buildModel(options) {
+    options = options || {};
+    var year = Number(options.year);
+    var filteredTracks = (options.tracks || []).filter(function (track) {
+      return matchesFilters(track, options.filters);
+    });
+    var activeTracks = filteredTracks.filter(function (track) { return Boolean(activePeriod(track, year)); });
+    var projectedCenters = projectActiveCenters(activeTracks, year, options.geography || {});
+    var regionGeometry = options.geography && options.geography.regions ? options.geography.regions : {};
+    var regions = aggregateRegions(projectedCenters).reduce(function (items, region) {
+      var geometry = regionGeometry[region.id];
+      if (geometry) items.push(Object.assign({}, region, geometry));
+      return items;
+    }, []);
+    var selectedRegion = options.selectedRegion || '';
+    var regionTracks = activeTracks.filter(function (track) {
+      return selectedRegion && track.region === selectedRegion;
+    }).map(function (track) {
+      return { track: track, period: activePeriod(track, year) };
+    });
+    var civilizationCount = activeTracks.filter(function (track) { return track.type === 'civilization'; }).length;
+    var activeRegionIds = activeTracks.reduce(function (ids, track) {
+      if (ids.indexOf(track.region) === -1) ids.push(track.region);
+      return ids;
+    }, []);
+    var focusIds = (options.focusIds || []).slice(0, 2);
+    return {
+      year: year,
+      activeTracks: activeTracks,
+      projectedCenters: projectedCenters,
+      regions: regions,
+      selectedRegion: selectedRegion,
+      regionTracks: regionTracks,
+      focusIds: focusIds,
+      stats: {
+        tracks: activeTracks.length,
+        civilizations: civilizationCount,
+        traditions: activeTracks.length - civilizationCount,
+        regions: activeRegionIds.length
+      },
+      insight: selectInsight(options.insights || [], activeTracks, year, options.locale, focusIds)
+    };
+  }
+
   return {
     activePeriod: activePeriod,
     aggregateRegions: aggregateRegions,
+    buildModel: buildModel,
+    nextPlaybackYear: nextPlaybackYear,
     projectActiveCenters: projectActiveCenters,
     selectInsight: selectInsight
   };

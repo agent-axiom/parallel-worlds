@@ -4,6 +4,11 @@
   var rawData = window.PARALLEL_WORLDS_DATA;
   var timeline = window.ParallelTimeline;
   var i18n = window.ParallelWorldsI18n;
+  var atlasData = window.PARALLEL_WORLDS_ATLAS_DATA;
+  var insights = window.PARALLEL_WORLDS_INSIGHTS;
+  var atlas = window.ParallelWorldsAtlas;
+  var explorerState = window.ParallelWorldsExplorerState;
+  var atlasView = window.ParallelWorldsAtlasView;
   var activeData = rawData;
   var regionNames = {};
   var regionColors = {
@@ -26,12 +31,14 @@
 
   var defaults = {
     query: '', region: 'all', type: 'all', start: rawData.range.start, end: rawData.range.end,
-    year: -500, zoom: 100, lang: initialLocale(),
+    year: -500, zoom: 100, lang: initialLocale(), view: 'map', focus: [], selectedRegion: '', playing: false,
     theme: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   };
   var state = Object.assign({}, defaults);
   var elements = {};
   var toastTimer;
+  var playbackTimer;
+  var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
 
   function get(id) { return document.getElementById(id); }
   function t(key, values) { return i18n.text(state.lang, key, values); }
@@ -39,32 +46,13 @@
 
   function readUrlState() {
     var params = new URLSearchParams(window.location.search);
-    if (isSupportedLocale(params.get('lang'))) state.lang = params.get('lang');
-    if (params.has('q')) state.query = params.get('q').slice(0, 100);
-    if (rawData.regions.some(function (region) { return region.id === params.get('region'); })) state.region = params.get('region');
-    if (['all', 'civilization', 'tradition'].indexOf(params.get('type')) !== -1) state.type = params.get('type');
-    var start = timeline.numericParam(params, 'start');
-    var end = timeline.numericParam(params, 'end');
-    var year = timeline.numericParam(params, 'year');
-    var zoom = timeline.numericParam(params, 'zoom');
-    if (start !== undefined) state.start = timeline.clamp(start, rawData.range.start, rawData.range.end - 1);
-    if (end !== undefined) state.end = timeline.clamp(end, state.start + 1, rawData.range.end);
-    if (year !== undefined) state.year = timeline.clamp(year, state.start, state.end);
-    if (zoom !== undefined) state.zoom = timeline.clamp(zoom, 75, 240);
+    state = explorerState.parse(params, defaults, rawData);
     var savedTheme = localStorage.getItem('parallel-worlds-theme');
     if (savedTheme === 'light' || savedTheme === 'dark') state.theme = savedTheme;
   }
 
   function writeUrlState() {
-    var params = new URLSearchParams();
-    params.set('lang', state.lang);
-    if (state.query) params.set('q', state.query);
-    if (state.region !== defaults.region) params.set('region', state.region);
-    if (state.type !== defaults.type) params.set('type', state.type);
-    if (state.start !== defaults.start) params.set('start', state.start);
-    if (state.end !== defaults.end) params.set('end', state.end);
-    if (state.year !== defaults.year) params.set('year', state.year);
-    if (state.zoom !== defaults.zoom) params.set('zoom', state.zoom);
+    var params = explorerState.serialize(state, defaults);
     history.replaceState(null, '', window.location.pathname + '?' + params.toString() + window.location.hash);
   }
 
@@ -79,7 +67,9 @@
       'export-button', 'range-start', 'range-end', 'year-input', 'year-output', 'contemporary-summary',
       'timeline', 'empty-state', 'reset-button', 'contemporary-list', 'detail-dialog', 'dialog-title',
       'dialog-meta', 'dialog-summary', 'dialog-periods', 'dialog-events', 'dialog-sources', 'dialog-close',
-      'source-links', 'theme-button', 'language-select', 'share-button', 'toast', 'track-count', 'period-count', 'event-count']
+      'source-links', 'theme-button', 'language-select', 'share-button', 'toast', 'track-count', 'period-count', 'event-count',
+      'view-map-button', 'view-chronology-button', 'atlas-view', 'chronology-view', 'atlas-map', 'atlas-world',
+      'atlas-regions', 'atlas-panel', 'atlas-region-list', 'atlas-play-button', 'atlas-year-input', 'atlas-year-output', 'atlas-map-summary']
       .forEach(function (id) { elements[id] = get(id); });
   }
 
@@ -147,7 +137,24 @@
     elements['year-input'].max = state.end;
     elements['year-input'].value = state.year;
     elements['year-output'].textContent = formatYear(state.year);
+    elements['atlas-year-input'].min = state.start;
+    elements['atlas-year-input'].max = state.end;
+    elements['atlas-year-input'].value = state.year;
+    elements['atlas-year-output'].textContent = formatYear(state.year);
     elements['language-select'].value = state.lang;
+    elements['atlas-view'].hidden = state.view !== 'map';
+    elements['chronology-view'].hidden = state.view !== 'chronology';
+    [['view-map-button', 'map'], ['view-chronology-button', 'chronology']].forEach(function (entry) {
+      var selected = state.view === entry[1];
+      elements[entry[0]].classList.toggle('active', selected);
+      elements[entry[0]].setAttribute('aria-selected', String(selected));
+      elements[entry[0]].tabIndex = selected ? 0 : -1;
+    });
+    var playbackLabel = t(state.playing ? 'pauseTime' : 'playTime');
+    elements['atlas-play-button'].setAttribute('aria-label', playbackLabel);
+    elements['atlas-play-button'].setAttribute('aria-pressed', String(state.playing));
+    elements['atlas-play-button'].querySelector('[aria-hidden]').textContent = state.playing ? 'Ⅱ' : '▶';
+    elements['atlas-play-button'].lastElementChild.textContent = playbackLabel;
     document.documentElement.dataset.theme = state.theme;
     document.querySelector('meta[name="theme-color"]').setAttribute('content', state.theme === 'dark' ? '#191d1b' : '#f1eadb');
     Array.prototype.forEach.call(elements['preset-buttons'].children, function (button) {
@@ -158,6 +165,72 @@
 
   function filteredTracks() {
     return timeline.filterTracks(activeData.tracks, state);
+  }
+
+  function atlasCopy() {
+    return {
+      regionNames: regionNames,
+      activeRegionLabel: t('activeRegionLabel'),
+      insightKicker: t('insightKicker'),
+      openComparison: t('openComparison'),
+      statsFallbackTitle: t('statsFallbackTitle'),
+      statsTemplate: t('statsTemplate'),
+      statTracks: t('statTracks'),
+      statCivilizations: t('statCivilizations'),
+      statTraditions: t('statTraditions'),
+      noRegionTracks: t('noRegionTracks')
+    };
+  }
+
+  function renderAtlas() {
+    var model = atlas.buildModel({
+      tracks: activeData.tracks,
+      year: state.year,
+      geography: atlasData,
+      insights: insights,
+      locale: state.lang,
+      filters: state,
+      selectedRegion: state.selectedRegion,
+      focusIds: state.focus
+    });
+    var copy = atlasCopy();
+    elements['atlas-world'].innerHTML = atlasView.worldSvg(t('atlasAria'));
+    elements['atlas-regions'].innerHTML = atlasView.renderRegions(model.regions, copy);
+    elements['atlas-map-summary'].textContent = t('activeLines', { count: model.stats.tracks, year: formatYear(state.year) });
+
+    Array.prototype.forEach.call(elements['atlas-regions'].querySelectorAll('[data-region]'), function (button) {
+      var selected = button.dataset.region === state.selectedRegion;
+      button.classList.toggle('selected', selected);
+      button.setAttribute('aria-pressed', String(selected));
+      button.addEventListener('click', function () {
+        state.selectedRegion = selected ? '' : button.dataset.region;
+        render();
+      });
+    });
+
+    if (state.selectedRegion) {
+      var selectedName = regionNames[state.selectedRegion] || state.selectedRegion;
+      elements['atlas-panel'].innerHTML = '<button class="atlas-panel-back" type="button" data-atlas-back>← ' + escapeHtml(t('backOverview')) + '</button>' +
+        '<p class="atlas-panel-kicker">' + escapeHtml(t('selectedRegion')) + '</p><h3>' + escapeHtml(selectedName) + '</h3>' +
+        '<p>' + escapeHtml(t('activeLines', { count: model.regionTracks.length, year: formatYear(state.year) })) + '</p>' +
+        atlasView.renderRegionList(model, copy) +
+        '<button class="atlas-panel-action" type="button" data-chronology>' + escapeHtml(t('openChronology')) + ' →</button>';
+    } else {
+      elements['atlas-panel'].innerHTML = atlasView.renderPanel(model, copy);
+    }
+
+    var backButton = elements['atlas-panel'].querySelector('[data-atlas-back]');
+    if (backButton) backButton.addEventListener('click', function () { state.selectedRegion = ''; render(); });
+    var chronologyButton = elements['atlas-panel'].querySelector('[data-chronology]');
+    if (chronologyButton) chronologyButton.addEventListener('click', function () { setView('chronology'); });
+    var focusButton = elements['atlas-panel'].querySelector('[data-focus]');
+    if (focusButton) focusButton.addEventListener('click', function () {
+      state.focus = explorerState.normalizeFocus(focusButton.dataset.focus, rawData.tracks);
+      setView('chronology');
+    });
+    Array.prototype.forEach.call(elements['atlas-panel'].querySelectorAll('[data-track]'), function (button) {
+      button.addEventListener('click', function () { openDetails(button.dataset.track); });
+    });
   }
 
   function axisHtml() {
@@ -183,7 +256,8 @@
     }).join('');
     var yearLeft = timeline.yearToPercent(state.year, state.start, state.end);
     var typeLabel = track.type === 'tradition' ? t('tradition') : t('civilization');
-    return '<div class="track-row ' + track.type + '" role="listitem" style="--region-color:' + regionColors[track.region] + '">' +
+    var focusClass = state.focus.indexOf(track.id) !== -1 ? ' focused' : '';
+    return '<div class="track-row ' + track.type + focusClass + '" role="listitem" style="--region-color:' + regionColors[track.region] + '">' +
       '<button class="track-label" type="button" data-track="' + track.id + '" title="' + escapeHtml(t('openDetails', { name: track.name })) + '">' +
       '<span class="track-label-marker"></span><span class="track-label-text"><strong>' + escapeHtml(track.name) + '</strong><small>' + escapeHtml(regionNames[track.region]) + ' · ' + typeLabel + '</small></span></button>' +
       '<div class="track-plot">' + periods + events + '<span class="current-year-line" style="left:' + yearLeft + '%"></span></div></div>';
@@ -254,9 +328,40 @@
     applyStaticCopy();
     renderLocaleControls();
     syncControls();
+    renderAtlas();
     renderTimeline();
     renderContemporaries();
     writeUrlState();
+  }
+
+  function stopPlayback(renderAfter) {
+    if (playbackTimer) clearInterval(playbackTimer);
+    playbackTimer = null;
+    var changed = state.playing;
+    state.playing = false;
+    if (renderAfter && changed) render();
+  }
+
+  function startPlayback() {
+    if (reducedMotion && reducedMotion.matches) {
+      state.year = atlas.nextPlaybackYear(state.year, state.start, state.end, 20);
+      render();
+      return;
+    }
+    if (playbackTimer) clearInterval(playbackTimer);
+    state.playing = true;
+    render();
+    playbackTimer = setInterval(function () {
+      state.year = atlas.nextPlaybackYear(state.year, state.start, state.end, 20);
+      render();
+    }, 560);
+  }
+
+  function setView(view) {
+    if (view !== 'map' && view !== 'chronology') return;
+    if (view !== 'map') stopPlayback(false);
+    state.view = view;
+    render();
   }
 
   function updateRange(start, end) {
@@ -295,7 +400,23 @@
     elements['region-select'].addEventListener('change', function (event) { state.region = event.target.value; render(); });
     elements['type-select'].addEventListener('change', function (event) { state.type = event.target.value; render(); });
     elements['zoom-input'].addEventListener('input', function (event) { state.zoom = Number(event.target.value); render(); });
-    elements['year-input'].addEventListener('input', function (event) { state.year = Number(event.target.value); render(); });
+    elements['year-input'].addEventListener('input', function (event) { stopPlayback(false); state.year = Number(event.target.value); render(); });
+    elements['atlas-year-input'].addEventListener('input', function (event) { stopPlayback(false); state.year = Number(event.target.value); render(); });
+    elements['atlas-play-button'].addEventListener('click', function () {
+      if (state.playing) stopPlayback(true);
+      else startPlayback();
+    });
+    elements['view-map-button'].addEventListener('click', function () { setView('map'); });
+    elements['view-chronology-button'].addEventListener('click', function () { setView('chronology'); });
+    [elements['view-map-button'], elements['view-chronology-button']].forEach(function (button) {
+      button.addEventListener('keydown', function (event) {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        event.preventDefault();
+        var view = button.dataset.view === 'map' ? 'chronology' : 'map';
+        setView(view);
+        elements[view === 'map' ? 'view-map-button' : 'view-chronology-button'].focus();
+      });
+    });
     elements['range-start'].addEventListener('change', function (event) { updateRange(event.target.value, state.end); });
     elements['range-end'].addEventListener('change', function (event) { updateRange(state.start, event.target.value); });
     elements['preset-buttons'].addEventListener('click', function (event) {
@@ -306,6 +427,7 @@
       updateRange(preset.start, preset.end);
     });
     elements['reset-button'].addEventListener('click', function () {
+      stopPlayback(false);
       state = Object.assign({}, defaults, { theme: state.theme, lang: state.lang });
       render();
     });
@@ -339,6 +461,9 @@
         event.preventDefault();
         elements['search-input'].focus();
       }
+    });
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) stopPlayback(true);
     });
   }
 

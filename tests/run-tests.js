@@ -168,6 +168,46 @@ test('atlas selects eligible localized insights and prefers focused tracks', fun
   assert.strictEqual(atlas.selectInsight(insights, timeline.activeTracks(data.tracks, -3500), -3500, 'en', []), null);
 });
 
+test('playback advances by a fixed historical step and wraps at the visible range', function () {
+  assert.strictEqual(atlas.nextPlaybackYear(-500, -3500, 1600, 20), -480);
+  assert.strictEqual(atlas.nextPlaybackYear(1590, -3500, 1600, 20), -3500);
+});
+
+test('atlas model combines filters, region selection, focus, and missing geography', function () {
+  const tracks = [
+    { id: 'alpha', name: 'Alpha Empire', summary: 'River cities', region: 'east-asia', type: 'civilization', periods: [{ name: 'Early Alpha', start: -600, end: -400 }], events: [] },
+    { id: 'beta', name: 'Beta tradition', summary: 'Ritual teaching', region: 'east-asia', type: 'tradition', periods: [{ name: 'Oracle schools', start: -550, end: -300 }], events: [] },
+    { id: 'gamma', name: 'Gamma', summary: 'Later society', region: 'americas', type: 'civilization', periods: [{ name: 'Gamma age', start: 100, end: 500 }], events: [] }
+  ];
+  const geography = {
+    regions: { 'east-asia': { x: 76, y: 40, radius: 14 } },
+    tracks: { alpha: [{ id: 'alpha-core', x: 75, y: 40, start: -600, end: -400 }] }
+  };
+  const comparisons = [{
+    id: 'alpha-beta', start: -540, end: -410, trackIds: ['alpha', 'beta'], sourceIds: [],
+    copy: { en: { title: 'Alpha and Beta', summary: 'Two active tracks.' } }
+  }];
+  const model = atlas.buildModel({
+    tracks: tracks, year: -500, geography: geography, insights: comparisons, locale: 'en',
+    filters: { query: '', region: 'all', type: 'all' }, selectedRegion: 'east-asia', focusIds: ['beta']
+  });
+  assert.deepStrictEqual(model.activeTracks.map(function (track) { return track.id; }), ['alpha', 'beta']);
+  assert.deepStrictEqual(model.regions.map(function (region) { return [region.id, region.count, region.x]; }), [['east-asia', 1, 76]]);
+  assert.deepStrictEqual(model.regionTracks.map(function (item) { return item.track.id; }), ['alpha', 'beta']);
+  assert.deepStrictEqual(model.stats, { tracks: 2, civilizations: 1, traditions: 1, regions: 1 });
+  assert.strictEqual(model.insight.id, 'alpha-beta');
+  assert.deepStrictEqual(model.focusIds, ['beta']);
+
+  const filtered = atlas.buildModel({
+    tracks: tracks, year: -500, geography: geography, insights: [], locale: 'en',
+    filters: { query: 'oracle', region: 'east-asia', type: 'tradition' }, selectedRegion: 'east-asia', focusIds: []
+  });
+  assert.deepStrictEqual(filtered.activeTracks.map(function (track) { return track.id; }), ['beta']);
+  assert.deepStrictEqual(filtered.regions, []);
+  assert.strictEqual(filtered.insight, null);
+  assert.strictEqual(filtered.stats.regions, 1);
+});
+
 test('missing URL numbers stay absent instead of becoming year zero', function () {
   const empty = new URLSearchParams('');
   const explicitZero = new URLSearchParams('start=0');
@@ -393,7 +433,7 @@ test('required static site and Pages files exist and use relative assets', funct
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/deploy-pages.yml'), 'utf8');
   assert.ok(workflow.indexOf('i18n.js') !== -1, 'Pages artifact does not include i18n.js');
   const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
-  assert.ok(app.indexOf("params.set('lang', state.lang)") !== -1, 'language is not persisted in URL state');
+  assert.ok(app.indexOf('explorerState.serialize(state, defaults)') !== -1, 'shared explorer state is not persisted in the URL');
   assert.ok(app.indexOf("i18n.locales.some") !== -1, 'app does not validate locales through the locale registry');
 });
 
