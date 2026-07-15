@@ -641,6 +641,24 @@ test('CSV export supports Chinese headers and values', function () {
   assert.ok(csv.indexOf('"巴比伦尼亚","文明","美索不达米亚","古巴比伦时期"') !== -1);
 });
 
+test('CSV export carries reviewed dating evidence and exact source links', function () {
+  const english = i18n.localizeData(data, 'en');
+  const xianrendong = english.tracks.filter(function (track) { return track.id === 'xianrendong'; });
+  const csv = timeline.buildCsv(xianrendong, {
+    headers: ['Track', 'Type', 'Region', 'Period', 'Start', 'End', 'Note', 'Precision', 'Dating basis', 'Original dating', 'Review status', 'Sources'],
+    typeNames: { site: 'Site / settlement' },
+    regionNames: { 'east-asia': 'East Asia' },
+    precisionNames: { range: 'range' },
+    basisNames: { radiocarbon: 'radiocarbon dating' },
+    reviewNames: { reviewed: 'reviewed' },
+    sources: data.sources,
+    includeEvidence: true
+  });
+  assert.ok(csv.indexOf('"Precision","Dating basis","Original dating","Review status","Sources"') !== -1);
+  assert.ok(csv.indexOf('"range","radiocarbon dating","ca. 20,000–19,000 cal BP (approximately 18,050–17,050 cal BCE)","reviewed"') !== -1);
+  assert.ok(csv.indexOf('"https://doi.org/10.1126/science.1218643"') !== -1);
+});
+
 test('required static site and Pages files exist and use relative assets', function () {
   const atlasAssets = ['atlas-data.js', 'insights.js', 'atlas.js', 'explorer-state.js', 'atlas-view.js'];
   ['index.html', 'styles.css', 'app.js', 'data.js', 'i18n.js', 'timeline.js'].concat(atlasAssets).concat(['.nojekyll',

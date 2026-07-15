@@ -74,15 +74,32 @@
   function buildCsv(tracks, options) {
     options = options || {};
     var headers = options.headers || ['Линия', 'Тип', 'Регион', 'Период', 'Начало', 'Конец', 'Примечание'];
+    var includeEvidence = Boolean(options.includeEvidence || headers.length > 7);
     var rows = [headers];
     tracks.forEach(function (track) {
       track.periods.forEach(function (period) {
-        rows.push([
+        var row = [
           track.name,
           options.typeNames && options.typeNames[track.type] || track.type,
           options.regionNames && options.regionNames[track.region] || track.region,
           period.name, period.start, period.end, period.note || ''
-        ]);
+        ];
+        if (includeEvidence) {
+          var dating = period.dating || {};
+          var sourceIds = period.sourceIds && period.sourceIds.length ? period.sourceIds : track.sources || [];
+          var sourceUrls = sourceIds.map(function (sourceId) {
+            var source = options.sources && options.sources[sourceId];
+            return source && source.url ? source.url : '';
+          }).filter(Boolean);
+          row.push(
+            options.precisionNames && options.precisionNames[dating.precision] || dating.precision || '',
+            options.basisNames && options.basisNames[dating.basis] || dating.basis || '',
+            dating.original || '',
+            options.reviewNames && options.reviewNames[track.reviewStatus] || track.reviewStatus || '',
+            sourceUrls.join(' | ')
+          );
+        }
+        rows.push(row);
       });
     });
     return rows.map(function (row) {

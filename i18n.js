@@ -44,7 +44,8 @@
       basisHistorical: 'историческая хронология', basisArchaeological: 'археологическая хронология', basisRadiocarbon: 'радиоуглеродная датировка', basisDendrochronology: 'дендрохронология', basisStratigraphy: 'стратиграфия', basisTraditional: 'традиция', basisUnknown: 'не указано',
       activeLines: '{count} линий активны в {year}', noContemporaries: 'В текущей выборке нет линий для этого года.',
       linkCopied: 'Ссылка скопирована', copyLinkPrompt: 'Скопируйте ссылку',
-      csvFilename: 'parallel-worlds-ru.csv', csvLine: 'Линия', csvType: 'Тип', csvRegion: 'Регион', csvPeriod: 'Период', csvStart: 'Начало', csvEnd: 'Конец', csvNote: 'Примечание'
+      csvFilename: 'parallel-worlds-ru.csv', csvLine: 'Линия', csvType: 'Тип', csvRegion: 'Регион', csvPeriod: 'Период', csvStart: 'Начало', csvEnd: 'Конец', csvNote: 'Примечание',
+      csvPrecision: 'Точность', csvDatingBasis: 'Основание датировки', csvOriginalDating: 'Исходная датировка', csvReviewStatus: 'Статус проверки', csvSources: 'Источники'
     },
     en: {
       siteName: 'Parallel Worlds',
@@ -84,7 +85,8 @@
       basisHistorical: 'historical chronology', basisArchaeological: 'archaeological chronology', basisRadiocarbon: 'radiocarbon dating', basisDendrochronology: 'dendrochronology', basisStratigraphy: 'stratigraphy', basisTraditional: 'tradition', basisUnknown: 'unspecified',
       activeLines: '{count} tracks active in {year}', noContemporaries: 'No tracks in the current selection cover this year.',
       linkCopied: 'Link copied', copyLinkPrompt: 'Copy this link',
-      csvFilename: 'parallel-worlds-en.csv', csvLine: 'Track', csvType: 'Type', csvRegion: 'Region', csvPeriod: 'Period', csvStart: 'Start', csvEnd: 'End', csvNote: 'Note'
+      csvFilename: 'parallel-worlds-en.csv', csvLine: 'Track', csvType: 'Type', csvRegion: 'Region', csvPeriod: 'Period', csvStart: 'Start', csvEnd: 'End', csvNote: 'Note',
+      csvPrecision: 'Precision', csvDatingBasis: 'Dating basis', csvOriginalDating: 'Original dating', csvReviewStatus: 'Review status', csvSources: 'Sources'
     },
     zh: {
       siteName: '平行世界',
@@ -124,7 +126,8 @@
       basisHistorical: '历史年表', basisArchaeological: '考古年表', basisRadiocarbon: '放射性碳测年', basisDendrochronology: '树轮年代学', basisStratigraphy: '地层学', basisTraditional: '传统', basisUnknown: '未注明',
       activeLines: '{year}共有{count}条历史线活跃', noContemporaries: '当前筛选中没有覆盖这一年份的历史线。',
       linkCopied: '链接已复制', copyLinkPrompt: '复制此链接',
-      csvFilename: 'parallel-worlds-zh.csv', csvLine: '历史线', csvType: '类型', csvRegion: '地区', csvPeriod: '时期', csvStart: '开始', csvEnd: '结束', csvNote: '说明'
+      csvFilename: 'parallel-worlds-zh.csv', csvLine: '历史线', csvType: '类型', csvRegion: '地区', csvPeriod: '时期', csvStart: '开始', csvEnd: '结束', csvNote: '说明',
+      csvPrecision: '年代精度', csvDatingBasis: '测年依据', csvOriginalDating: '来源原始年代', csvReviewStatus: '审核状态', csvSources: '来源链接'
     }
   };
 

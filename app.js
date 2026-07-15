@@ -479,9 +479,26 @@
 
   function downloadCsv() {
     var options = {
-      headers: [t('csvLine'), t('csvType'), t('csvRegion'), t('csvPeriod'), t('csvStart'), t('csvEnd'), t('csvNote')],
-      typeNames: { civilization: t('civilization'), tradition: t('tradition') },
-      regionNames: regionNames
+      headers: [t('csvLine'), t('csvType'), t('csvRegion'), t('csvPeriod'), t('csvStart'), t('csvEnd'), t('csvNote'),
+        t('csvPrecision'), t('csvDatingBasis'), t('csvOriginalDating'), t('csvReviewStatus'), t('csvSources')],
+      typeNames: {
+        civilization: typeLabel('civilization'), tradition: typeLabel('tradition'),
+        'archaeological-culture': typeLabel('archaeological-culture'), site: typeLabel('site'),
+        polity: typeLabel('polity'), 'regional-sequence': typeLabel('regional-sequence'), network: typeLabel('network')
+      },
+      regionNames: regionNames,
+      precisionNames: {
+        exact: precisionLabel('exact'), approximate: precisionLabel('approximate'), range: precisionLabel('range'),
+        traditional: precisionLabel('traditional'), disputed: precisionLabel('disputed')
+      },
+      basisNames: {
+        historical: basisLabel('historical'), 'archaeological-chronology': basisLabel('archaeological-chronology'),
+        radiocarbon: basisLabel('radiocarbon'), dendrochronology: basisLabel('dendrochronology'),
+        stratigraphy: basisLabel('stratigraphy'), traditional: basisLabel('traditional')
+      },
+      reviewNames: { reviewed: reviewLabel('reviewed'), provisional: reviewLabel('provisional'), legacy: reviewLabel('legacy') },
+      sources: rawData.sources,
+      includeEvidence: true
     };
     var blob = new Blob(['\ufeff' + timeline.buildCsv(filteredTracks(), options)], { type: 'text/csv;charset=utf-8' });
     var url = URL.createObjectURL(blob);
