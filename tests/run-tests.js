@@ -383,6 +383,13 @@ test('required static site and Pages files exist and use relative assets', funct
   assert.ok(html.indexOf('<option value="zh">中文</option>') !== -1);
   assert.strictEqual(html.indexOf('id="language-button"'), -1, 'binary language toggle should be removed');
   assert.ok(html.indexOf('data-i18n="heroTitleLead"') !== -1);
+  ['explorer', 'view-map-button', 'view-chronology-button', 'atlas-view', 'atlas-map', 'atlas-regions',
+    'atlas-panel', 'atlas-play-button', 'atlas-year-input', 'chronology-view'].forEach(function (id) {
+    assert.ok(html.indexOf('id="' + id + '"') !== -1, 'missing explorer element ' + id);
+  });
+  ['atlas-data.js', 'insights.js', 'atlas.js', 'explorer-state.js', 'atlas-view.js'].forEach(function (asset) {
+    assert.ok(html.indexOf('src="' + asset + '"') !== -1, 'missing atlas asset ' + asset);
+  });
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/deploy-pages.yml'), 'utf8');
   assert.ok(workflow.indexOf('i18n.js') !== -1, 'Pages artifact does not include i18n.js');
   const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');

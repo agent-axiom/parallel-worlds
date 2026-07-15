@@ -84,36 +84,78 @@
       </div>
     </section>
 
-    <section class="timeline-section" aria-labelledby="timeline-heading">
-      <div class="section-heading">
+    <section id="explorer" class="explorer" aria-labelledby="explorer-heading">
+      <div class="explorer-heading">
         <div>
-          <p class="kicker" data-i18n="timelineKicker">Слои времени</p>
-          <h2 id="timeline-heading" data-i18n="timelineHeading">Кто жил в одно время?</h2>
+          <p class="kicker" data-i18n="explorerKicker">Исследователь мира</p>
+          <h2 id="explorer-heading" data-i18n="explorerHeading">Мир в один момент</h2>
         </div>
-        <p><span class="legend-swatch civilization"></span> <span data-i18n="legendCivilizations">цивилизации</span> <span class="legend-swatch tradition"></span> <span data-i18n="legendTraditions">традиции</span></p>
+        <div class="view-switch" role="tablist" aria-label="Режим исследователя" data-i18n-aria="viewSwitchAria">
+          <button id="view-map-button" class="view-button active" type="button" role="tab" aria-selected="true" aria-controls="atlas-view" data-view="map" data-i18n="viewMap">Карта</button>
+          <button id="view-chronology-button" class="view-button" type="button" role="tab" aria-selected="false" aria-controls="chronology-view" data-view="chronology" data-i18n="viewChronology">Хронология</button>
+        </div>
       </div>
 
-      <div class="year-explorer">
-        <div class="year-readout">
-          <span data-i18n="selectedYear">Выбранный год</span>
-          <strong id="year-output">500 до н. э.</strong>
-        </div>
-        <label class="year-slider">
-          <span class="sr-only" data-i18n="selectYear">Выбрать год</span>
-          <input id="year-input" type="range" min="-3500" max="1600" step="1" value="-500">
-        </label>
-        <p id="contemporary-summary" data-i18n="yearHint">Перемещайте ползунок, чтобы увидеть современников.</p>
-      </div>
+      <div class="explorer-shell">
+        <section id="atlas-view" class="explorer-view atlas-view" role="tabpanel" aria-labelledby="view-map-button">
+          <div class="atlas-workspace">
+            <div id="atlas-map" class="atlas-map" aria-label="Карта активных исторических регионов" data-i18n-aria="atlasAria">
+              <div class="atlas-map-title">
+                <span data-i18n="atlasYearLabel">Мир в выбранном году</span>
+                <strong id="atlas-year-output">500 до н. э.</strong>
+                <small id="atlas-map-summary" data-i18n="atlasHint">Выберите светящуюся область, чтобы раскрыть её историю.</small>
+              </div>
+              <div id="atlas-world" class="atlas-world-layer"></div>
+              <div id="atlas-regions" class="atlas-regions"></div>
+              <div class="atlas-playback">
+                <button id="atlas-play-button" type="button" aria-pressed="false" data-i18n-aria="playTime"><span aria-hidden="true">▶</span><span data-i18n="playTime">Запустить время</span></button>
+                <label>
+                  <span class="sr-only" data-i18n="selectYear">Выбрать год</span>
+                  <input id="atlas-year-input" type="range" min="-3500" max="1600" step="1" value="-500">
+                </label>
+              </div>
+            </div>
+            <aside id="atlas-panel" class="atlas-panel" aria-live="polite">
+              <p class="atlas-panel-kicker" data-i18n="insightKicker">Одновременно</p>
+              <h3 data-i18n="statsFallbackTitle">Обзор мира</h3>
+              <p data-i18n="atlasPanelLoading">Исторический срез готовится…</p>
+              <div id="atlas-region-list"></div>
+            </aside>
+          </div>
+        </section>
 
-      <div class="timeline-frame">
-        <div class="timeline-scroll" tabindex="0" aria-label="Горизонтальная сравнительная шкала" data-i18n-aria="timelineAria">
-          <div id="timeline" class="timeline" role="list"></div>
-        </div>
-        <div id="empty-state" class="empty-state" hidden>
-          <strong data-i18n="emptyTitle">Ничего не найдено</strong>
-          <span data-i18n="emptyText">Измените запрос или сбросьте фильтры.</span>
-          <button id="reset-button" type="button" data-i18n="resetFilters">Сбросить фильтры</button>
-        </div>
+        <section id="chronology-view" class="explorer-view chronology-view" role="tabpanel" aria-labelledby="view-chronology-button" hidden>
+          <div class="section-heading chronology-heading">
+            <div>
+              <p class="kicker" data-i18n="timelineKicker">Слои времени</p>
+              <h2 id="timeline-heading" data-i18n="timelineHeading">Кто жил в одно время?</h2>
+            </div>
+            <p><span class="legend-swatch civilization"></span> <span data-i18n="legendCivilizations">цивилизации</span> <span class="legend-swatch tradition"></span> <span data-i18n="legendTraditions">традиции</span></p>
+          </div>
+
+          <div class="year-explorer">
+            <div class="year-readout">
+              <span data-i18n="selectedYear">Выбранный год</span>
+              <strong id="year-output">500 до н. э.</strong>
+            </div>
+            <label class="year-slider">
+              <span class="sr-only" data-i18n="selectYear">Выбрать год</span>
+              <input id="year-input" type="range" min="-3500" max="1600" step="1" value="-500">
+            </label>
+            <p id="contemporary-summary" data-i18n="yearHint">Перемещайте ползунок, чтобы увидеть современников.</p>
+          </div>
+
+          <div class="timeline-frame">
+            <div class="timeline-scroll" tabindex="0" aria-label="Горизонтальная сравнительная шкала" data-i18n-aria="timelineAria">
+              <div id="timeline" class="timeline" role="list"></div>
+            </div>
+            <div id="empty-state" class="empty-state" hidden>
+              <strong data-i18n="emptyTitle">Ничего не найдено</strong>
+              <span data-i18n="emptyText">Измените запрос или сбросьте фильтры.</span>
+              <button id="reset-button" type="button" data-i18n="resetFilters">Сбросить фильтры</button>
+            </div>
+          </div>
+        </section>
       </div>
     </section>
 
@@ -164,6 +206,11 @@
   <script src="data.js"></script>
   <script src="i18n.js"></script>
   <script src="timeline.js"></script>
+  <script src="atlas-data.js"></script>
+  <script src="insights.js"></script>
+  <script src="atlas.js"></script>
+  <script src="explorer-state.js"></script>
+  <script src="atlas-view.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
