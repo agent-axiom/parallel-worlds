@@ -1082,6 +1082,25 @@ test('CSV export includes confidence, model, calibration, alternatives, and disp
   assert.ok(csv.indexOf('"high","preferred","IntCal20","Short model: -11900–-11100","A narrower posterior interval is also published."') !== -1);
 });
 
+test('academic migration status and audit workflow are documented without overclaiming', function () {
+  const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
+  assert.ok(readme.indexOf('25 рецензированных / 37 унаследованных') !== -1);
+  assert.ok(readme.indexOf('node scripts/build-academic-audit.mjs') !== -1);
+  assert.ok(readme.indexOf('docs/academic-method.md') !== -1);
+  assert.ok(readme.indexOf('полностью академически проверены') === -1);
+
+  const methodPath = path.join(root, 'docs/academic-method.md');
+  assert.ok(fs.existsSync(methodPath), 'missing academic method document');
+  const method = fs.readFileSync(methodPath, 'utf8');
+  ['Tier A', 'Tier B', 'Tier C', 'confidence', 'alternatives', '37'].forEach(function (term) {
+    assert.ok(method.indexOf(term) !== -1, 'academic method omits ' + term);
+  });
+
+  const deploymentPath = path.join(root, 'DEPLOYMENT_TASK.md');
+  assert.ok(fs.existsSync(deploymentPath), 'missing deployment acceptance document');
+  assert.ok(fs.readFileSync(deploymentPath, 'utf8').indexOf('academic-audit.json') !== -1);
+});
+
 test('required static site and Pages files exist and use relative assets', function () {
   const evidenceAssets = ['chronology.js', 'academic-data.js', 'data-quality.js'];
   const auditAssets = ['academic-audit.js', 'academic-audit.json'];
