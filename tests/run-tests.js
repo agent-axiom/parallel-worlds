@@ -7,6 +7,8 @@ const root = path.resolve(__dirname, '..');
 const data = require(path.join(root, 'data.js'));
 const academicData = require(path.join(root, 'academic-data.js'));
 const quality = require(path.join(root, 'data-quality.js'));
+const journey = require(path.join(root, 'journey.js'));
+const journeysData = require(path.join(root, 'journeys-data.js'));
 const chronology = require(path.join(root, 'chronology.js'));
 const timeline = require(path.join(root, 'timeline.js'));
 const i18n = require(path.join(root, 'i18n.js'));
@@ -28,6 +30,63 @@ function test(name, fn) {
     throw error;
   }
 }
+
+test('directed journey resolves seven reviewed and exactly sourced stops', function () {
+  const result = journey.validateCollection(journeysData, data);
+  assert.deepStrictEqual(result.issues, []);
+  assert.deepStrictEqual(result.routes[0].stops.map(function (stop) { return stop.year; }),
+    [-18000, -9500, -7400, -7000, -3200, -3085, -3000]);
+  assert.ok(result.routes[0].stops.every(function (stop) {
+    return stop.records.every(function (record) { return record.track.reviewStatus === 'reviewed' && record.exactSourceIds.length > 0; });
+  }));
+});
+
+test('directed journey validation fails closed for legacy tracks and bad dates', function () {
+  const fixture = JSON.parse(JSON.stringify(journeysData));
+  fixture.routes[0].stops[0].focusTrackIds = ['indus'];
+  fixture.routes[0].stops[0].year = -17000;
+  const codes = journey.validateCollection(fixture, data).issues.map(function (item) { return item.code; });
+  assert.ok(codes.indexOf('legacy-journey-track') !== -1);
+  assert.ok(codes.indexOf('journey-year-mismatch') !== -1);
+});
+
+test('directed journey validation requires complete RU EN ZH editorial copy', function () {
+  const fixture = JSON.parse(JSON.stringify(journeysData));
+  fixture.routes[0].stops[2].copy.zh.body = '   ';
+  assert.ok(journey.validateCollection(fixture, data).issues.some(function (item) {
+    return item.code === 'missing-localization' && item.path === 'routes[0].stops[2].copy.zh.body';
+  }));
+});
+
+test('directed journey validation rejects equal non-finite event years', function () {
+  const fixture = JSON.parse(JSON.stringify(journeysData));
+  const fixtureData = JSON.parse(JSON.stringify(data));
+  fixture.routes[0].stops[0].year = Infinity;
+  fixtureData.tracks.filter(function (track) { return track.id === 'xianrendong'; })[0].events[0].year = Infinity;
+  const result = journey.validateCollection(fixture, fixtureData);
+  assert.deepStrictEqual(result.routes, []);
+  assert.ok(result.issues.some(function (item) { return item.code === 'journey-year-mismatch'; }));
+});
+
+test('directed journey validation rejects sparse stop focus and record lists', function () {
+  const sparseStops = JSON.parse(JSON.stringify(journeysData));
+  sparseStops.routes[0].stops = new Array(6);
+  const stopResult = journey.validateCollection(sparseStops, data);
+  assert.deepStrictEqual(stopResult.routes, []);
+  assert.ok(stopResult.issues.some(function (item) { return item.code === 'invalid-journey-id'; }));
+
+  const sparseFocus = JSON.parse(JSON.stringify(journeysData));
+  sparseFocus.routes[0].stops[0].focusTrackIds = new Array(1);
+  const focusResult = journey.validateCollection(sparseFocus, data);
+  assert.deepStrictEqual(focusResult.routes, []);
+  assert.ok(focusResult.issues.some(function (item) { return item.code === 'invalid-focus'; }));
+
+  const sparseRefs = JSON.parse(JSON.stringify(journeysData));
+  sparseRefs.routes[0].stops[0].recordRefs = new Array(1);
+  const refResult = journey.validateCollection(sparseRefs, data);
+  assert.deepStrictEqual(refResult.routes, []);
+  assert.ok(refResult.issues.some(function (item) { return item.code === 'invalid-record-ref'; }));
+});
 
 test('historical calendar skips year zero in both directions', function () {
   assert.strictEqual(chronology.isValidHistoricalYear(-1), true);
