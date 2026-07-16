@@ -157,6 +157,63 @@ test('academic schema validates confidence and alternative chronology models', f
   assert.ok(issueCodes(function (dating) { dating.precision = 'disputed'; dating.alternatives = []; delete dating.disputeNote; }).indexOf('missing-dispute-note') !== -1);
 });
 
+test('academic audit is deterministic and separates reviewed coverage from legacy warnings', function () {
+  const audit = require(path.join(root, 'academic-audit.js'));
+  const source = {
+    tier: 'A', kind: 'peer-reviewed-article', title: 'Fixture chronology', publisher: 'Journal of Tests',
+    year: 2025, url: 'https://doi.org/10.1000/audit-fixture', accessed: '2026-07-16'
+  };
+  const trackCopy = {
+    ru: { name: 'Запись', summary: 'Описание' }, en: { name: 'Record', summary: 'Description' }, zh: { name: '记录', summary: '说明' }
+  };
+  const periodCopy = {
+    ru: { name: 'Период', note: '' }, en: { name: 'Period', note: '' }, zh: { name: '时期', note: '' }
+  };
+  const eventCopy = {
+    ru: { title: 'Событие', note: '' }, en: { title: 'Event', note: '' }, zh: { title: '事件', note: '' }
+  };
+  const fixture = {
+    range: { start: -20000, end: 1600 },
+    sources: {
+      exact: source,
+      legacyHome: { title: 'Legacy homepage', url: 'https://example.org/' }
+    },
+    tracks: [{
+      id: 'reviewed', region: 'west-asia', type: 'site', reviewStatus: 'reviewed', copy: trackCopy,
+      periods: [{ id: 'reviewed-period', start: -1000, end: -900, dating: { precision: 'range', basis: 'historical' }, sourceIds: ['exact'], copy: periodCopy }],
+      events: [{ id: 'reviewed-event', year: -950, dating: { precision: 'approximate', basis: 'historical' }, sourceIds: ['exact'], copy: eventCopy }]
+    }, {
+      id: 'legacy', region: 'west-asia', type: 'civilization', reviewStatus: 'legacy', sources: ['legacyHome'],
+      periods: [{ start: -800, end: -700 }], events: [{ year: -750 }]
+    }]
+  };
+
+  const first = audit.buildAudit(fixture);
+  const second = audit.buildAudit(fixture);
+  assert.deepStrictEqual(first, second);
+  assert.strictEqual(first.generatedAt, undefined);
+  assert.deepStrictEqual(first.summary, {
+    tracks: 2, reviewedTracks: 1, legacyTracks: 1, blockingIssues: 0, warnings: 2
+  });
+  assert.deepStrictEqual(first.coverage, {
+    periods: { total: 2, sourced: 1, dated: 1 }, events: { total: 2, sourced: 1, dated: 1 }
+  });
+  assert.strictEqual(first.issues.filter(function (item) { return item.code === 'legacy-track'; }).length, 1);
+  assert.strictEqual(first.issues.filter(function (item) { return item.code === 'generic-source'; }).length, 1);
+});
+
+test('academic audit promotes invalid reviewed records to blocking errors', function () {
+  const audit = require(path.join(root, 'academic-audit.js'));
+  const report = audit.buildAudit({
+    range: { start: -20000, end: 1600 }, sources: {}, tracks: [{
+      id: 'broken-reviewed', region: 'west-asia', type: 'site', reviewStatus: 'reviewed',
+      copy: {}, periods: [], events: []
+    }]
+  });
+  assert.ok(report.summary.blockingIssues > 0);
+  assert.ok(report.issues.some(function (item) { return item.severity === 'error' && item.trackId === 'broken-reviewed'; }));
+});
+
 test('academic data shell and source URL validation are explicit', function () {
   assert.ok(Array.isArray(academicData.tracks));
   assert.ok(academicData.tracks.some(function (track) { return track.id === 'uruk'; }));
