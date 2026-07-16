@@ -307,6 +307,63 @@ test('priority corrected tracks pass full academic validation and inline localiz
   assert.strictEqual(chinese.tracks.find(function (track) { return track.id === 'korea'; }).periods.find(function (period) { return period.id === 'korea-three-kingdoms'; }).name, '朝鲜半岛三国：高句丽、百济、新罗');
 });
 
+function assertReviewedBatch(ids) {
+  ids.forEach(function (id) {
+    const track = data.tracks.find(function (item) { return item.id === id; });
+    assert.ok(track, 'missing reviewed track ' + id);
+    assert.strictEqual(track.reviewStatus, 'reviewed', id + ' remains legacy');
+    assert.notStrictEqual(track.type, 'civilization', id + ' uses the obsolete civilization type');
+    assert.strictEqual(track.periods.length, 4, id + ' must expose four explicit periods');
+    assert.strictEqual(track.events.length, 3, id + ' must expose three evidence-backed events');
+    assert.deepStrictEqual(quality.validateReviewedTrack(track, data.sources, data.range), [], id + ' validation failed');
+    ['ru', 'en', 'zh'].forEach(function (locale) {
+      assert.ok(track.copy[locale].name && track.copy[locale].summary, id + ' missing ' + locale + ' track copy');
+      track.periods.forEach(function (period) {
+        assert.ok(period.id && period.copy[locale].name, id + ' missing localized period');
+      });
+      track.events.forEach(function (event) {
+        assert.ok(event.id && event.copy[locale].title, id + ' missing localized event');
+      });
+    });
+    track.periods.concat(track.events).forEach(function (record) {
+      assert.ok(record.dating && record.dating.precision && record.dating.basis, id + ' missing dating evidence');
+      assert.ok(record.sourceIds && record.sourceIds.length, id + ' missing record sources');
+      record.sourceIds.forEach(function (sourceId) {
+        assert.ok(data.sources[sourceId], id + ' references unknown source ' + sourceId);
+        assert.strictEqual(quality.isGenericHomepage(data.sources[sourceId].url), false, id + ' depends on a generic homepage');
+      });
+    });
+  });
+}
+
+test('Egypt, Akkad, Babylonia, and Assyria use reviewed source-backed scopes', function () {
+  assertReviewedBatch(['egypt', 'akkadia', 'babylonia', 'assyria']);
+
+  const egypt = data.tracks.find(function (track) { return track.id === 'egypt'; });
+  assert.deepStrictEqual(egypt.periods.map(function (period) { return [period.id, period.start, period.end]; }), [
+    ['egypt-early-dynastic', -3111, -2649], ['egypt-old-kingdom', -2649, -2130],
+    ['egypt-middle-kingdom', -2030, -1650], ['egypt-new-kingdom', -1550, -1070]
+  ]);
+  assert.ok(egypt.periods.every(function (period) { return period.end <= -1070; }), 'Egypt must not merge the New Kingdom with later dynasties');
+
+  const akkad = data.tracks.find(function (track) { return track.id === 'akkadia'; });
+  assert.strictEqual(akkad.periods[0].start, -2340);
+  assert.strictEqual(akkad.periods[akkad.periods.length - 1].end, -2150);
+
+  const babylonia = data.tracks.find(function (track) { return track.id === 'babylonia'; });
+  assert.deepStrictEqual(babylonia.periods.map(function (period) { return period.id; }), [
+    'babylonia-old-babylonian', 'babylonia-kassite', 'babylonia-second-isin', 'babylonia-neo-babylonian'
+  ]);
+  assert.strictEqual(babylonia.periods[0].dating.model, 'Middle chronology');
+  assert.ok(babylonia.periods[0].dating.alternatives.some(function (alternative) { return alternative.id === 'low-middle'; }));
+
+  const assyria = data.tracks.find(function (track) { return track.id === 'assyria'; });
+  assert.deepStrictEqual(assyria.periods.map(function (period) { return [period.id, period.start, period.end]; }), [
+    ['assyria-old', -2000, -1600], ['assyria-middle', -1365, -1100],
+    ['assyria-neo-early', -883, -721], ['assyria-neo-late', -721, -609]
+  ]);
+});
+
 test('reviewed deep-time corpus is balanced across seven macroregions', function () {
   const required = [
     'xianrendong', 'jomon', 'liangzhu', 'natufian', 'gobekli-tepe', 'catalhoyuk',
@@ -906,11 +963,11 @@ test('CSV export accepts localized headers, types, regions, and historical copy'
   const babylonia = english.tracks.filter(function (track) { return track.id === 'babylonia'; });
   const csv = timeline.buildCsv(babylonia, {
     headers: ['Track', 'Type', 'Region', 'Period', 'Start', 'End', 'Note'],
-    typeNames: { civilization: 'civilization', tradition: 'tradition' },
+    typeNames: { polity: 'polity', tradition: 'tradition' },
     regionNames: { mesopotamia: 'Mesopotamia' }
   });
   assert.ok(csv.indexOf('"Track","Type","Region"') === 0);
-  assert.ok(csv.indexOf('"Babylonia","civilization","Mesopotamia","Old Babylonian period"') !== -1);
+  assert.ok(csv.indexOf('"Babylonian dynasties","polity","Mesopotamia","Old Babylonian period"') !== -1);
 });
 
 test('CSV export supports Chinese headers and values', function () {
@@ -918,11 +975,11 @@ test('CSV export supports Chinese headers and values', function () {
   const babylonia = chinese.tracks.filter(function (track) { return track.id === 'babylonia'; });
   const csv = timeline.buildCsv(babylonia, {
     headers: ['历史线', '类型', '地区', '时期', '开始', '结束', '说明'],
-    typeNames: { civilization: '文明', tradition: '传统' },
+    typeNames: { polity: '政体', tradition: '传统' },
     regionNames: { mesopotamia: '美索不达米亚' }
   });
   assert.ok(csv.indexOf('"历史线","类型","地区"') === 0);
-  assert.ok(csv.indexOf('"巴比伦尼亚","文明","美索不达米亚","古巴比伦时期"') !== -1);
+  assert.ok(csv.indexOf('"巴比伦诸王朝","政体","美索不达米亚","古巴比伦时期"') !== -1);
 });
 
 test('CSV export carries reviewed dating evidence and exact source links', function () {

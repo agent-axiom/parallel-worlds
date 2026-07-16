@@ -2,37 +2,37 @@
   "generatedFrom": "parallel-worlds-data-v1",
   "summary": {
     "tracks": 62,
-    "reviewedTracks": 16,
-    "legacyTracks": 46,
+    "reviewedTracks": 20,
+    "legacyTracks": 42,
     "blockingIssues": 0,
-    "warnings": 51
+    "warnings": 47
   },
   "coverage": {
     "periods": {
       "total": 217,
-      "sourced": 33,
-      "dated": 33
+      "sourced": 49,
+      "dated": 49
     },
     "events": {
       "total": 161,
-      "sourced": 23,
-      "dated": 23
+      "sourced": 35,
+      "dated": 35
     }
   },
   "tracks": [
     {
       "id": "akkadia",
-      "reviewStatus": "legacy",
-      "type": "civilization",
+      "reviewStatus": "reviewed",
+      "type": "polity",
       "periods": {
         "total": 4,
-        "sourced": 0,
-        "dated": 0
+        "sourced": 4,
+        "dated": 4
       },
       "events": {
         "total": 3,
-        "sourced": 0,
-        "dated": 0
+        "sourced": 3,
+        "dated": 3
       }
     },
     {
@@ -67,17 +67,17 @@
     },
     {
       "id": "assyria",
-      "reviewStatus": "legacy",
-      "type": "civilization",
+      "reviewStatus": "reviewed",
+      "type": "polity",
       "periods": {
         "total": 4,
-        "sourced": 0,
-        "dated": 0
+        "sourced": 4,
+        "dated": 4
       },
       "events": {
         "total": 3,
-        "sourced": 0,
-        "dated": 0
+        "sourced": 3,
+        "dated": 3
       }
     },
     {
@@ -97,17 +97,17 @@
     },
     {
       "id": "babylonia",
-      "reviewStatus": "legacy",
-      "type": "civilization",
+      "reviewStatus": "reviewed",
+      "type": "polity",
       "periods": {
         "total": 4,
-        "sourced": 0,
-        "dated": 0
+        "sourced": 4,
+        "dated": 4
       },
       "events": {
         "total": 3,
-        "sourced": 0,
-        "dated": 0
+        "sourced": 3,
+        "dated": 3
       }
     },
     {
@@ -232,17 +232,17 @@
     },
     {
       "id": "egypt",
-      "reviewStatus": "legacy",
-      "type": "civilization",
+      "reviewStatus": "reviewed",
+      "type": "polity",
       "periods": {
         "total": 4,
-        "sourced": 0,
-        "dated": 0
+        "sourced": 4,
+        "dated": 4
       },
       "events": {
         "total": 3,
-        "sourced": 0,
-        "dated": 0
+        "sourced": 3,
+        "dated": 3
       }
     },
     {
@@ -969,7 +969,6 @@
       "exact": false,
       "usedByReviewed": [],
       "usedByLegacy": [
-        "assyria",
         "israel_judah",
         "judaism",
         "manichaeism",
@@ -1041,15 +1040,12 @@
       "exact": false,
       "usedByReviewed": [],
       "usedByLegacy": [
-        "akkadia",
-        "babylonia",
         "buddhism",
         "byzantium",
         "central_asia",
         "christianity",
         "confucianism",
         "daoism",
-        "egypt",
         "egyptian_religion",
         "ethiopia",
         "greece",
@@ -1077,7 +1073,9 @@
       "title": "The Akkadian Period (ca. 2350–2150 B.C.)",
       "url": "https://www.metmuseum.org/essays/the-akkadian-period-ca-2350-2150-b-c",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "akkadia"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1085,7 +1083,9 @@
       "title": "Assyria, 1365–609 B.C.",
       "url": "https://www.metmuseum.org/essays/assyria-1365-609-b-c",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "assyria"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1093,7 +1093,9 @@
       "title": "Babylon",
       "url": "https://www.metmuseum.org/essays/babylon",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "babylonia"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1127,7 +1129,9 @@
       "title": "Egypt in the Middle Kingdom (ca. 2030–1650 B.C.)",
       "url": "https://www.metmuseum.org/essays/egypt-in-the-middle-kingdom-2030-1640-b-c",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "egypt"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1135,7 +1139,9 @@
       "title": "Egypt in the New Kingdom (ca. 1550–1070 B.C.)",
       "url": "https://www.metmuseum.org/essays/egypt-in-the-new-kingdom-ca-1550-1070-b-c",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "egypt"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1143,7 +1149,9 @@
       "title": "Egypt in the Old Kingdom (ca. 2649–2130 B.C.)",
       "url": "https://www.metmuseum.org/essays/egypt-in-the-old-kingdom-ca-2649-2150-b-c",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "egypt"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1209,7 +1217,9 @@
       "title": "The Middle Babylonian / Kassite Period (ca. 1595–1155 B.C.) in Mesopotamia",
       "url": "https://www.metmuseum.org/essays/the-middle-babylonian-kassite-period-ca-1595-1155-b-c-in-mesopotamia",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "babylonia"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1238,7 +1248,9 @@
       "title": "The Old Assyrian Period",
       "url": "https://www.metmuseum.org/essays/the-old-assyrian-period",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "assyria"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1246,7 +1258,9 @@
       "title": "The Isin-Larsa and Old Babylonian Periods (2004–1595 B.C.)",
       "url": "https://www.metmuseum.org/essays/the-isin-larsa-and-old-babylonian-periods-2004-1595-b-c",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "babylonia"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1358,7 +1372,9 @@
       "title": "Integrated Tree-Ring-Radiocarbon High-Resolution Timeframe to Resolve Earlier Second Millennium BCE Mesopotamian Chronology",
       "url": "https://doi.org/10.1371/journal.pone.0157144",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "babylonia"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1374,7 +1390,9 @@
       "title": "An absolute chronology for early Egypt using radiocarbon dating and Bayesian statistical modelling",
       "url": "https://doi.org/10.1098/rspa.2013.0395",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "egypt"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1382,7 +1400,9 @@
       "title": "Radiocarbon-Based Chronology for Dynastic Egypt",
       "url": "https://doi.org/10.1126/science.1189395",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "egypt"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1492,13 +1512,6 @@
     {
       "severity": "warning",
       "code": "legacy-track",
-      "path": "akkadia",
-      "message": "Legacy track has not yet received record-level academic review",
-      "trackId": "akkadia"
-    },
-    {
-      "severity": "warning",
-      "code": "legacy-track",
       "path": "andean_religion",
       "message": "Legacy track has not yet received record-level academic review",
       "trackId": "andean_religion"
@@ -1513,23 +1526,9 @@
     {
       "severity": "warning",
       "code": "legacy-track",
-      "path": "assyria",
-      "message": "Legacy track has not yet received record-level academic review",
-      "trackId": "assyria"
-    },
-    {
-      "severity": "warning",
-      "code": "legacy-track",
       "path": "aztec",
       "message": "Legacy track has not yet received record-level academic review",
       "trackId": "aztec"
-    },
-    {
-      "severity": "warning",
-      "code": "legacy-track",
-      "path": "babylonia",
-      "message": "Legacy track has not yet received record-level academic review",
-      "trackId": "babylonia"
     },
     {
       "severity": "warning",
@@ -1572,13 +1571,6 @@
       "path": "daoism",
       "message": "Legacy track has not yet received record-level academic review",
       "trackId": "daoism"
-    },
-    {
-      "severity": "warning",
-      "code": "legacy-track",
-      "path": "egypt",
-      "message": "Legacy track has not yet received record-level academic review",
-      "trackId": "egypt"
     },
     {
       "severity": "warning",

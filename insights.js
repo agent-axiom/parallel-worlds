@@ -37,7 +37,7 @@
       ['Шумерские города-государства и ранний Египет', 'Раннединастические города южной Месопотамии существовали в те же века, когда вдоль Нила укреплялось раннее государство.'],
       ['Sumerian city-states and early Egypt', 'Early Dynastic cities in southern Mesopotamia existed while an early state consolidated along the Nile.'],
       ['苏美尔城邦与早期埃及', '美索不达米亚南部的早王朝城市与尼罗河沿岸早期国家的巩固处于同一时代。'], ['met']),
-    insight('akkad-indus-networks', -2400, -2000, ['akkadia', 'indus'],
+    insight('akkad-indus-networks', -2340, -2150, ['akkadia', 'indus'],
       ['Аккад и города Инда', 'Территориальная держава Аккада существовала рядом по времени с развитой городской сетью Хараппской цивилизации.'],
       ['Akkad and the Indus cities', 'Akkad’s territorial state overlapped in time with the mature urban network of the Harappan civilization.'],
       ['阿卡德与印度河城市', '阿卡德的领土国家与成熟哈拉帕文明的城市网络在时间上彼此重叠。'], ['met']),

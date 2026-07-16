@@ -315,6 +315,106 @@
           eventCopy('Начало правления Ур-Намму', 'Формирование державы III династии Ура.', 'Ur-Nammu’s reign begins', 'Formation of the Ur III state.', '乌尔纳姆统治开始', '乌尔第三王朝国家形成。'))
       ], ['met-sumer-early-dynastic', 'met-sumer-ur-iii']),
 
+    egypt: patch('polity',
+      trackCopy(
+        'Династический Египет', 'Выборка основных централизованных эпох Египта. Разрывы между царствами показаны явно, а Новое царство не объединено с поздними династиями.',
+        'Dynastic Egypt', 'A selection of Egypt’s major centralized eras. Gaps between kingdoms are explicit, and the New Kingdom is not merged with the later dynasties.',
+        '埃及王朝时期', '选取埃及主要中央集权时期；各王国之间的间隔明确保留，新王国也不与后期王朝合并。'
+      ), [
+        period('egypt-early-dynastic', -3111, -2649, 'range', 'radiocarbon', 'Aha accession 3111–3045 BCE (68% HPD); sequence shown to ca. 2649 BCE', ['royal-society-early-egypt-2013', 'met-egypt-old-kingdom-2019'],
+          periodCopy('Раннединастическая последовательность', 'Начальная граница отражает байесовский интервал восшествия Аха, а не мгновенное объединение всей долины Нила.', 'Early Dynastic sequence', 'The opening boundary follows the Bayesian interval for Aha’s accession, not an instantaneous unification of the entire Nile Valley.', '早王朝序列', '起点依据阿哈即位的贝叶斯区间，并不表示整个尼罗河谷在某一刻瞬间统一。'),
+          { confidence: 'medium', model: 'Bayesian radiocarbon model' }),
+        period('egypt-old-kingdom', -2649, -2130, 'range', 'historical', 'ca. 2649–2130 BCE', ['met-egypt-old-kingdom-2019'],
+          periodCopy('Древнее царство', 'Музейная хронология включает III–VIII династии.', 'Old Kingdom', 'The cited museum chronology encompasses Dynasties 3–8.', '古王国', '所引博物馆年表涵盖第三至第八王朝。'),
+          { confidence: 'high' }),
+        period('egypt-middle-kingdom', -2030, -1650, 'range', 'historical', 'ca. 2030–1650 BCE', ['met-egypt-middle-kingdom-2019'],
+          periodCopy('Среднее царство', 'Централизованная эпоха после Первого переходного периода.', 'Middle Kingdom', 'A centralized era after the First Intermediate Period.', '中王国', '第一中间期之后的中央集权时代。'),
+          { confidence: 'high' }),
+        period('egypt-new-kingdom', -1550, -1070, 'range', 'historical', 'ca. 1550–1070 BCE; radiocarbon model places the start within 1570–1544 BCE', ['science-egypt-chronology-2010', 'met-egypt-new-kingdom-2000'],
+          periodCopy('Новое царство', 'Поздние династии после 1070 года до н. э. намеренно не включены в этот период.', 'New Kingdom', 'Later dynasties after 1070 BCE are deliberately not folded into this period.', '新王国', '公元前1070年以后的晚期王朝未被并入这一时期。'),
+          { confidence: 'high', model: 'Radiocarbon-constrained historical chronology' })
+      ], [
+        event('egypt-aha-accession', -3085, 'approximate', 'radiocarbon', 'median 3085 BCE; 3111–3045 BCE at 68% HPD', ['royal-society-early-egypt-2013'],
+          eventCopy('Модельная дата восшествия Аха', 'Байесовская оценка ранней династической последовательности, а не точный год «основания Египта».', 'Modelled accession of Aha', 'A Bayesian estimate for the early dynastic sequence, not an exact year when “Egypt was founded.”', '阿哈即位的模型年代', '这是早王朝序列的贝叶斯估计，并非“埃及建立”的精确年份。'),
+          { confidence: 'medium', model: 'Bayesian radiocarbon model' }),
+        event('egypt-giza-pyramids', -2551, 'approximate', 'historical', 'Khufu ca. 2551–2528 BCE', ['met-egypt-old-kingdom-2019'],
+          eventCopy('Пирамиды Гизы', 'Строительство Великой пирамиды относится к правлению Хуфу; маркер поставлен у начала его музейно датированного правления.', 'Pyramids of Giza', 'The Great Pyramid belongs to Khufu’s reign; the marker is placed at the opening of the cited museum reign range.', '吉萨金字塔', '大金字塔属于胡夫统治时期；标记置于所引博物馆在位年代的起点。'),
+          { confidence: 'medium' }),
+        event('egypt-new-kingdom-begins', -1550, 'approximate', 'radiocarbon', 'conventional ca. 1550 BCE; modelled start 1570–1544 BCE', ['science-egypt-chronology-2010', 'met-egypt-new-kingdom-2000'],
+          eventCopy('Начало Нового царства', 'Точка показывает принятую округлённую границу; радиоуглеродная модель даёт интервал.', 'New Kingdom begins', 'The marker uses the conventional rounded boundary; the radiocarbon model supplies an interval.', '新王国开始', '标记采用通常的约数边界；放射性碳模型给出的是区间。'),
+          { confidence: 'high', model: 'Radiocarbon-constrained historical chronology' })
+      ], ['royal-society-early-egypt-2013', 'science-egypt-chronology-2010', 'met-egypt-old-kingdom-2019', 'met-egypt-middle-kingdom-2019', 'met-egypt-new-kingdom-2000']),
+
+    akkadia: patch('polity',
+      trackCopy(
+        'Аккадская династия', 'Династическая последовательность Аккада примерно 2350–2150 годов до н. э.; более ранние и поздние аккадоязычные общества не выданы за одну непрерывную империю.',
+        'Akkadian dynasty', 'The Akkadian dynastic sequence of about 2350–2150 BCE; earlier and later Akkadian-speaking societies are not presented as one continuous empire.',
+        '阿卡德王朝', '约公元前2350至2150年的阿卡德王朝序列；更早和更晚的阿卡德语社会不被描述为一个连续帝国。'
+      ), [
+        period('akkadia-sargon', -2340, -2285, 'approximate', 'historical', 'Sargon ca. 2340–2285 BCE', ['met-akkadian-period-2004'],
+          periodCopy('Правление Саргона', 'Формирование территориальной державы с центром в Аккаде.', 'Reign of Sargon', 'Formation of a territorial state centered on Akkad.', '萨尔贡统治时期', '以阿卡德为中心的领土国家形成。'), { confidence: 'medium' }),
+        period('akkadia-rimush-manishtushu', -2285, -2260, 'approximate', 'historical', 'between Sargon ca. 2340–2285 and Naram-Sin ca. 2260–2223 BCE', ['met-akkadian-period-2004'],
+          periodCopy('Римуш и Маништушу', 'Промежуточные правления внутри аккадской династии.', 'Rimush and Manishtushu', 'Intermediate reigns within the Akkadian dynasty.', '里穆什与玛尼什图苏', '阿卡德王朝内部的中间统治阶段。'), { confidence: 'medium' }),
+        period('akkadia-naram-sin', -2260, -2223, 'approximate', 'historical', 'Naram-Sin ca. 2260–2223 BCE', ['met-akkadian-period-2004'],
+          periodCopy('Правление Нарам-Суэна', 'Эпоха крупнейшей территориальной экспансии династии.', 'Reign of Naram-Sin', 'The dynasty’s period of greatest territorial expansion.', '纳拉姆辛统治时期', '王朝领土扩张最盛的阶段。'), { confidence: 'medium' }),
+        period('akkadia-late-dynasty', -2223, -2150, 'approximate', 'historical', 'Shar-kali-sharri ca. 2223–2198 BCE; later rulers to ca. 2150 BCE', ['met-akkadian-period-2004'],
+          periodCopy('Поздняя аккадская династия', 'После Шаркалишарри власть сокращается; Дуду и Шу-туруль продолжают династическую линию.', 'Late Akkadian dynasty', 'Power contracts after Shar-kali-sharri; Dudu and Shu-Turul continue the dynastic line.', '阿卡德王朝晚期', '沙尔卡利沙里之后权力收缩；杜杜和舒图鲁尔延续王朝。'), { confidence: 'medium' })
+      ], [
+        event('akkadia-sargon-begins', -2340, 'approximate', 'historical', 'ca. 2340 BCE', ['met-akkadian-period-2004'],
+          eventCopy('Начало правления Саргона', 'Округлённая музейная датировка.', 'Sargon’s reign begins', 'A rounded museum chronology.', '萨尔贡开始统治', '采用博物馆年表的约数。'), { confidence: 'medium' }),
+        event('akkadia-naram-sin-begins', -2260, 'approximate', 'historical', 'ca. 2260 BCE', ['met-akkadian-period-2004'],
+          eventCopy('Начало правления Нарам-Суэна', '', 'Naram-Sin’s reign begins', '', '纳拉姆辛开始统治', ''), { confidence: 'medium' }),
+        event('akkadia-shar-kali-sharri-ends', -2198, 'approximate', 'historical', 'ca. 2198 BCE', ['met-akkadian-period-2004'],
+          eventCopy('Конец правления Шаркалишарри', 'После этого аккадская власть заметно сужается, хотя династия не исчезает мгновенно.', 'Shar-kali-sharri’s reign ends', 'Akkadian power contracts sharply afterward, although the dynasty does not vanish at once.', '沙尔卡利沙里统治结束', '此后阿卡德权力明显收缩，但王朝并非立即消失。'), { confidence: 'medium' })
+      ], ['met-akkadian-period-2004']),
+
+    babylonia: patch('polity',
+      trackCopy(
+        'Вавилонские династии', 'Несмежные, но источниково подтверждённые периоды вавилонской государственности; пробелы не маскируются единой полосой.',
+        'Babylonian dynasties', 'Non-contiguous but source-backed periods of Babylonian rule; gaps are not hidden inside one continuous bar.',
+        '巴比伦诸王朝', '以可靠来源展示不连续的巴比伦统治时期；时间间隔不再被一条连续色带掩盖。'
+      ), [
+        period('babylonia-old-babylonian', -1894, -1595, 'disputed', 'historical', 'Old Babylonian dynasty 1894–1595 BCE in the Middle chronology', ['plos-mesopotamian-chronology-2016', 'met-old-babylonian-2017'],
+          periodCopy('Старовавилонский период', 'Основная полоса следует средней хронологии; низко-средняя модель сдвигает границы на восемь лет позднее.', 'Old Babylonian period', 'The main bar follows the Middle chronology; the Low-Middle model shifts its boundaries eight years later.', '古巴比伦时期', '主时间带采用中年表；低中年表把边界整体后移八年。'),
+          { confidence: 'medium', model: 'Middle chronology', alternatives: [{ id: 'low-middle', start: -1886, end: -1587, label: 'Low-Middle chronology (8 years later)' }], disputeNote: 'Tree-ring and radiocarbon evidence is compatible with the Middle or Low-Middle models; the display uses the conventional Middle chronology.' }),
+        period('babylonia-kassite', -1595, -1155, 'range', 'historical', 'ca. 1595–1155 BCE', ['met-kassite-babylonia-2016'],
+          periodCopy('Касситская Вавилония', 'Средневавилонский период касситского правления.', 'Kassite Babylonia', 'The Middle Babylonian period under Kassite rule.', '加喜特巴比伦', '加喜特统治下的中古巴比伦时期。'), { confidence: 'high' }),
+        period('babylonia-second-isin', -1155, -1026, 'range', 'historical', 'Second Dynasty of Isin ca. 1155–1026 BCE', ['met-kassite-babylonia-2016'],
+          periodCopy('II династия Исина', 'Посткасситская династия; последующий длинный интервал до Нововавилонской державы показан как пробел.', 'Second Dynasty of Isin', 'A post-Kassite dynasty; the long interval before the Neo-Babylonian empire remains visible as a gap.', '伊辛第二王朝', '后加喜特王朝；至新巴比伦帝国之间的长时段保留为空档。'), { confidence: 'high' }),
+        period('babylonia-neo-babylonian', -625, -539, 'range', 'historical', 'Nabopolassar 625–605; Babylon conquered 539 BCE', ['met-babylon-2016'],
+          periodCopy('Нововавилонская держава', 'Династия Набопаласара и Навуходоносора II до завоевания Киром.', 'Neo-Babylonian empire', 'The dynasty of Nabopolassar and Nebuchadnezzar II until Cyrus’s conquest.', '新巴比伦帝国', '那波帕拉萨尔和尼布甲尼撒二世的王朝，终于居鲁士征服。'), { confidence: 'high' })
+      ], [
+        event('babylonia-hammurabi-begins', -1792, 'approximate', 'historical', '1792 BCE in the Middle chronology', ['met-old-babylonian-2017', 'plos-mesopotamian-chronology-2016'],
+          eventCopy('Начало правления Хаммурапи', 'Дата следует средней хронологии.', 'Hammurabi’s reign begins', 'The date follows the Middle chronology.', '汉谟拉比开始统治', '日期采用中年表。'), { confidence: 'medium', model: 'Middle chronology' }),
+        event('babylonia-first-dynasty-ends', -1595, 'approximate', 'historical', '1595 BCE in the Middle chronology', ['met-old-babylonian-2017', 'plos-mesopotamian-chronology-2016'],
+          eventCopy('Падение I Вавилонской династии', 'Разграбление Вавилона хеттами; абсолютная дата зависит от модели месопотамской хронологии.', 'First Dynasty of Babylon ends', 'The Hittite sack of Babylon; its absolute date depends on the Mesopotamian chronology model.', '巴比伦第一王朝结束', '赫梯人洗劫巴比伦；绝对年代取决于美索不达米亚年表模型。'), { confidence: 'medium', model: 'Middle chronology' }),
+        event('babylonia-cyrus-conquest', -539, 'exact', 'historical', '539 BCE', ['met-babylon-2016'],
+          eventCopy('Кир завоёвывает Вавилон', 'Конец Нововавилонской державы.', 'Cyrus conquers Babylon', 'The end of the Neo-Babylonian empire.', '居鲁士征服巴比伦', '新巴比伦帝国结束。'), { confidence: 'high' })
+      ], ['plos-mesopotamian-chronology-2016', 'met-old-babylonian-2017', 'met-kassite-babylonia-2016', 'met-babylon-2016']),
+
+    assyria: patch('polity',
+      trackCopy(
+        'Ассирийские государства', 'Старо-, средне- и новоассирийские политические фазы с явными пробелами; культурное наследие после 609 года до н. э. не выдано за продолжающуюся державу.',
+        'Assyrian states', 'Old, Middle, and Neo-Assyrian political phases with explicit gaps; cultural legacies after 609 BCE are not presented as a continuing state.',
+        '亚述诸国家阶段', '明确区分古亚述、中亚述和新亚述政治阶段及其间隔；公元前609年后的文化遗产不再被描述为延续中的国家。'
+      ), [
+        period('assyria-old', -2000, -1600, 'approximate', 'historical', 'ca. 2000–1600 BCE', ['met-old-assyrian-2017'],
+          periodCopy('Староассирийский период', 'Ашшур и документированные торговые сети, особенно в Анатолии.', 'Old Assyrian period', 'Ashur and its documented trading networks, especially in Anatolia.', '古亚述时期', '阿淑尔及其有文献记录的贸易网络，尤其是在安纳托利亚。'), { confidence: 'medium' }),
+        period('assyria-middle', -1365, -1100, 'approximate', 'historical', 'revival from Ashur-uballit I ca. 1365 BCE; contraction by the end of the second millennium', ['met-assyria-2004'],
+          periodCopy('Среднеассирийская держава', 'Возрождение при Ашшур-убаллите I и последующее сокращение территории к концу II тысячелетия.', 'Middle Assyrian state', 'Revival under Ashur-uballit I followed by territorial contraction toward the end of the second millennium.', '中亚述国家', '亚述乌巴利特一世时期复兴，至公元前二千纪末领土收缩。'), { confidence: 'medium' }),
+        period('assyria-neo-early', -883, -721, 'range', 'historical', 'Ashurnasirpal II 883–859 to the accession of Sargon II in 721 BCE', ['met-assyria-2004'],
+          periodCopy('Ранняя Новоассирийская империя', 'Экспансия от Ашшурнацирапала II до конца VIII века до н. э.', 'Early Neo-Assyrian empire', 'Expansion from Ashurnasirpal II to the late eighth century BCE.', '新亚述帝国早期', '从阿淑尔纳西尔帕二世至公元前八世纪末的扩张阶段。'), { confidence: 'high' }),
+        period('assyria-neo-late', -721, -609, 'range', 'historical', 'Sargon II 721–705; imperial collapse 612–609 BCE', ['met-assyria-2004'],
+          periodCopy('Поздняя Новоассирийская империя', 'Саргонидская эпоха и распад после падения Ниневии.', 'Late Neo-Assyrian empire', 'The Sargonid era and collapse after the fall of Nineveh.', '新亚述帝国晚期', '萨尔贡王朝时期及尼尼微陷落后的帝国崩溃。'), { confidence: 'high' })
+      ], [
+        event('assyria-trade-anatolia', -1900, 'approximate', 'historical', 'merchant archives mainly 20th–18th centuries BCE', ['met-old-assyrian-2017'],
+          eventCopy('Ассирийские торговые сети в Анатолии', 'Архивы купцов документируют обмен между Ашшуром и торговыми поселениями.', 'Assyrian trade networks in Anatolia', 'Merchant archives document exchange between Ashur and trading settlements.', '亚述在安纳托利亚的贸易网络', '商人档案记录了阿淑尔与贸易聚落之间的往来。'), { confidence: 'medium' }),
+        event('assyria-ashurnasirpal-begins', -883, 'exact', 'historical', '883 BCE', ['met-assyria-2004'],
+          eventCopy('Начало правления Ашшурнацирапала II', 'Важный рубеж новоассирийской экспансии.', 'Ashurnasirpal II’s reign begins', 'A major threshold in Neo-Assyrian expansion.', '阿淑尔纳西尔帕二世开始统治', '新亚述扩张的重要节点。'), { confidence: 'high' }),
+        event('assyria-nineveh-falls', -612, 'exact', 'historical', '612 BCE; remaining Assyrian resistance to 609 BCE', ['met-assyria-2004'],
+          eventCopy('Падение Ниневии', 'Столица разграблена в 612 году; остаточное сопротивление продолжается до 609 года до н. э.', 'Fall of Nineveh', 'The capital is sacked in 612; remaining Assyrian resistance continues to 609 BCE.', '尼尼微陷落', '首都于公元前612年被攻陷；残余抵抗持续到公元前609年。'), { confidence: 'high' })
+      ], ['met-old-assyrian-2017', 'met-assyria-2004']),
+
     china: patch('regional-sequence',
       trackCopy(
         'Исторические государства Китая', 'Последовательность и сосуществование династий и региональных государств на территории современного Китая.',
