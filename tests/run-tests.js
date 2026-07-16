@@ -374,6 +374,18 @@ test('filtering searches periods and respects region and type', function () {
   assert.ok(asiaTraditions.every(function (track) { return track.region === 'east-asia' && track.type === 'tradition'; }));
 });
 
+test('review-state filters distinguish reviewed and legacy tracks from academic type', function () {
+  const fixture = [{
+    id: 'reviewed-polity', reviewStatus: 'reviewed', type: 'polity', region: 'west-asia', name: 'Reviewed', summary: '', periods: [], events: []
+  }, {
+    id: 'legacy-polity', reviewStatus: 'legacy', type: 'polity', region: 'west-asia', name: 'Legacy', summary: '', periods: [], events: []
+  }, {
+    id: 'legacy-tradition', reviewStatus: 'legacy', type: 'tradition', region: 'west-asia', name: 'Tradition', summary: '', periods: [], events: []
+  }];
+  assert.deepStrictEqual(timeline.filterTracks(fixture, { query: '', region: 'all', type: 'reviewed' }).map(function (track) { return track.id; }), ['reviewed-polity']);
+  assert.deepStrictEqual(timeline.filterTracks(fixture, { query: '', region: 'all', type: 'legacy' }).map(function (track) { return track.id; }), ['legacy-polity', 'legacy-tradition']);
+});
+
 test('year projection and active-track lookup handle BCE and CE', function () {
   assert.strictEqual(timeline.yearToPercent(-3500, -3500, 1600), 0);
   assert.strictEqual(timeline.yearToPercent(1600, -3500, 1600), 100);
@@ -638,6 +650,16 @@ test('explorer state round-trips view, year, filters, and focused tracks', funct
   assert.strictEqual(params.get('focus'), 'china,byzantium');
   assert.strictEqual(params.get('year'), '1200');
   assert.strictEqual(params.get('panel'), 'east-asia');
+});
+
+test('explorer state round-trips the reviewed evidence filter', function () {
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: -20000, end: 1600, zoom: 100, lang: 'ru', scaleMode: 'overview'
+  };
+  const parsed = explorerState.parse(new URLSearchParams('type=reviewed'), defaults, data);
+  assert.strictEqual(parsed.type, 'reviewed');
+  assert.strictEqual(explorerState.serialize(parsed, defaults).get('type'), 'reviewed');
 });
 
 test('explorer state rejects invalid values and bounds shared focus', function () {
@@ -925,6 +947,10 @@ test('required static site and Pages files exist and use relative assets', funct
   assert.ok(html.indexOf('id="detail-dialog"') !== -1);
   assert.ok(html.indexOf('id="language-select"') !== -1);
   assert.ok(html.indexOf('<option value="zh">中文</option>') !== -1);
+  assert.ok(html.indexOf('<option value="reviewed" data-i18n="reviewedRecords">') !== -1);
+  ['ru', 'en', 'zh'].forEach(function (locale) {
+    assert.ok(i18n.text(locale, 'reviewedRecords'));
+  });
   assert.strictEqual(html.indexOf('id="language-button"'), -1, 'binary language toggle should be removed');
   assert.ok(html.indexOf('data-i18n="heroTitleLead"') !== -1);
   ['explorer', 'view-map-button', 'view-chronology-button', 'atlas-view', 'atlas-map', 'atlas-regions',

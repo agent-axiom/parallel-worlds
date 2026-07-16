@@ -58,7 +58,7 @@
     if ((data.regions || []).some(function (region) { return region.id === params.get('panel'); })) state.selectedRegion = params.get('panel');
     var type = params.get('type');
     if (type === 'civilization') state.type = 'society';
-    else if (['all', 'society', 'archaeological-culture', 'site', 'polity', 'regional-sequence', 'network', 'tradition', 'legacy'].indexOf(type) !== -1) state.type = type;
+    else if (['all', 'society', 'archaeological-culture', 'site', 'polity', 'regional-sequence', 'network', 'tradition', 'reviewed', 'legacy'].indexOf(type) !== -1) state.type = type;
 
     var start = numberParam(params, 'start');
     var end = numberParam(params, 'end');
