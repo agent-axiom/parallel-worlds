@@ -2,21 +2,21 @@
   "generatedFrom": "parallel-worlds-data-v1",
   "summary": {
     "tracks": 62,
-    "reviewedTracks": 20,
-    "legacyTracks": 42,
+    "reviewedTracks": 22,
+    "legacyTracks": 40,
     "blockingIssues": 0,
-    "warnings": 47
+    "warnings": 45
   },
   "coverage": {
     "periods": {
       "total": 217,
-      "sourced": 49,
-      "dated": 49
+      "sourced": 57,
+      "dated": 57
     },
     "events": {
       "total": 161,
-      "sourced": 35,
-      "dated": 35
+      "sourced": 41,
+      "dated": 41
     }
   },
   "tracks": [
@@ -352,17 +352,17 @@
     },
     {
       "id": "hittites",
-      "reviewStatus": "legacy",
-      "type": "civilization",
+      "reviewStatus": "reviewed",
+      "type": "regional-sequence",
       "periods": {
         "total": 4,
-        "sourced": 0,
-        "dated": 0
+        "sourced": 4,
+        "dated": 4
       },
       "events": {
         "total": 3,
-        "sourced": 0,
-        "dated": 0
+        "sourced": 3,
+        "dated": 3
       }
     },
     {
@@ -712,17 +712,17 @@
     },
     {
       "id": "persia",
-      "reviewStatus": "legacy",
-      "type": "civilization",
+      "reviewStatus": "reviewed",
+      "type": "polity",
       "periods": {
         "total": 4,
-        "sourced": 0,
-        "dated": 0
+        "sourced": 4,
+        "dated": 4
       },
       "events": {
         "total": 3,
-        "sourced": 0,
-        "dated": 0
+        "sourced": 3,
+        "dated": 3
       }
     },
     {
@@ -1008,11 +1008,23 @@
       "usedByLegacy": []
     },
     {
+      "id": "iranica-arsacid-dynasty-1986",
+      "title": "Arsacids ii. The Arsacid Dynasty",
+      "url": "https://www.iranicaonline.org/articles/arsacids-ii/",
+      "exact": true,
+      "usedByReviewed": [
+        "persia"
+      ],
+      "usedByLegacy": []
+    },
+    {
       "id": "iranica-chronology-2004",
       "title": "Chronology of Iranian History, Part 1",
       "url": "https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-1/",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "persia"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1020,7 +1032,9 @@
       "title": "Sasanian Dynasty",
       "url": "https://www.iranicaonline.org/articles/sasanian-dynasty/",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "persia"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1051,7 +1065,6 @@
         "greece",
         "greek_religion",
         "hinduism",
-        "hittites",
         "india",
         "indonesia",
         "indus",
@@ -1059,7 +1072,6 @@
         "jainism",
         "japan",
         "nubia",
-        "persia",
         "phoenicia",
         "roman_religion",
         "rome",
@@ -1199,7 +1211,9 @@
       "title": "The Hittites",
       "url": "https://www.metmuseum.org/essays/the-hittites",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "hittites"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1610,13 +1624,6 @@
     {
       "severity": "warning",
       "code": "legacy-track",
-      "path": "hittites",
-      "message": "Legacy track has not yet received record-level academic review",
-      "trackId": "hittites"
-    },
-    {
-      "severity": "warning",
-      "code": "legacy-track",
       "path": "inca",
       "message": "Legacy track has not yet received record-level academic review",
       "trackId": "inca"
@@ -1725,13 +1732,6 @@
       "path": "oceania",
       "message": "Legacy track has not yet received record-level academic review",
       "trackId": "oceania"
-    },
-    {
-      "severity": "warning",
-      "code": "legacy-track",
-      "path": "persia",
-      "message": "Legacy track has not yet received record-level academic review",
-      "trackId": "persia"
     },
     {
       "severity": "warning",

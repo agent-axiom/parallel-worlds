@@ -247,7 +247,7 @@ test('reviewed source registry covers every first-release region with exact reco
     'met-kassite-babylonia-2016', 'met-babylon-2016',
     'met-old-assyrian-2017', 'met-assyria-2004',
     'met-hittites-2002',
-    'iranica-chronology-2004', 'iranica-sasanian-dynasty-2005',
+    'iranica-chronology-2004', 'iranica-arsacid-dynasty-1986', 'iranica-sasanian-dynasty-2005',
     'met-greek-prehistoric-classical-2000', 'met-greek-archaic-2003',
     'met-greek-classical-2008', 'met-greek-hellenistic-2007', 'met-greek-athletics-2002',
     'met-roman-republic-2000', 'met-roman-empire-2000', 'met-roman-kings-1989',
@@ -362,6 +362,27 @@ test('Egypt, Akkad, Babylonia, and Assyria use reviewed source-backed scopes', f
     ['assyria-old', -2000, -1600], ['assyria-middle', -1365, -1100],
     ['assyria-neo-early', -883, -721], ['assyria-neo-late', -721, -609]
   ]);
+});
+
+test('Hittite and Persian tracks expose bounded polities and honest alternatives', function () {
+  assertReviewedBatch(['hittites', 'persia']);
+
+  const hittites = data.tracks.find(function (track) { return track.id === 'hittites'; });
+  assert.deepStrictEqual(hittites.periods.map(function (period) { return [period.id, period.start, period.end]; }), [
+    ['hittites-rise', -1750, -1650], ['hittites-old-kingdom', -1650, -1430],
+    ['hittites-empire', -1430, -1200], ['hittites-successors', -1200, -700]
+  ]);
+  assert.strictEqual(hittites.periods[0].dating.precision, 'approximate');
+  assert.strictEqual(hittites.periods[2].dating.precision, 'approximate');
+
+  const persia = data.tracks.find(function (track) { return track.id === 'persia'; });
+  assert.deepStrictEqual(persia.periods.map(function (period) { return [period.id, period.start, period.end]; }), [
+    ['persia-median', -708, -550], ['persia-achaemenid', -550, -330],
+    ['persia-arsacid', -247, 224], ['persia-sasanian', 224, 651]
+  ]);
+  assert.strictEqual(timeline.activeTracks([persia], -300).length, 0, 'Seleucid gap must remain explicit');
+  assert.ok(persia.periods[2].dating.alternatives.some(function (alternative) { return alternative.id === 'parthava-conquest'; }));
+  assert.ok(persia.periods[2].dating.disputeNote);
 });
 
 test('reviewed deep-time corpus is balanced across seven macroregions', function () {

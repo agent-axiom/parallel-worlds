@@ -189,6 +189,11 @@
       authors: ['Ehsan Yarshater'], publisher: 'Encyclopaedia Iranica', year: 2004,
       url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-1/', accessed: '2026-07-16'
     },
+    'iranica-arsacid-dynasty-1986': {
+      tier: 'A', kind: 'academic-encyclopedia-article', title: 'Arsacids ii. The Arsacid Dynasty',
+      authors: ['Klaus Schippmann'], publisher: 'Encyclopaedia Iranica', year: 1986,
+      url: 'https://www.iranicaonline.org/articles/arsacids-ii/', accessed: '2026-07-16'
+    },
     'iranica-sasanian-dynasty-2005': {
       tier: 'A', kind: 'academic-encyclopedia-article', title: 'Sasanian Dynasty',
       authors: ['Alireza Shapur Shahbazi'], publisher: 'Encyclopaedia Iranica', year: 2005,
@@ -414,6 +419,53 @@
         event('assyria-nineveh-falls', -612, 'exact', 'historical', '612 BCE; remaining Assyrian resistance to 609 BCE', ['met-assyria-2004'],
           eventCopy('Падение Ниневии', 'Столица разграблена в 612 году; остаточное сопротивление продолжается до 609 года до н. э.', 'Fall of Nineveh', 'The capital is sacked in 612; remaining Assyrian resistance continues to 609 BCE.', '尼尼微陷落', '首都于公元前612年被攻陷；残余抵抗持续到公元前609年。'), { confidence: 'high' })
       ], ['met-old-assyrian-2017', 'met-assyria-2004']),
+
+    hittites: patch('regional-sequence',
+      trackCopy(
+        'Хеттские и сиро-анатолийские политии', 'Хеттское государство и его региональные преемники показаны как разные фазы; ранние и поздние границы остаются приблизительными.',
+        'Hittite and Syro-Anatolian polities', 'The Hittite state and its regional successors are shown as distinct phases; early and late boundaries remain approximate.',
+        '赫梯与叙利亚—安纳托利亚政体', '赫梯国家及其区域继承政权被分为不同阶段；早期与晚期边界均为约数。'
+      ), [
+        period('hittites-rise', -1750, -1650, 'approximate', 'archaeological-chronology', 'Hittite-speaking polities rise ca. 1750 BCE; Hattusha becomes capital ca. 1650 BCE', ['met-hittites-2002'],
+          periodCopy('Хеттские политии до Хаттусы', 'Период подъёма Анитты и других центров до закрепления столицы в Хаттусе.', 'Hittite polities before Hattusha', 'The rise of Anitta and other centers before the capital was established at Hattusha.', '哈图沙之前的赫梯政体', '阿尼塔及其他中心兴起，直至首都确立于哈图沙。'), { confidence: 'medium' }),
+        period('hittites-old-kingdom', -1650, -1430, 'approximate', 'historical', 'conventional subdivision within ca. 1650–1200 BCE Hittite dominance', ['met-hittites-2002'],
+          periodCopy('Древнехеттское царство', 'Граница 1430 года до н. э. — удобная историографическая конвенция внутри более широкой последовательности.', 'Old Hittite Kingdom', 'The 1430 BCE boundary is a useful historiographic convention within a broader sequence.', '古赫梯王国', '公元前1430年的边界是较长历史序列中的史学惯例。'), { confidence: 'medium', model: 'Conventional historical periodization' }),
+        period('hittites-empire', -1430, -1200, 'approximate', 'historical', 'conventional imperial phase to the destruction of Hattusha ca. 1200 BCE', ['met-hittites-2002'],
+          periodCopy('Хеттская имперская фаза', 'Поздняя фаза державы до разрушения Хаттусы около 1200 года до н. э.', 'Hittite imperial phase', 'The later phase of the state until Hattusha’s destruction around 1200 BCE.', '赫梯帝国阶段', '赫梯国家的后期阶段，终于约公元前1200年哈图沙被毁。'), { confidence: 'medium', model: 'Conventional historical periodization' }),
+        period('hittites-successors', -1200, -700, 'approximate', 'archaeological-chronology', 'first-millennium BCE successor states after ca. 1200 BCE', ['met-hittites-2002'],
+          periodCopy('Сиро-анатолийские государства-преемники', 'Региональные царства продолжали отдельные хеттские традиции, но не были продолжением единой империи.', 'Syro-Anatolian successor states', 'Regional kingdoms retained selected Hittite traditions but did not continue a single empire.', '叙利亚—安纳托利亚继承国', '区域王国保留部分赫梯传统，但并非一个统一帝国的延续。'), { confidence: 'low' })
+      ], [
+        event('hittites-anitta', -1750, 'approximate', 'archaeological-chronology', 'around 1750 BCE', ['met-hittites-2002'],
+          eventCopy('Подъём Анитты', 'Ранний этап возвышения хеттских правителей в Центральной Анатолии.', 'Rise of Anitta', 'An early stage in the emergence of Hittite rulers in central Anatolia.', '阿尼塔兴起', '赫梯统治者在安纳托利亚中部崛起的早期阶段。'), { confidence: 'medium' }),
+        event('hittites-hattusha-capital', -1650, 'approximate', 'historical', 'around 1650 BCE', ['met-hittites-2002'],
+          eventCopy('Хаттуса становится столицей', 'Округлённая граница начала хеттской державы с центром в Хаттусе.', 'Hattusha becomes the capital', 'A rounded boundary for the Hittite state centered on Hattusha.', '哈图沙成为首都', '以哈图沙为中心的赫梯国家的约数起点。'), { confidence: 'medium' }),
+        event('hittites-hattusha-destroyed', -1200, 'approximate', 'archaeological-chronology', 'around 1200 BCE', ['met-hittites-2002'],
+          eventCopy('Разрушение Хаттусы', 'Имперская система распадается; региональные преемники продолжают некоторые традиции.', 'Hattusha is destroyed', 'The imperial system collapses; regional successors retain some traditions.', '哈图沙被毁', '帝国体系崩溃；区域继承者延续部分传统。'), { confidence: 'medium' })
+      ], ['met-hittites-2002']),
+
+    persia: patch('polity',
+      trackCopy(
+        'Иранские державы', 'Мидийская, Ахеменидская, Аршакидская и Сасанидская фазы показаны раздельно; селевкидский интервал сохранён как пробел.',
+        'Iranian empires', 'Median, Achaemenid, Arsacid, and Sasanian phases are shown separately; the Seleucid interval remains an explicit gap.',
+        '伊朗诸帝国', '米底、阿契美尼德、阿尔萨息和萨珊阶段分别展示；塞琉古统治时段保留为空档。'
+      ), [
+        period('persia-median', -708, -550, 'traditional', 'traditional', 'Deioces 708 BCE in the cited chronology; Cyrus unites Media and Persia in 550 BCE', ['iranica-chronology-2004'],
+          periodCopy('Мидийское царство', 'Начальная дата следует традиционной хронологии Диока и не означает археологически точный момент основания.', 'Median kingdom', 'The opening follows the traditional chronology of Deioces and is not an archaeologically exact founding moment.', '米底王国', '起点沿用迪奥塞斯的传统年表，并非考古学上精确的建国时刻。'), { confidence: 'low' }),
+        period('persia-achaemenid', -550, -330, 'range', 'historical', '550–330 BCE', ['iranica-chronology-2004'],
+          periodCopy('Ахеменидская держава', 'От объединения Мидии и Персии Киром до гибели Дария III и конца династии.', 'Achaemenid empire', 'From Cyrus’s unification of Media and Persia to the death of Darius III and the dynasty’s end.', '阿契美尼德帝国', '从居鲁士统一米底与波斯，至大流士三世死亡和王朝终结。'), { confidence: 'high' }),
+        period('persia-arsacid', -247, 224, 'disputed', 'historical', 'Arsacid era begins 247 BCE; conquest of Parthava ca. 238 BCE; dynasty ends 224 CE', ['iranica-chronology-2004', 'iranica-arsacid-dynasty-1986'],
+          periodCopy('Аршакидская (Парфянская) держава', 'Основная граница следует началу аршакидской эры; альтернативная полоса начинается с завоевания Парфии парнами.', 'Arsacid (Parthian) empire', 'The main boundary follows the Arsacid era; the alternative begins with the Parni conquest of Parthia.', '阿尔萨息（安息）帝国', '主边界采用阿尔萨息纪元；替代边界从帕尼人征服帕提亚开始。'),
+          { confidence: 'medium', model: 'Arsacid dynastic era', alternatives: [{ id: 'parthava-conquest', start: -238, end: 224, label: 'Territorial rule from the conquest of Parthava, ca. 238 BCE' }], disputeNote: 'The 247 BCE boundary marks Arsaces’ proclamation and the dynastic era; ca. 238 BCE marks the Parni conquest of Parthava. The difference reflects what event is chosen as the political beginning.' }),
+        period('persia-sasanian', 224, 651, 'range', 'historical', 'dynasty established 224 CE; Sasanian rule ends 650/651 CE', ['iranica-chronology-2004', 'iranica-sasanian-dynasty-2005'],
+          periodCopy('Сасанидская держава', 'Династия установлена в 224 году; финальная граница округляет завершение завоевания в 650–651 годах.', 'Sasanian empire', 'The dynasty was established in 224; the final boundary normalizes the end of conquest in 650–651.', '萨珊帝国', '王朝建立于224年；终点将650至651年的征服完成归一为651年。'), { confidence: 'high' })
+      ], [
+        event('persia-cyrus-unites', -550, 'exact', 'historical', '550 BCE', ['iranica-chronology-2004'],
+          eventCopy('Кир объединяет Мидию и Персию', 'Начало Ахеменидской державы на этой шкале.', 'Cyrus unites Media and Persia', 'The opening of the Achaemenid empire on this timeline.', '居鲁士统一米底与波斯', '本时间轴上阿契美尼德帝国的起点。'), { confidence: 'high' }),
+        event('persia-achaemenid-ends', -330, 'exact', 'historical', '330 BCE', ['iranica-chronology-2004'],
+          eventCopy('Конец Ахеменидской династии', 'Гибель Дария III и захват ключевых центров Александром.', 'Achaemenid dynasty ends', 'The death of Darius III and Alexander’s capture of the major centers.', '阿契美尼德王朝结束', '大流士三世死亡，亚历山大占领主要中心。'), { confidence: 'high' }),
+        event('persia-sasanian-established', 224, 'exact', 'historical', '224 CE', ['iranica-chronology-2004', 'iranica-sasanian-dynasty-2005'],
+          eventCopy('Установление Сасанидской династии', 'Ардашир I побеждает последнего Аршакида.', 'Sasanian dynasty is established', 'Ardashir I defeats the last Arsacid ruler.', '萨珊王朝建立', '阿尔达希尔一世击败最后一位阿尔萨息统治者。'), { confidence: 'high' })
+      ], ['iranica-chronology-2004', 'iranica-arsacid-dynasty-1986', 'iranica-sasanian-dynasty-2005']),
 
     china: patch('regional-sequence',
       trackCopy(
