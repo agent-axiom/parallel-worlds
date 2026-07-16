@@ -145,18 +145,18 @@
     };
   }
 
-  function period(id, start, end, precision, basis, original, sourceIds, copy) {
+  function period(id, start, end, precision, basis, original, sourceIds, copy, datingExtra) {
     return {
       id: id, name: copy.ru.name, note: copy.ru.note, start: start, end: end,
-      dating: { precision: precision, basis: basis, original: original || '' },
+      dating: Object.assign({ precision: precision, basis: basis, original: original || '' }, datingExtra || {}),
       sourceIds: sourceIds.slice(), copy: copy
     };
   }
 
-  function event(id, year, precision, basis, original, sourceIds, copy) {
+  function event(id, year, precision, basis, original, sourceIds, copy, datingExtra) {
     return {
       id: id, title: copy.ru.title, note: copy.ru.note, year: year,
-      dating: { precision: precision, basis: basis, original: original || '' },
+      dating: Object.assign({ precision: precision, basis: basis, original: original || '' }, datingExtra || {}),
       sourceIds: sourceIds.slice(), copy: copy
     };
   }
@@ -405,7 +405,8 @@
         '美洲晚更新世证据', '关于早期人类存在的考古与年代学证据；最早边界仍有学术争议。'
       ), [
         period('americas-early-presence', -20000, -10900, 'disputed', 'radiocarbon', 'probable presence around/before the Last Glacial Maximum; wider expansion ca. 14.7–12.9 ka before AD 2000', ['nature-americas-2020'],
-          periodCopy('Раннее присутствие и расселение', 'Начало намеренно показано как спорный интервал, а не точная дата «первого заселения».', 'Early presence and dispersal', 'The start is intentionally shown as a disputed interval, not an exact “first settlement” date.', '早期存在与扩散', '起点有意显示为争议区间，而非精确的“首次定居”日期。'))
+          periodCopy('Раннее присутствие и расселение', 'Начало намеренно показано как спорный интервал, а не точная дата «первого заселения».', 'Early presence and dispersal', 'The start is intentionally shown as a disputed interval, not an exact “first settlement” date.', '早期存在与扩散', '起点有意显示为争议区间，而非精确的“首次定居”日期。'),
+          { confidence: 'low', disputeNote: 'Claims before the wider ca. 14.7–12.9 ka dispersal remain debated and are not represented as a single first-arrival date.' })
       ], [
         event('americas-wider-expansion', -12000, 'approximate', 'radiocarbon', 'wider occupation during ca. 14.7–12.9 ka before AD 2000', ['nature-americas-2020'],
           eventCopy('Более широкое расселение становится заметным', 'Байесовская модель объединяет данные 42 памятников.', 'Wider occupation becomes visible', 'A Bayesian model combines evidence from 42 sites.', '更广泛的居住变得可见', '贝叶斯模型综合了42处遗址的数据。'))

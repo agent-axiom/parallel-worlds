@@ -108,6 +108,55 @@ test('academic schema accepts sourced reviewed records and rejects missing evide
   assert.ok(quality.validateReviewedTrack(yearZero, sources, { start: -20000, end: 1600 }).some(function (issue) { return issue.code === 'year-zero'; }));
 });
 
+test('academic schema validates confidence and alternative chronology models', function () {
+  const sources = {
+    exact: {
+      id: 'exact', tier: 'A', kind: 'peer-reviewed-article', title: 'Exact chronology',
+      publisher: 'Journal of Tests', year: 2025, url: 'https://doi.org/10.1000/example', accessed: '2026-07-16'
+    }
+  };
+  const track = {
+    id: 'dating-fixture', region: 'west-asia', type: 'site', reviewStatus: 'reviewed',
+    copy: {
+      ru: { name: 'Запись', summary: 'Описание' }, en: { name: 'Record', summary: 'Description' }, zh: { name: '记录', summary: '说明' }
+    },
+    periods: [{
+      id: 'dating-period', start: -12000, end: -11000, sourceIds: ['exact'],
+      dating: {
+        precision: 'range', basis: 'radiocarbon', original: '12,000–11,000 BCE', confidence: 'high',
+        calibrationCurve: 'IntCal20', model: 'preferred',
+        alternatives: [{ id: 'short-model', start: -11900, end: -11100, label: 'Short model' }],
+        disputeNote: 'The alternative uses a narrower posterior interval.'
+      },
+      copy: {
+        ru: { name: 'Период', note: 'Примечание' }, en: { name: 'Period', note: 'Note' }, zh: { name: '时期', note: '说明' }
+      }
+    }],
+    events: [{
+      id: 'dating-event', year: -11500, sourceIds: ['exact'],
+      dating: { precision: 'approximate', basis: 'radiocarbon', confidence: 'medium', calibrationCurve: 'IntCal20' },
+      copy: {
+        ru: { title: 'Событие', note: 'Примечание' }, en: { title: 'Event', note: 'Note' }, zh: { title: '事件', note: '说明' }
+      }
+    }]
+  };
+  const range = { start: -20000, end: 1600 };
+  assert.deepStrictEqual(quality.validateReviewedTrack(track, sources, range), []);
+
+  function issueCodes(mutator) {
+    const invalid = JSON.parse(JSON.stringify(track));
+    mutator(invalid.periods[0].dating);
+    return quality.validateReviewedTrack(invalid, sources, range).map(function (item) { return item.code; });
+  }
+
+  assert.ok(issueCodes(function (dating) { dating.confidence = 'certain'; }).indexOf('invalid-confidence') !== -1);
+  assert.ok(issueCodes(function (dating) { dating.alternatives.push(Object.assign({}, dating.alternatives[0])); }).indexOf('duplicate-alternative-id') !== -1);
+  assert.ok(issueCodes(function (dating) { dating.alternatives[0].start = 0; }).indexOf('year-zero') !== -1);
+  assert.ok(issueCodes(function (dating) { dating.alternatives[0].start = -11000; dating.alternatives[0].end = -11900; }).indexOf('invalid-alternative-range') !== -1);
+  assert.ok(issueCodes(function (dating) { delete dating.disputeNote; }).indexOf('missing-dispute-note') !== -1);
+  assert.ok(issueCodes(function (dating) { dating.precision = 'disputed'; dating.alternatives = []; delete dating.disputeNote; }).indexOf('missing-dispute-note') !== -1);
+});
+
 test('academic data shell and source URL validation are explicit', function () {
   assert.ok(Array.isArray(academicData.tracks));
   assert.ok(academicData.tracks.some(function (track) { return track.id === 'uruk'; }));

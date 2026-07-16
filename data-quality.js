@@ -9,6 +9,7 @@
   var TYPES = ['archaeological-culture', 'site', 'polity', 'regional-sequence', 'network', 'tradition'];
   var PRECISIONS = ['exact', 'approximate', 'range', 'traditional', 'disputed'];
   var BASES = ['historical', 'archaeological-chronology', 'radiocarbon', 'dendrochronology', 'stratigraphy', 'traditional'];
+  var CONFIDENCE = ['high', 'medium', 'low'];
   var LOCALES = ['ru', 'en', 'zh'];
 
   function issue(code, path, message) {
@@ -52,10 +53,45 @@
     return issues;
   }
 
-  function validateDating(dating, path) {
+  function validateDating(dating, path, range) {
     var issues = [];
     if (!dating || PRECISIONS.indexOf(dating.precision) === -1) issues.push(issue('invalid-precision', path + '.dating.precision', 'Missing or invalid dating precision'));
     if (!dating || BASES.indexOf(dating.basis) === -1) issues.push(issue('invalid-dating-basis', path + '.dating.basis', 'Missing or invalid dating basis'));
+    if (!dating) return issues;
+    if (dating.confidence !== undefined && CONFIDENCE.indexOf(dating.confidence) === -1) {
+      issues.push(issue('invalid-confidence', path + '.dating.confidence', 'Unknown dating confidence'));
+    }
+    if (dating.calibrationCurve !== undefined && (typeof dating.calibrationCurve !== 'string' || !dating.calibrationCurve.trim())) {
+      issues.push(issue('invalid-calibration-curve', path + '.dating.calibrationCurve', 'Calibration curve must be a non-empty string'));
+    }
+    if (dating.model !== undefined && (typeof dating.model !== 'string' || !dating.model.trim())) {
+      issues.push(issue('invalid-chronology-model', path + '.dating.model', 'Chronology model must be a non-empty string'));
+    }
+    if (dating.alternatives !== undefined && !Array.isArray(dating.alternatives)) {
+      issues.push(issue('invalid-alternatives', path + '.dating.alternatives', 'Chronology alternatives must be an array'));
+    }
+    var alternativeIds = {};
+    (Array.isArray(dating.alternatives) ? dating.alternatives : []).forEach(function (alternative, index) {
+      var alternativePath = path + '.dating.alternatives[' + index + ']';
+      if (!alternative || typeof alternative.id !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(alternative.id)) {
+        issues.push(issue('invalid-alternative-id', alternativePath + '.id', 'Alternative chronology needs a stable ID'));
+      } else if (alternativeIds[alternative.id]) {
+        issues.push(issue('duplicate-alternative-id', alternativePath + '.id', 'Alternative chronology IDs must be unique'));
+      } else {
+        alternativeIds[alternative.id] = true;
+      }
+      if (alternative) {
+        issues = issues.concat(validateYear(alternative.start, range, alternativePath + '.start'));
+        issues = issues.concat(validateYear(alternative.end, range, alternativePath + '.end'));
+        if (Number.isFinite(alternative.start) && Number.isFinite(alternative.end) && alternative.start >= alternative.end) {
+          issues.push(issue('invalid-alternative-range', alternativePath, 'Alternative chronology start must precede end'));
+        }
+      }
+    });
+    if ((dating.precision === 'disputed' || Array.isArray(dating.alternatives) && dating.alternatives.length) &&
+        (typeof dating.disputeNote !== 'string' || !dating.disputeNote.trim())) {
+      issues.push(issue('missing-dispute-note', path + '.dating.disputeNote', 'Disputed or alternative chronology needs an explanation'));
+    }
     return issues;
   }
 
@@ -92,7 +128,7 @@
       issues = issues.concat(validateYear(period.start, range, path + '.start'));
       issues = issues.concat(validateYear(period.end, range, path + '.end'));
       if (Number.isFinite(period.start) && Number.isFinite(period.end) && period.start >= period.end) issues.push(issue('invalid-range', path, 'Period start must precede end'));
-      issues = issues.concat(validateDating(period.dating, path));
+      issues = issues.concat(validateDating(period.dating, path, range));
       issues = issues.concat(validateSourceIds(period.sourceIds, sources, path));
       issues = issues.concat(validateCopy(period.copy, 'period', path));
     });
@@ -102,7 +138,7 @@
       if (!event.id || ids[event.id]) issues.push(issue(event.id ? 'duplicate-id' : 'missing-id', path + '.id', 'Event ID must be unique'));
       if (event.id) ids[event.id] = true;
       issues = issues.concat(validateYear(event.year, range, path + '.year'));
-      issues = issues.concat(validateDating(event.dating, path));
+      issues = issues.concat(validateDating(event.dating, path, range));
       issues = issues.concat(validateSourceIds(event.sourceIds, sources, path));
       issues = issues.concat(validateCopy(event.copy, 'event', path));
     });
@@ -122,6 +158,7 @@
 
   return {
     BASES: BASES,
+    CONFIDENCE: CONFIDENCE,
     PRECISIONS: PRECISIONS,
     TYPES: TYPES,
     isGenericHomepage: isGenericHomepage,
