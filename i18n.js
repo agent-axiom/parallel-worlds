@@ -475,6 +475,20 @@
     });
   }
 
+  function localizeDating(dating, locale) {
+    if (!dating) return dating;
+    var lang = normalizeLocale(locale);
+    var localized = dating.copy && (dating.copy[lang] || dating.copy.en) || {};
+    return Object.assign({}, dating, {
+      model: localized.model || dating.model,
+      disputeNote: localized.disputeNote || dating.disputeNote,
+      alternatives: (dating.alternatives || []).map(function (alternative) {
+        var alternativeCopy = alternative.copy && (alternative.copy[lang] || alternative.copy.en) || {};
+        return Object.assign({}, alternative, { label: alternativeCopy.label || alternative.label });
+      })
+    });
+  }
+
   function localizeTrack(track, locale) {
     var lang = normalizeLocale(locale);
     if (track.copy) {
@@ -484,15 +498,22 @@
         summary: inline.summary,
         periods: track.periods.map(function (period) {
           var localized = period.copy && (period.copy[lang] || period.copy.en);
-          return localized ? Object.assign({}, period, { name: localized.name, note: localized.note || '' }) : period;
+          return Object.assign({}, period, localized ? { name: localized.name, note: localized.note || '' } : {}, {
+            dating: localizeDating(period.dating, lang)
+          });
         }),
         events: track.events.map(function (event) {
           var localized = event.copy && (event.copy[lang] || event.copy.en);
-          return localized ? Object.assign({}, event, { title: localized.title, note: localized.note || '' }) : event;
+          return Object.assign({}, event, localized ? { title: localized.title, note: localized.note || '' } : {}, {
+            dating: localizeDating(event.dating, lang)
+          });
         })
       });
     }
-    if (lang === 'ru') return track;
+    if (lang === 'ru') return Object.assign({}, track, {
+      periods: track.periods.map(function (period) { return Object.assign({}, period, { dating: localizeDating(period.dating, lang) }); }),
+      events: track.events.map(function (event) { return Object.assign({}, event, { dating: localizeDating(event.dating, lang) }); })
+    });
     var translations = lang === 'zh' ? chineseTracks : englishTracks;
     var translated = translations[track.id];
     if (!translated) throw new Error('Missing ' + lang + ' translation for ' + track.id);
@@ -500,10 +521,10 @@
       name: translated.name,
       summary: translated.summary,
       periods: track.periods.map(function (period, index) {
-        return Object.assign({}, period, { name: translated.periods[index], note: period.note ? translated.notes[index] : '' });
+        return Object.assign({}, period, { name: translated.periods[index], note: period.note ? translated.notes[index] : '', dating: localizeDating(period.dating, lang) });
       }),
       events: track.events.map(function (event, index) {
-        return Object.assign({}, event, { title: translated.events[index] });
+        return Object.assign({}, event, { title: translated.events[index], dating: localizeDating(event.dating, lang) });
       })
     });
   }
@@ -523,6 +544,7 @@
   return {
     locales: locales,
     localizeData: localizeData,
+    localizeDating: localizeDating,
     localizeTrack: localizeTrack,
     normalizeLocale: normalizeLocale,
     text: text

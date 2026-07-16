@@ -11,9 +11,20 @@
   var BASES = ['historical', 'archaeological-chronology', 'radiocarbon', 'dendrochronology', 'stratigraphy', 'traditional'];
   var CONFIDENCE = ['high', 'medium', 'low'];
   var LOCALES = ['ru', 'en', 'zh'];
+  var SOURCE_TIERS = ['A', 'B', 'C'];
+  var SOURCE_KINDS = [
+    'academic-encyclopedia-article', 'academic-encyclopedia-chronology', 'academic-synthesis',
+    'heritage-dossier', 'museum-collection-record', 'peer-reviewed-article',
+    'peer-reviewed-museum-journal', 'scholarly-museum-chronology', 'scholarly-museum-essay',
+    'scholarly-museum-publication'
+  ];
 
   function issue(code, path, message) {
     return { code: code, path: path, message: message };
+  }
+
+  function isNonEmptyString(value) {
+    return typeof value === 'string' && Boolean(value.trim());
   }
 
   function isGenericHomepage(value) {
@@ -26,12 +37,20 @@
     }
   }
 
+  function isExactSource(source) {
+    if (!source || SOURCE_TIERS.indexOf(source.tier) === -1 || SOURCE_KINDS.indexOf(source.kind) === -1) return false;
+    if (!['title', 'publisher', 'url', 'accessed'].every(function (field) { return isNonEmptyString(source[field]); })) return false;
+    if (source.year === undefined || source.year === '') return false;
+    return /^https:\/\//.test(source.url) && !isGenericHomepage(source.url);
+  }
+
   function validateSource(source, path) {
     var issues = [];
     ['tier', 'kind', 'title', 'publisher', 'year', 'url', 'accessed'].forEach(function (field) {
       if (!source || source[field] === undefined || source[field] === '') issues.push(issue('missing-source-field', path + '.' + field, 'Missing source field ' + field));
     });
-    if (source && ['A', 'B', 'C'].indexOf(source.tier) === -1) issues.push(issue('invalid-source-tier', path + '.tier', 'Unknown evidence tier'));
+    if (source && SOURCE_TIERS.indexOf(source.tier) === -1) issues.push(issue('invalid-source-tier', path + '.tier', 'Unknown evidence tier'));
+    if (source && SOURCE_KINDS.indexOf(source.kind) === -1) issues.push(issue('invalid-source-kind', path + '.kind', 'Unknown or non-academic source kind'));
     if (source && (!/^https:\/\//.test(source.url || '') || isGenericHomepage(source.url))) issues.push(issue('generic-source-url', path + '.url', 'Reviewed sources must use an exact HTTPS page or DOI'));
     return issues;
   }
@@ -67,6 +86,13 @@
     if (dating.model !== undefined && (typeof dating.model !== 'string' || !dating.model.trim())) {
       issues.push(issue('invalid-chronology-model', path + '.dating.model', 'Chronology model must be a non-empty string'));
     }
+    if (dating.model !== undefined) {
+      LOCALES.forEach(function (locale) {
+        if (!dating.copy || !dating.copy[locale] || !isNonEmptyString(dating.copy[locale].model)) {
+          issues.push(issue('missing-localization', path + '.dating.copy.' + locale + '.model', 'Missing ' + locale + ' chronology model'));
+        }
+      });
+    }
     if (dating.alternatives !== undefined && !Array.isArray(dating.alternatives)) {
       issues.push(issue('invalid-alternatives', path + '.dating.alternatives', 'Chronology alternatives must be an array'));
     }
@@ -86,11 +112,23 @@
         if (Number.isFinite(alternative.start) && Number.isFinite(alternative.end) && alternative.start >= alternative.end) {
           issues.push(issue('invalid-alternative-range', alternativePath, 'Alternative chronology start must precede end'));
         }
+        LOCALES.forEach(function (locale) {
+          if (!alternative.copy || !alternative.copy[locale] || !isNonEmptyString(alternative.copy[locale].label)) {
+            issues.push(issue('missing-localization', alternativePath + '.copy.' + locale + '.label', 'Missing ' + locale + ' alternative label'));
+          }
+        });
       }
     });
     if ((dating.precision === 'disputed' || Array.isArray(dating.alternatives) && dating.alternatives.length) &&
         (typeof dating.disputeNote !== 'string' || !dating.disputeNote.trim())) {
       issues.push(issue('missing-dispute-note', path + '.dating.disputeNote', 'Disputed or alternative chronology needs an explanation'));
+    }
+    if (dating.disputeNote !== undefined) {
+      LOCALES.forEach(function (locale) {
+        if (!dating.copy || !dating.copy[locale] || !isNonEmptyString(dating.copy[locale].disputeNote)) {
+          issues.push(issue('missing-localization', path + '.dating.copy.' + locale + '.disputeNote', 'Missing ' + locale + ' chronology dispute note'));
+        }
+      });
     }
     return issues;
   }
@@ -161,6 +199,7 @@
     CONFIDENCE: CONFIDENCE,
     PRECISIONS: PRECISIONS,
     TYPES: TYPES,
+    isExactSource: isExactSource,
     isGenericHomepage: isGenericHomepage,
     validateDataset: validateDataset,
     validateReviewedTrack: validateReviewedTrack,

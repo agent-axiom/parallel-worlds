@@ -126,8 +126,16 @@ test('academic schema validates confidence and alternative chronology models', f
       dating: {
         precision: 'range', basis: 'radiocarbon', original: '12,000–11,000 BCE', confidence: 'high',
         calibrationCurve: 'IntCal20', model: 'preferred',
-        alternatives: [{ id: 'short-model', start: -11900, end: -11100, label: 'Short model' }],
-        disputeNote: 'The alternative uses a narrower posterior interval.'
+        alternatives: [{
+          id: 'short-model', start: -11900, end: -11100, label: 'Short model',
+          copy: { ru: { label: 'Короткая модель' }, en: { label: 'Short model' }, zh: { label: '短模型' } }
+        }],
+        disputeNote: 'The alternative uses a narrower posterior interval.',
+        copy: {
+          ru: { model: 'предпочтительная', disputeNote: 'Альтернатива использует более узкий апостериорный интервал.' },
+          en: { model: 'preferred', disputeNote: 'The alternative uses a narrower posterior interval.' },
+          zh: { model: '首选模型', disputeNote: '备选方案使用更窄的后验区间。' }
+        }
       },
       copy: {
         ru: { name: 'Период', note: 'Примечание' }, en: { name: 'Period', note: 'Note' }, zh: { name: '时期', note: '说明' }
@@ -156,6 +164,12 @@ test('academic schema validates confidence and alternative chronology models', f
   assert.ok(issueCodes(function (dating) { dating.alternatives[0].start = -11000; dating.alternatives[0].end = -11900; }).indexOf('invalid-alternative-range') !== -1);
   assert.ok(issueCodes(function (dating) { delete dating.disputeNote; }).indexOf('missing-dispute-note') !== -1);
   assert.ok(issueCodes(function (dating) { dating.precision = 'disputed'; dating.alternatives = []; delete dating.disputeNote; }).indexOf('missing-dispute-note') !== -1);
+  assert.ok(issueCodes(function (dating) { delete dating.copy.ru.model; }).indexOf('missing-localization') !== -1);
+  assert.ok(issueCodes(function (dating) { delete dating.copy.zh.disputeNote; }).indexOf('missing-localization') !== -1);
+  assert.ok(issueCodes(function (dating) { delete dating.alternatives[0].copy.ru.label; }).indexOf('missing-localization') !== -1);
+  assert.ok(issueCodes(function (dating) { dating.copy.ru.model = '   '; }).indexOf('missing-localization') !== -1);
+  assert.ok(issueCodes(function (dating) { dating.copy.zh.disputeNote = '   '; }).indexOf('missing-localization') !== -1);
+  assert.ok(issueCodes(function (dating) { dating.alternatives[0].copy.en.label = '   '; }).indexOf('missing-localization') !== -1);
 });
 
 test('academic audit is deterministic and separates reviewed coverage from legacy warnings', function () {
@@ -177,7 +191,11 @@ test('academic audit is deterministic and separates reviewed coverage from legac
     range: { start: -20000, end: 1600 },
     sources: {
       exact: source,
-      legacyHome: { title: 'Legacy homepage', url: 'https://example.org/' }
+      legacyHome: { title: 'Legacy homepage', url: 'https://example.org/' },
+      malformed: {
+        tier: 'Z', kind: 'personal-blog', title: 'Plausible-looking non-academic source', publisher: 'Example',
+        year: 2025, url: 'https://example.org/chronology/article', accessed: '2026-07-16'
+      }
     },
     tracks: [{
       id: 'reviewed', region: 'west-asia', type: 'site', reviewStatus: 'reviewed', copy: trackCopy,
@@ -185,7 +203,8 @@ test('academic audit is deterministic and separates reviewed coverage from legac
       events: [{ id: 'reviewed-event', year: -950, dating: { precision: 'approximate', basis: 'historical' }, sourceIds: ['exact'], copy: eventCopy }]
     }, {
       id: 'legacy', region: 'west-asia', type: 'civilization', reviewStatus: 'legacy', sources: ['legacyHome'],
-      periods: [{ start: -800, end: -700 }], events: [{ year: -750 }]
+      periods: [{ start: -800, end: -700, sourceIds: ['legacyHome', 'malformed'] }],
+      events: [{ year: -750, sourceIds: ['missing'] }]
     }]
   };
 
@@ -194,13 +213,13 @@ test('academic audit is deterministic and separates reviewed coverage from legac
   assert.deepStrictEqual(first, second);
   assert.strictEqual(first.generatedAt, undefined);
   assert.deepStrictEqual(first.summary, {
-    tracks: 2, reviewedTracks: 1, legacyTracks: 1, blockingIssues: 0, warnings: 2
+    tracks: 2, reviewedTracks: 1, legacyTracks: 1, blockingIssues: 0, warnings: 3
   });
   assert.deepStrictEqual(first.coverage, {
     periods: { total: 2, sourced: 1, dated: 1 }, events: { total: 2, sourced: 1, dated: 1 }
   });
   assert.strictEqual(first.issues.filter(function (item) { return item.code === 'legacy-track'; }).length, 1);
-  assert.strictEqual(first.issues.filter(function (item) { return item.code === 'generic-source'; }).length, 1);
+  assert.strictEqual(first.issues.filter(function (item) { return item.code === 'generic-source'; }).length, 2);
 });
 
 test('academic audit promotes invalid reviewed records to blocking errors', function () {
@@ -356,6 +375,15 @@ test('Egypt, Akkad, Babylonia, and Assyria use reviewed source-backed scopes', f
   ]);
   assert.strictEqual(babylonia.periods[0].dating.model, 'Middle chronology');
   assert.ok(babylonia.periods[0].dating.alternatives.some(function (alternative) { return alternative.id === 'low-middle'; }));
+
+  const russianBabylonia = i18n.localizeData(data, 'ru').tracks.find(function (track) { return track.id === 'babylonia'; });
+  const chineseBabylonia = i18n.localizeData(data, 'zh').tracks.find(function (track) { return track.id === 'babylonia'; });
+  assert.strictEqual(russianBabylonia.periods[0].dating.model, 'Средняя хронология');
+  assert.strictEqual(russianBabylonia.periods[0].dating.alternatives[0].label, 'Низко-средняя хронология (на 8 лет позднее)');
+  assert.match(russianBabylonia.periods[0].dating.disputeNote, /Дендрохронологические/);
+  assert.strictEqual(chineseBabylonia.periods[0].dating.model, '中年表');
+  assert.strictEqual(chineseBabylonia.periods[0].dating.alternatives[0].label, '低中年表（晚8年）');
+  assert.match(chineseBabylonia.periods[0].dating.disputeNote, /树轮/);
 
   const assyria = data.tracks.find(function (track) { return track.id === 'assyria'; });
   assert.deepStrictEqual(assyria.periods.map(function (period) { return [period.id, period.start, period.end]; }), [
@@ -1090,6 +1118,28 @@ test('CSV export includes confidence, model, calibration, alternatives, and disp
   });
   assert.ok(csv.indexOf('"Confidence","Model","Calibration curve","Alternatives","Dispute note"') !== -1);
   assert.ok(csv.indexOf('"high","preferred","IntCal20","Short model: -11900–-11100","A narrower posterior interval is also published."') !== -1);
+});
+
+test('localized chronology evidence flows into Russian and Chinese CSV exports', function () {
+  function exportBabylonia(locale) {
+    const localized = i18n.localizeData(data, locale);
+    const babylonia = localized.tracks.filter(function (track) { return track.id === 'babylonia'; });
+    return timeline.buildCsv(babylonia, {
+      headers: ['Track', 'Type', 'Region', 'Period', 'Start', 'End', 'Note', 'Precision', 'Dating basis', 'Original dating', 'Review status', 'Sources', 'Confidence', 'Model', 'Calibration curve', 'Alternatives', 'Dispute note'],
+      sources: data.sources,
+      includeEvidence: true
+    });
+  }
+
+  const russian = exportBabylonia('ru');
+  assert.ok(russian.indexOf('Средняя хронология') !== -1);
+  assert.ok(russian.indexOf('Низко-средняя хронология (на 8 лет позднее)') !== -1);
+  assert.ok(russian.indexOf('Дендрохронологические') !== -1);
+
+  const chinese = exportBabylonia('zh');
+  assert.ok(chinese.indexOf('中年表') !== -1);
+  assert.ok(chinese.indexOf('低中年表（晚8年）') !== -1);
+  assert.ok(chinese.indexOf('树轮与放射性碳证据') !== -1);
 });
 
 test('academic migration status and audit workflow are documented without overclaiming', function () {

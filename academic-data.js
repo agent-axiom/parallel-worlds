@@ -270,6 +270,28 @@
     };
   }
 
+  function datingCopy(ruModel, enModel, zhModel, ruDisputeNote, enDisputeNote, zhDisputeNote) {
+    function localized(model, disputeNote) {
+      var result = {};
+      if (model) result.model = model;
+      if (disputeNote) result.disputeNote = disputeNote;
+      return result;
+    }
+    return {
+      ru: localized(ruModel, ruDisputeNote),
+      en: localized(enModel, enDisputeNote),
+      zh: localized(zhModel, zhDisputeNote)
+    };
+  }
+
+  function alternativeCopy(ruLabel, enLabel, zhLabel) {
+    return {
+      ru: { label: ruLabel },
+      en: { label: enLabel },
+      zh: { label: zhLabel }
+    };
+  }
+
   function period(id, start, end, precision, basis, original, sourceIds, copy, datingExtra) {
     return {
       id: id, name: copy.ru.name, note: copy.ru.note, start: start, end: end,
@@ -328,7 +350,7 @@
       ), [
         period('egypt-early-dynastic', -3111, -2649, 'range', 'radiocarbon', 'Aha accession 3111–3045 BCE (68% HPD); sequence shown to ca. 2649 BCE', ['royal-society-early-egypt-2013', 'met-egypt-old-kingdom-2019'],
           periodCopy('Раннединастическая последовательность', 'Начальная граница отражает байесовский интервал восшествия Аха, а не мгновенное объединение всей долины Нила.', 'Early Dynastic sequence', 'The opening boundary follows the Bayesian interval for Aha’s accession, not an instantaneous unification of the entire Nile Valley.', '早王朝序列', '起点依据阿哈即位的贝叶斯区间，并不表示整个尼罗河谷在某一刻瞬间统一。'),
-          { confidence: 'medium', model: 'Bayesian radiocarbon model' }),
+          { confidence: 'medium', model: 'Bayesian radiocarbon model', copy: datingCopy('Байесовская радиоуглеродная модель', 'Bayesian radiocarbon model', '贝叶斯放射性碳模型') }),
         period('egypt-old-kingdom', -2649, -2130, 'range', 'historical', 'ca. 2649–2130 BCE', ['met-egypt-old-kingdom-2019'],
           periodCopy('Древнее царство', 'Музейная хронология включает III–VIII династии.', 'Old Kingdom', 'The cited museum chronology encompasses Dynasties 3–8.', '古王国', '所引博物馆年表涵盖第三至第八王朝。'),
           { confidence: 'high' }),
@@ -337,17 +359,17 @@
           { confidence: 'high' }),
         period('egypt-new-kingdom', -1550, -1070, 'range', 'historical', 'ca. 1550–1070 BCE; radiocarbon model places the start within 1570–1544 BCE', ['science-egypt-chronology-2010', 'met-egypt-new-kingdom-2000'],
           periodCopy('Новое царство', 'Поздние династии после 1070 года до н. э. намеренно не включены в этот период.', 'New Kingdom', 'Later dynasties after 1070 BCE are deliberately not folded into this period.', '新王国', '公元前1070年以后的晚期王朝未被并入这一时期。'),
-          { confidence: 'high', model: 'Radiocarbon-constrained historical chronology' })
+          { confidence: 'high', model: 'Radiocarbon-constrained historical chronology', copy: datingCopy('Историческая хронология с радиоуглеродными ограничениями', 'Radiocarbon-constrained historical chronology', '放射性碳约束的历史年表') })
       ], [
         event('egypt-aha-accession', -3085, 'approximate', 'radiocarbon', 'median 3085 BCE; 3111–3045 BCE at 68% HPD', ['royal-society-early-egypt-2013'],
           eventCopy('Модельная дата восшествия Аха', 'Байесовская оценка ранней династической последовательности, а не точный год «основания Египта».', 'Modelled accession of Aha', 'A Bayesian estimate for the early dynastic sequence, not an exact year when “Egypt was founded.”', '阿哈即位的模型年代', '这是早王朝序列的贝叶斯估计，并非“埃及建立”的精确年份。'),
-          { confidence: 'medium', model: 'Bayesian radiocarbon model' }),
+          { confidence: 'medium', model: 'Bayesian radiocarbon model', copy: datingCopy('Байесовская радиоуглеродная модель', 'Bayesian radiocarbon model', '贝叶斯放射性碳模型') }),
         event('egypt-giza-pyramids', -2551, 'approximate', 'historical', 'Khufu ca. 2551–2528 BCE', ['met-egypt-old-kingdom-2019'],
           eventCopy('Пирамиды Гизы', 'Строительство Великой пирамиды относится к правлению Хуфу; маркер поставлен у начала его музейно датированного правления.', 'Pyramids of Giza', 'The Great Pyramid belongs to Khufu’s reign; the marker is placed at the opening of the cited museum reign range.', '吉萨金字塔', '大金字塔属于胡夫统治时期；标记置于所引博物馆在位年代的起点。'),
           { confidence: 'medium' }),
         event('egypt-new-kingdom-begins', -1550, 'approximate', 'radiocarbon', 'conventional ca. 1550 BCE; modelled start 1570–1544 BCE', ['science-egypt-chronology-2010', 'met-egypt-new-kingdom-2000'],
           eventCopy('Начало Нового царства', 'Точка показывает принятую округлённую границу; радиоуглеродная модель даёт интервал.', 'New Kingdom begins', 'The marker uses the conventional rounded boundary; the radiocarbon model supplies an interval.', '新王国开始', '标记采用通常的约数边界；放射性碳模型给出的是区间。'),
-          { confidence: 'high', model: 'Radiocarbon-constrained historical chronology' })
+          { confidence: 'high', model: 'Radiocarbon-constrained historical chronology', copy: datingCopy('Историческая хронология с радиоуглеродными ограничениями', 'Radiocarbon-constrained historical chronology', '放射性碳约束的历史年表') })
       ], ['royal-society-early-egypt-2013', 'science-egypt-chronology-2010', 'met-egypt-old-kingdom-2019', 'met-egypt-middle-kingdom-2019', 'met-egypt-new-kingdom-2000']),
 
     akkadia: patch('polity',
@@ -381,7 +403,20 @@
       ), [
         period('babylonia-old-babylonian', -1894, -1595, 'disputed', 'historical', 'Old Babylonian dynasty 1894–1595 BCE in the Middle chronology', ['plos-mesopotamian-chronology-2016', 'met-old-babylonian-2017'],
           periodCopy('Старовавилонский период', 'Основная полоса следует средней хронологии; низко-средняя модель сдвигает границы на восемь лет позднее.', 'Old Babylonian period', 'The main bar follows the Middle chronology; the Low-Middle model shifts its boundaries eight years later.', '古巴比伦时期', '主时间带采用中年表；低中年表把边界整体后移八年。'),
-          { confidence: 'medium', model: 'Middle chronology', alternatives: [{ id: 'low-middle', start: -1886, end: -1587, label: 'Low-Middle chronology (8 years later)' }], disputeNote: 'Tree-ring and radiocarbon evidence is compatible with the Middle or Low-Middle models; the display uses the conventional Middle chronology.' }),
+          {
+            confidence: 'medium', model: 'Middle chronology',
+            alternatives: [{
+              id: 'low-middle', start: -1886, end: -1587, label: 'Low-Middle chronology (8 years later)',
+              copy: alternativeCopy('Низко-средняя хронология (на 8 лет позднее)', 'Low-Middle chronology (8 years later)', '低中年表（晚8年）')
+            }],
+            disputeNote: 'Tree-ring and radiocarbon evidence is compatible with the Middle or Low-Middle models; the display uses the conventional Middle chronology.',
+            copy: datingCopy(
+              'Средняя хронология', 'Middle chronology', '中年表',
+              'Дендрохронологические и радиоуглеродные данные совместимы со средней или низко-средней моделями; на шкале используется традиционная средняя хронология.',
+              'Tree-ring and radiocarbon evidence is compatible with the Middle or Low-Middle models; the display uses the conventional Middle chronology.',
+              '树轮与放射性碳证据同时符合中年表和低中年表；主时间轴采用传统的中年表。'
+            )
+          }),
         period('babylonia-kassite', -1595, -1155, 'range', 'historical', 'ca. 1595–1155 BCE', ['met-kassite-babylonia-2016'],
           periodCopy('Касситская Вавилония', 'Средневавилонский период касситского правления.', 'Kassite Babylonia', 'The Middle Babylonian period under Kassite rule.', '加喜特巴比伦', '加喜特统治下的中古巴比伦时期。'), { confidence: 'high' }),
         period('babylonia-second-isin', -1155, -1026, 'range', 'historical', 'Second Dynasty of Isin ca. 1155–1026 BCE', ['met-kassite-babylonia-2016'],
@@ -390,9 +425,9 @@
           periodCopy('Нововавилонская держава', 'Династия Набопаласара и Навуходоносора II до завоевания Киром.', 'Neo-Babylonian empire', 'The dynasty of Nabopolassar and Nebuchadnezzar II until Cyrus’s conquest.', '新巴比伦帝国', '那波帕拉萨尔和尼布甲尼撒二世的王朝，终于居鲁士征服。'), { confidence: 'high' })
       ], [
         event('babylonia-hammurabi-begins', -1792, 'approximate', 'historical', '1792 BCE in the Middle chronology', ['met-old-babylonian-2017', 'plos-mesopotamian-chronology-2016'],
-          eventCopy('Начало правления Хаммурапи', 'Дата следует средней хронологии.', 'Hammurabi’s reign begins', 'The date follows the Middle chronology.', '汉谟拉比开始统治', '日期采用中年表。'), { confidence: 'medium', model: 'Middle chronology' }),
+          eventCopy('Начало правления Хаммурапи', 'Дата следует средней хронологии.', 'Hammurabi’s reign begins', 'The date follows the Middle chronology.', '汉谟拉比开始统治', '日期采用中年表。'), { confidence: 'medium', model: 'Middle chronology', copy: datingCopy('Средняя хронология', 'Middle chronology', '中年表') }),
         event('babylonia-first-dynasty-ends', -1595, 'approximate', 'historical', '1595 BCE in the Middle chronology', ['met-old-babylonian-2017', 'plos-mesopotamian-chronology-2016'],
-          eventCopy('Падение I Вавилонской династии', 'Разграбление Вавилона хеттами; абсолютная дата зависит от модели месопотамской хронологии.', 'First Dynasty of Babylon ends', 'The Hittite sack of Babylon; its absolute date depends on the Mesopotamian chronology model.', '巴比伦第一王朝结束', '赫梯人洗劫巴比伦；绝对年代取决于美索不达米亚年表模型。'), { confidence: 'medium', model: 'Middle chronology' }),
+          eventCopy('Падение I Вавилонской династии', 'Разграбление Вавилона хеттами; абсолютная дата зависит от модели месопотамской хронологии.', 'First Dynasty of Babylon ends', 'The Hittite sack of Babylon; its absolute date depends on the Mesopotamian chronology model.', '巴比伦第一王朝结束', '赫梯人洗劫巴比伦；绝对年代取决于美索不达米亚年表模型。'), { confidence: 'medium', model: 'Middle chronology', copy: datingCopy('Средняя хронология', 'Middle chronology', '中年表') }),
         event('babylonia-cyrus-conquest', -539, 'exact', 'historical', '539 BCE', ['met-babylon-2016'],
           eventCopy('Кир завоёвывает Вавилон', 'Конец Нововавилонской державы.', 'Cyrus conquers Babylon', 'The end of the Neo-Babylonian empire.', '居鲁士征服巴比伦', '新巴比伦帝国结束。'), { confidence: 'high' })
       ], ['plos-mesopotamian-chronology-2016', 'met-old-babylonian-2017', 'met-kassite-babylonia-2016', 'met-babylon-2016']),
@@ -429,9 +464,9 @@
         period('hittites-rise', -1750, -1650, 'approximate', 'archaeological-chronology', 'Hittite-speaking polities rise ca. 1750 BCE; Hattusha becomes capital ca. 1650 BCE', ['met-hittites-2002'],
           periodCopy('Хеттские политии до Хаттусы', 'Период подъёма Анитты и других центров до закрепления столицы в Хаттусе.', 'Hittite polities before Hattusha', 'The rise of Anitta and other centers before the capital was established at Hattusha.', '哈图沙之前的赫梯政体', '阿尼塔及其他中心兴起，直至首都确立于哈图沙。'), { confidence: 'medium' }),
         period('hittites-old-kingdom', -1650, -1430, 'approximate', 'historical', 'conventional subdivision within ca. 1650–1200 BCE Hittite dominance', ['met-hittites-2002'],
-          periodCopy('Древнехеттское царство', 'Граница 1430 года до н. э. — удобная историографическая конвенция внутри более широкой последовательности.', 'Old Hittite Kingdom', 'The 1430 BCE boundary is a useful historiographic convention within a broader sequence.', '古赫梯王国', '公元前1430年的边界是较长历史序列中的史学惯例。'), { confidence: 'medium', model: 'Conventional historical periodization' }),
+          periodCopy('Древнехеттское царство', 'Граница 1430 года до н. э. — удобная историографическая конвенция внутри более широкой последовательности.', 'Old Hittite Kingdom', 'The 1430 BCE boundary is a useful historiographic convention within a broader sequence.', '古赫梯王国', '公元前1430年的边界是较长历史序列中的史学惯例。'), { confidence: 'medium', model: 'Conventional historical periodization', copy: datingCopy('Условная историческая периодизация', 'Conventional historical periodization', '通行历史分期') }),
         period('hittites-empire', -1430, -1200, 'approximate', 'historical', 'conventional imperial phase to the destruction of Hattusha ca. 1200 BCE', ['met-hittites-2002'],
-          periodCopy('Хеттская имперская фаза', 'Поздняя фаза державы до разрушения Хаттусы около 1200 года до н. э.', 'Hittite imperial phase', 'The later phase of the state until Hattusha’s destruction around 1200 BCE.', '赫梯帝国阶段', '赫梯国家的后期阶段，终于约公元前1200年哈图沙被毁。'), { confidence: 'medium', model: 'Conventional historical periodization' }),
+          periodCopy('Хеттская имперская фаза', 'Поздняя фаза державы до разрушения Хаттусы около 1200 года до н. э.', 'Hittite imperial phase', 'The later phase of the state until Hattusha’s destruction around 1200 BCE.', '赫梯帝国阶段', '赫梯国家的后期阶段，终于约公元前1200年哈图沙被毁。'), { confidence: 'medium', model: 'Conventional historical periodization', copy: datingCopy('Условная историческая периодизация', 'Conventional historical periodization', '通行历史分期') }),
         period('hittites-successors', -1200, -700, 'approximate', 'archaeological-chronology', 'first-millennium BCE successor states after ca. 1200 BCE', ['met-hittites-2002'],
           periodCopy('Сиро-анатолийские государства-преемники', 'Региональные царства продолжали отдельные хеттские традиции, но не были продолжением единой империи.', 'Syro-Anatolian successor states', 'Regional kingdoms retained selected Hittite traditions but did not continue a single empire.', '叙利亚—安纳托利亚继承国', '区域王国保留部分赫梯传统，但并非一个统一帝国的延续。'), { confidence: 'low' })
       ], [
@@ -455,7 +490,20 @@
           periodCopy('Ахеменидская держава', 'От объединения Мидии и Персии Киром до гибели Дария III и конца династии.', 'Achaemenid empire', 'From Cyrus’s unification of Media and Persia to the death of Darius III and the dynasty’s end.', '阿契美尼德帝国', '从居鲁士统一米底与波斯，至大流士三世死亡和王朝终结。'), { confidence: 'high' }),
         period('persia-arsacid', -247, 224, 'disputed', 'historical', 'Arsacid era begins 247 BCE; conquest of Parthava ca. 238 BCE; dynasty ends 224 CE', ['iranica-chronology-2004', 'iranica-arsacid-dynasty-1986'],
           periodCopy('Аршакидская (Парфянская) держава', 'Основная граница следует началу аршакидской эры; альтернативная полоса начинается с завоевания Парфии парнами.', 'Arsacid (Parthian) empire', 'The main boundary follows the Arsacid era; the alternative begins with the Parni conquest of Parthia.', '阿尔萨息（安息）帝国', '主边界采用阿尔萨息纪元；替代边界从帕尼人征服帕提亚开始。'),
-          { confidence: 'medium', model: 'Arsacid dynastic era', alternatives: [{ id: 'parthava-conquest', start: -238, end: 224, label: 'Territorial rule from the conquest of Parthava, ca. 238 BCE' }], disputeNote: 'The 247 BCE boundary marks Arsaces’ proclamation and the dynastic era; ca. 238 BCE marks the Parni conquest of Parthava. The difference reflects what event is chosen as the political beginning.' }),
+          {
+            confidence: 'medium', model: 'Arsacid dynastic era',
+            alternatives: [{
+              id: 'parthava-conquest', start: -238, end: 224, label: 'Territorial rule from the conquest of Parthava, ca. 238 BCE',
+              copy: alternativeCopy('Территориальное правление от завоевания Парфии, ок. 238 года до н. э.', 'Territorial rule from the conquest of Parthava, ca. 238 BCE', '自约公元前238年征服帕提亚起的领土统治')
+            }],
+            disputeNote: 'The 247 BCE boundary marks Arsaces’ proclamation and the dynastic era; ca. 238 BCE marks the Parni conquest of Parthava. The difference reflects what event is chosen as the political beginning.',
+            copy: datingCopy(
+              'Аршакидская династическая эра', 'Arsacid dynastic era', '阿尔萨息王朝纪元',
+              'Граница 247 года до н. э. отмечает провозглашение Аршака и начало династической эры; около 238 года до н. э. парны завоевали Парфию. Разница зависит от выбора события, считающегося политическим началом.',
+              'The 247 BCE boundary marks Arsaces’ proclamation and the dynastic era; ca. 238 BCE marks the Parni conquest of Parthava. The difference reflects what event is chosen as the political beginning.',
+              '公元前247年标志阿尔萨息称王和王朝纪元开始；约公元前238年帕尼人征服帕提亚。差异来自对政治起点事件的不同选择。'
+            )
+          }),
         period('persia-sasanian', 224, 651, 'range', 'historical', 'dynasty established 224 CE; Sasanian rule ends 650/651 CE', ['iranica-chronology-2004', 'iranica-sasanian-dynasty-2005'],
           periodCopy('Сасанидская держава', 'Династия установлена в 224 году; финальная граница округляет завершение завоевания в 650–651 годах.', 'Sasanian empire', 'The dynasty was established in 224; the final boundary normalizes the end of conquest in 650–651.', '萨珊帝国', '王朝建立于224年；终点将650至651年的征服完成归一为651年。'), { confidence: 'high' })
       ], [
@@ -476,7 +524,7 @@
         period('greece-aegean-bronze', -3000, -1100, 'approximate', 'archaeological-chronology', 'broad Aegean Bronze Age, ca. 3000–1100 BCE', ['met-greek-prehistoric-classical-2000'],
           periodCopy('Эгейский бронзовый век', 'Широкая рамка для кикладской, минойской и микенской последовательностей, а не единое государство.', 'Aegean Bronze Age', 'A broad frame for Cycladic, Minoan, and Mycenaean sequences, not a single state.', '爱琴海青铜时代', '基克拉泽斯、米诺斯和迈锡尼序列的宽泛框架，并非单一国家。'), { confidence: 'medium' }),
         period('greece-archaic', -700, -480, 'approximate', 'historical', 'seventh century to 480 BCE', ['met-greek-archaic-2003'],
-          periodCopy('Архаическая эпоха', 'Начальная граница округляет переход от геометрической эпохи; конец связан с Персидскими войнами.', 'Archaic period', 'The opening rounds the transition from the Geometric era; the end is associated with the Persian Wars.', '古风时期', '起点概括了从几何风格时代的过渡；终点与希波战争相关。'), { confidence: 'medium', model: 'Conventional art-historical periodization' }),
+          periodCopy('Архаическая эпоха', 'Начальная граница округляет переход от геометрической эпохи; конец связан с Персидскими войнами.', 'Archaic period', 'The opening rounds the transition from the Geometric era; the end is associated with the Persian Wars.', '古风时期', '起点概括了从几何风格时代的过渡；终点与希波战争相关。'), { confidence: 'medium', model: 'Conventional art-historical periodization', copy: datingCopy('Условная искусствоведческая периодизация', 'Conventional art-historical periodization', '通行艺术史分期') }),
         period('greece-classical', -480, -323, 'range', 'historical', 'ca. 480–323 BCE', ['met-greek-classical-2008'],
           periodCopy('Классическая эпоха', 'Принятая историко-художественная граница от Персидских войн до смерти Александра.', 'Classical period', 'The conventional art-historical span from the Persian Wars to Alexander’s death.', '古典时期', '从希波战争至亚历山大去世的通行艺术史分期。'), { confidence: 'high' }),
         period('greece-hellenistic', -323, -31, 'range', 'historical', '323–31 BCE; conventional end at Actium', ['met-greek-hellenistic-2007'],
@@ -497,9 +545,9 @@
         '罗马国家', '传统王政时期、共和国与西部帝国；传说性的早期边界与证据充分的帝国年代明确区分。'
       ), [
         period('rome-kings', -753, -509, 'traditional', 'traditional', 'traditional royal chronology, 753–509 BCE', ['met-roman-kings-1989', 'met-roman-republic-2000'],
-          periodCopy('Традиционный царский период', '753 год до н. э. происходит из литературной традиции о Ромуле; археология показывает более длительное развитие поселения.', 'Traditional regal period', '753 BCE comes from the literary tradition of Romulus; archaeology shows a longer settlement history.', '传统王政时期', '公元前753年来自罗慕路斯的文学传统；考古材料显示聚落经历了更长的发展过程。'), { confidence: 'low', model: 'Roman literary tradition' }),
+          periodCopy('Традиционный царский период', '753 год до н. э. происходит из литературной традиции о Ромуле; археология показывает более длительное развитие поселения.', 'Traditional regal period', '753 BCE comes from the literary tradition of Romulus; archaeology shows a longer settlement history.', '传统王政时期', '公元前753年来自罗慕路斯的文学传统；考古材料显示聚落经历了更长的发展过程。'), { confidence: 'low', model: 'Roman literary tradition', copy: datingCopy('Римская литературная традиция', 'Roman literary tradition', '罗马文学传统') }),
         period('rome-republic', -509, -27, 'traditional', 'traditional', 'traditional/conventional start 509 BCE; Augustus 27 BCE', ['met-roman-republic-2000'],
-          periodCopy('Римская республика', 'Начальная граница 509 года до н. э. традиционна; переход к принципату в 27 году засвидетельствован точнее.', 'Roman Republic', 'The 509 BCE opening is traditional; the transition to the Principate in 27 BCE is more securely attested.', '罗马共和国', '公元前509年的起点属传统年代；公元前27年向元首制的过渡证据更为确切。'), { confidence: 'medium', model: 'Traditional republican chronology' }),
+          periodCopy('Римская республика', 'Начальная граница 509 года до н. э. традиционна; переход к принципату в 27 году засвидетельствован точнее.', 'Roman Republic', 'The 509 BCE opening is traditional; the transition to the Principate in 27 BCE is more securely attested.', '罗马共和国', '公元前509年的起点属传统年代；公元前27年向元首制的过渡证据更为确切。'), { confidence: 'medium', model: 'Traditional republican chronology', copy: datingCopy('Традиционная республиканская хронология', 'Traditional republican chronology', '传统共和国年表') }),
         period('rome-principate', -27, 284, 'range', 'historical', '27 BCE–284 CE', ['met-roman-empire-2000'],
           periodCopy('Принципат и ранняя империя', 'От получения Октавианом титула Августа до прихода Диоклетиана.', 'Principate and early empire', 'From Octavian receiving the title Augustus to Diocletian’s accession.', '元首制与早期帝国', '从屋大维获“奥古斯都”称号至戴克里先即位。'), { confidence: 'high' }),
         period('rome-late-empire', 284, 476, 'range', 'historical', '284–476 CE for the western empire', ['met-roman-empire-2000'],
@@ -747,7 +795,16 @@
       ), [
         period('americas-early-presence', -20000, -10900, 'disputed', 'radiocarbon', 'probable presence around/before the Last Glacial Maximum; wider expansion ca. 14.7–12.9 ka before AD 2000', ['nature-americas-2020'],
           periodCopy('Раннее присутствие и расселение', 'Начало намеренно показано как спорный интервал, а не точная дата «первого заселения».', 'Early presence and dispersal', 'The start is intentionally shown as a disputed interval, not an exact “first settlement” date.', '早期存在与扩散', '起点有意显示为争议区间，而非精确的“首次定居”日期。'),
-          { confidence: 'low', disputeNote: 'Claims before the wider ca. 14.7–12.9 ka dispersal remain debated and are not represented as a single first-arrival date.' })
+          {
+            confidence: 'low',
+            disputeNote: 'Claims before the wider ca. 14.7–12.9 ka dispersal remain debated and are not represented as a single first-arrival date.',
+            copy: datingCopy(
+              '', '', '',
+              'Свидетельства, предшествующие более широкому расселению около 14,7–12,9 тыс. лет назад, остаются спорными и не показаны как единая дата первого прибытия.',
+              'Claims before the wider ca. 14.7–12.9 ka dispersal remain debated and are not represented as a single first-arrival date.',
+              '早于约14.7至12.9千年前更广泛扩散的证据仍有争议，因而不会被表示为单一的“首次抵达”日期。'
+            )
+          })
       ], [
         event('americas-wider-expansion', -12000, 'approximate', 'radiocarbon', 'wider occupation during ca. 14.7–12.9 ka before AD 2000', ['nature-americas-2020'],
           eventCopy('Более широкое расселение становится заметным', 'Байесовская модель объединяет данные 42 памятников.', 'Wider occupation becomes visible', 'A Bayesian model combines evidence from 42 sites.', '更广泛的居住变得可见', '贝叶斯模型综合了42处遗址的数据。'))

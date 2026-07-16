@@ -8,12 +8,14 @@
 
   var SEVERITY_ORDER = { error: 0, warning: 1, info: 2 };
 
-  function recordCoverage(records) {
+  function recordCoverage(records, sourceRegistry) {
     records = Array.isArray(records) ? records : [];
     return {
       total: records.length,
       sourced: records.filter(function (record) {
-        return Array.isArray(record.sourceIds) && record.sourceIds.length > 0;
+        return Array.isArray(record.sourceIds) && record.sourceIds.some(function (id) {
+          return sourceIsExact(sourceRegistry && sourceRegistry[id]);
+        });
       }).length,
       dated: records.filter(function (record) {
         return Boolean(record.dating && record.dating.precision && record.dating.basis);
@@ -28,10 +30,7 @@
   }
 
   function sourceIsExact(source) {
-    if (!source || quality.isGenericHomepage(source.url || '')) return false;
-    return ['tier', 'kind', 'title', 'publisher', 'year', 'url', 'accessed'].every(function (field) {
-      return source[field] !== undefined && source[field] !== '';
-    });
+    return quality.isExactSource(source);
   }
 
   function issue(severity, code, path, message, extra) {
@@ -87,8 +86,8 @@
     };
 
     var trackReports = tracks.map(function (track) {
-      var periods = recordCoverage(track.periods);
-      var events = recordCoverage(track.events);
+      var periods = recordCoverage(track.periods, sourceRegistry);
+      var events = recordCoverage(track.events, sourceRegistry);
       addCoverage(coverage.periods, periods);
       addCoverage(coverage.events, events);
       if (track.reviewStatus === 'legacy') {
