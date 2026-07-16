@@ -1,0 +1,1623 @@
+{
+  "generatedFrom": "parallel-worlds-data-v1",
+  "summary": {
+    "tracks": 62,
+    "reviewedTracks": 16,
+    "legacyTracks": 46,
+    "blockingIssues": 0,
+    "warnings": 51
+  },
+  "coverage": {
+    "periods": {
+      "total": 217,
+      "sourced": 33,
+      "dated": 33
+    },
+    "events": {
+      "total": 161,
+      "sourced": 23,
+      "dated": 23
+    }
+  },
+  "tracks": [
+    {
+      "id": "akkadia",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "andean_religion",
+      "reviewStatus": "legacy",
+      "type": "tradition",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "andes",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "assyria",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "aztec",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "babylonia",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "buddhism",
+      "reviewStatus": "legacy",
+      "type": "tradition",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "byzantium",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "catalhoyuk",
+      "reviewStatus": "reviewed",
+      "type": "site",
+      "periods": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      },
+      "events": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      }
+    },
+    {
+      "id": "central_asia",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "china",
+      "reviewStatus": "reviewed",
+      "type": "regional-sequence",
+      "periods": {
+        "total": 11,
+        "sourced": 11,
+        "dated": 11
+      },
+      "events": {
+        "total": 4,
+        "sourced": 4,
+        "dated": 4
+      }
+    },
+    {
+      "id": "christianity",
+      "reviewStatus": "legacy",
+      "type": "tradition",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "confucianism",
+      "reviewStatus": "legacy",
+      "type": "tradition",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "daoism",
+      "reviewStatus": "legacy",
+      "type": "tradition",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "egypt",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "egyptian_religion",
+      "reviewStatus": "legacy",
+      "type": "tradition",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "ethiopia",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "european-palaeolithic-mesolithic",
+      "reviewStatus": "reviewed",
+      "type": "regional-sequence",
+      "periods": {
+        "total": 2,
+        "sourced": 2,
+        "dated": 2
+      },
+      "events": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      }
+    },
+    {
+      "id": "gobekli-tepe",
+      "reviewStatus": "reviewed",
+      "type": "site",
+      "periods": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      },
+      "events": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      }
+    },
+    {
+      "id": "greece",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "greek_religion",
+      "reviewStatus": "legacy",
+      "type": "tradition",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "hinduism",
+      "reviewStatus": "legacy",
+      "type": "tradition",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "hittites",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "inca",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "india",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "indonesia",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "indus",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "islam",
+      "reviewStatus": "legacy",
+      "type": "tradition",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "israel_judah",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "jainism",
+      "reviewStatus": "legacy",
+      "type": "tradition",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "japan",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "jomon",
+      "reviewStatus": "reviewed",
+      "type": "archaeological-culture",
+      "periods": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      },
+      "events": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      }
+    },
+    {
+      "id": "judaism",
+      "reviewStatus": "legacy",
+      "type": "tradition",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "korea",
+      "reviewStatus": "reviewed",
+      "type": "regional-sequence",
+      "periods": {
+        "total": 6,
+        "sourced": 6,
+        "dated": 6
+      },
+      "events": {
+        "total": 4,
+        "sourced": 4,
+        "dated": 4
+      }
+    },
+    {
+      "id": "lapita",
+      "reviewStatus": "reviewed",
+      "type": "network",
+      "periods": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      },
+      "events": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      }
+    },
+    {
+      "id": "late-pleistocene-americas",
+      "reviewStatus": "reviewed",
+      "type": "regional-sequence",
+      "periods": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      },
+      "events": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      }
+    },
+    {
+      "id": "liangzhu",
+      "reviewStatus": "reviewed",
+      "type": "archaeological-culture",
+      "periods": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      },
+      "events": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      }
+    },
+    {
+      "id": "manichaeism",
+      "reviewStatus": "legacy",
+      "type": "tradition",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "maya",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "mehrgarh",
+      "reviewStatus": "reviewed",
+      "type": "site",
+      "periods": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      },
+      "events": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      }
+    },
+    {
+      "id": "mesoamerican_religion",
+      "reviewStatus": "legacy",
+      "type": "tradition",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "mesopotamian_religion",
+      "reviewStatus": "legacy",
+      "type": "tradition",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "natufian",
+      "reviewStatus": "reviewed",
+      "type": "archaeological-culture",
+      "periods": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      },
+      "events": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      }
+    },
+    {
+      "id": "north_america",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "nubia",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "oceania",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "persia",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "phoenicia",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "predynastic-nile",
+      "reviewStatus": "reviewed",
+      "type": "regional-sequence",
+      "periods": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      },
+      "events": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      }
+    },
+    {
+      "id": "roman_religion",
+      "reviewStatus": "legacy",
+      "type": "tradition",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "rome",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "sahul-continuity",
+      "reviewStatus": "reviewed",
+      "type": "regional-sequence",
+      "periods": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      },
+      "events": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      }
+    },
+    {
+      "id": "shinto",
+      "reviewStatus": "legacy",
+      "type": "tradition",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "sikhism",
+      "reviewStatus": "legacy",
+      "type": "tradition",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "southeast_asia",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "steppe",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "sumer",
+      "reviewStatus": "reviewed",
+      "type": "polity",
+      "periods": {
+        "total": 2,
+        "sourced": 2,
+        "dated": 2
+      },
+      "events": {
+        "total": 2,
+        "sourced": 2,
+        "dated": 2
+      }
+    },
+    {
+      "id": "teotihuacan",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "uruk",
+      "reviewStatus": "reviewed",
+      "type": "site",
+      "periods": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      },
+      "events": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      }
+    },
+    {
+      "id": "west_africa",
+      "reviewStatus": "legacy",
+      "type": "civilization",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    },
+    {
+      "id": "xianrendong",
+      "reviewStatus": "reviewed",
+      "type": "site",
+      "periods": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      },
+      "events": {
+        "total": 1,
+        "sourced": 1,
+        "dated": 1
+      }
+    },
+    {
+      "id": "zoroastrianism",
+      "reviewStatus": "legacy",
+      "type": "tradition",
+      "periods": {
+        "total": 4,
+        "sourced": 0,
+        "dated": 0
+      },
+      "events": {
+        "total": 3,
+        "sourced": 0,
+        "dated": 0
+      }
+    }
+  ],
+  "sources": [
+    {
+      "id": "asia",
+      "title": "Asia Society — Education",
+      "url": "https://asiasociety.org/education",
+      "exact": false,
+      "usedByReviewed": [],
+      "usedByLegacy": [
+        "sikhism"
+      ]
+    },
+    {
+      "id": "british",
+      "title": "British Museum — Collection and research",
+      "url": "https://www.britishmuseum.org/collection",
+      "exact": false,
+      "usedByReviewed": [],
+      "usedByLegacy": [
+        "assyria",
+        "israel_judah",
+        "judaism",
+        "manichaeism",
+        "mesopotamian_religion",
+        "steppe",
+        "zoroastrianism"
+      ]
+    },
+    {
+      "id": "british-early-egypt",
+      "title": "Early Egypt",
+      "url": "https://www.britishmuseum.org/collection/galleries/early-egypt",
+      "exact": true,
+      "usedByReviewed": [
+        "predynastic-nile"
+      ],
+      "usedByLegacy": []
+    },
+    {
+      "id": "cambridge-mesolithic-europe-2008",
+      "title": "Mesolithic Europe",
+      "url": "https://assets.cambridge.org/97805218/55037/frontmatter/9780521855037_frontmatter.htm",
+      "exact": true,
+      "usedByReviewed": [
+        "european-palaeolithic-mesolithic"
+      ],
+      "usedByLegacy": []
+    },
+    {
+      "id": "cambridge-natufian-2017",
+      "title": "The Natufian Culture",
+      "url": "https://doi.org/10.1017/9781316106754.077",
+      "exact": true,
+      "usedByReviewed": [
+        "natufian"
+      ],
+      "usedByLegacy": []
+    },
+    {
+      "id": "kenoyer-indus-2011",
+      "title": "Changing Perspectives of the Indus Civilization: New Discoveries and Challenges",
+      "url": "https://www.harappa.com/sites/default/files/pdf/Kenoyer_Changing%20Perspectives%20of%20the%20Indus%20Civilization.pdf",
+      "exact": true,
+      "usedByReviewed": [
+        "mehrgarh"
+      ],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met",
+      "title": "The Met — Heilbrunn Timeline of Art History",
+      "url": "https://www.metmuseum.org/toah/chronology/",
+      "exact": false,
+      "usedByReviewed": [],
+      "usedByLegacy": [
+        "akkadia",
+        "babylonia",
+        "buddhism",
+        "byzantium",
+        "central_asia",
+        "christianity",
+        "confucianism",
+        "daoism",
+        "egypt",
+        "egyptian_religion",
+        "ethiopia",
+        "greece",
+        "greek_religion",
+        "hinduism",
+        "hittites",
+        "india",
+        "indonesia",
+        "indus",
+        "islam",
+        "jainism",
+        "japan",
+        "nubia",
+        "persia",
+        "phoenicia",
+        "roman_religion",
+        "rome",
+        "shinto",
+        "southeast_asia",
+        "west_africa"
+      ]
+    },
+    {
+      "id": "met-china-three-kingdoms",
+      "title": "Tile with Buddhist images — Three Kingdoms period (220–280)",
+      "url": "https://www.metmuseum.org/art/collection/search/61612",
+      "exact": true,
+      "usedByReviewed": [
+        "china"
+      ],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-east-asia-neolithic-2000",
+      "title": "China, 8000–2000 B.C.",
+      "url": "https://82nd-and-fifth.metmuseum.org/toah/ht/02/eac.html",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-jomon-2002",
+      "title": "Jōmon Culture (ca. 10,500–ca. 300 B.C.)",
+      "url": "https://www.metmuseum.org/essays/jomon-culture-ca-10500-ca-300-b-c",
+      "exact": true,
+      "usedByReviewed": [
+        "jomon"
+      ],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-korea-1998",
+      "title": "The Arts of Korea: A Resource for Educators",
+      "url": "https://www.metmuseum.org/-/media/files/learn/for-educators/publications-for-educators/korea.pdf",
+      "exact": true,
+      "usedByReviewed": [
+        "korea"
+      ],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-korea-renaissance-2009",
+      "title": "Art of the Korean Renaissance, 1400–1600",
+      "url": "https://resources.metmuseum.org/resources/metpublications/pdf/Art_of_the_Korean_Renaissance_1400_1600.pdf",
+      "exact": true,
+      "usedByReviewed": [
+        "china",
+        "korea"
+      ],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-prehistoric-art-2007",
+      "title": "Introduction to Prehistoric Art, 20,000–8000 B.C.",
+      "url": "https://www.metmuseum.org/essays/introduction-to-prehistoric-art-20000-8000-b-c",
+      "exact": true,
+      "usedByReviewed": [
+        "european-palaeolithic-mesolithic"
+      ],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-sumer-early-dynastic",
+      "title": "Ornament — Sumerian, Early Dynastic, ca. 2900–2350 BCE",
+      "url": "https://www.metmuseum.org/art/collection/search/324886",
+      "exact": true,
+      "usedByReviewed": [
+        "sumer"
+      ],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-sumer-ur-iii",
+      "title": "Bead — Neo-Sumerian, Ur III, ca. 2112–2004 BCE",
+      "url": "https://www.metmuseum.org/art/collection/search/323922",
+      "exact": true,
+      "usedByReviewed": [
+        "sumer"
+      ],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-uruk-2003",
+      "title": "Uruk: The First City",
+      "url": "https://www.metmuseum.org/essays/uruk-the-first-city",
+      "exact": true,
+      "usedByReviewed": [
+        "uruk"
+      ],
+      "usedByLegacy": []
+    },
+    {
+      "id": "nature-americas-2020",
+      "title": "The timing and effect of the earliest human arrivals in North America",
+      "url": "https://doi.org/10.1038/s41586-020-2491-6",
+      "exact": true,
+      "usedByReviewed": [
+        "late-pleistocene-americas"
+      ],
+      "usedByLegacy": []
+    },
+    {
+      "id": "nature-lapita-2022",
+      "title": "Frontier Lapita interaction with resident Papuan populations set the stage for initial peopling of the Pacific",
+      "url": "https://doi.org/10.1038/s41559-022-01735-w",
+      "exact": true,
+      "usedByReviewed": [
+        "lapita"
+      ],
+      "usedByLegacy": []
+    },
+    {
+      "id": "nature-madjedbebe-2022",
+      "title": "65,000-years of continuous grinding stone use at Madjedbebe, Northern Australia",
+      "url": "https://doi.org/10.1038/s41598-022-15174-x",
+      "exact": true,
+      "usedByReviewed": [
+        "sahul-continuity"
+      ],
+      "usedByLegacy": []
+    },
+    {
+      "id": "nm-korea-unified-silla",
+      "title": "Unified Silla Period",
+      "url": "https://www.museum.go.kr/ENG/contents/E0201030900.do?showHallId=760&showroomCode=DM0034",
+      "exact": true,
+      "usedByReviewed": [
+        "korea"
+      ],
+      "usedByLegacy": []
+    },
+    {
+      "id": "radiocarbon-near-east-2001",
+      "title": "Proto-Neolithic and Neolithic Cultures in the Middle East—a Calibrated 14C Chronology 12,500–5500 cal BC",
+      "url": "https://doi.org/10.1017/S0033822200038480",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
+      "id": "science-xianrendong-2012",
+      "title": "Early Pottery at 20,000 Years Ago in Xianrendong Cave, China",
+      "url": "https://doi.org/10.1126/science.1218643",
+      "exact": true,
+      "usedByReviewed": [
+        "xianrendong"
+      ],
+      "usedByLegacy": []
+    },
+    {
+      "id": "smarthistory",
+      "title": "Smarthistory — World art history",
+      "url": "https://smarthistory.org/",
+      "exact": false,
+      "usedByReviewed": [],
+      "usedByLegacy": [
+        "andean_religion",
+        "andes",
+        "aztec",
+        "inca",
+        "maya",
+        "mesoamerican_religion",
+        "north_america",
+        "teotihuacan"
+      ]
+    },
+    {
+      "id": "unesco",
+      "title": "UNESCO World Heritage Centre",
+      "url": "https://whc.unesco.org/",
+      "exact": false,
+      "usedByReviewed": [],
+      "usedByLegacy": [
+        "oceania"
+      ]
+    },
+    {
+      "id": "unesco-catalhoyuk-2012",
+      "title": "Neolithic Site of Çatalhöyük",
+      "url": "https://whc.unesco.org/en/list/1405/",
+      "exact": true,
+      "usedByReviewed": [
+        "catalhoyuk"
+      ],
+      "usedByLegacy": []
+    },
+    {
+      "id": "unesco-gobekli-2018",
+      "title": "Göbekli Tepe",
+      "url": "https://whc.unesco.org/en/list/1572/",
+      "exact": true,
+      "usedByReviewed": [
+        "gobekli-tepe"
+      ],
+      "usedByLegacy": []
+    },
+    {
+      "id": "unesco-liangzhu-2019",
+      "title": "Archaeological Ruins of Liangzhu City",
+      "url": "https://whc.unesco.org/en/list/1592/",
+      "exact": true,
+      "usedByReviewed": [
+        "liangzhu"
+      ],
+      "usedByLegacy": []
+    }
+  ],
+  "issues": [
+    {
+      "severity": "warning",
+      "code": "generic-source",
+      "path": "sources.asia",
+      "message": "Inherited source is not an exact academic record",
+      "sourceId": "asia"
+    },
+    {
+      "severity": "warning",
+      "code": "generic-source",
+      "path": "sources.british",
+      "message": "Inherited source is not an exact academic record",
+      "sourceId": "british"
+    },
+    {
+      "severity": "warning",
+      "code": "generic-source",
+      "path": "sources.met",
+      "message": "Inherited source is not an exact academic record",
+      "sourceId": "met"
+    },
+    {
+      "severity": "warning",
+      "code": "generic-source",
+      "path": "sources.smarthistory",
+      "message": "Inherited source is not an exact academic record",
+      "sourceId": "smarthistory"
+    },
+    {
+      "severity": "warning",
+      "code": "generic-source",
+      "path": "sources.unesco",
+      "message": "Inherited source is not an exact academic record",
+      "sourceId": "unesco"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "akkadia",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "akkadia"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "andean_religion",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "andean_religion"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "andes",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "andes"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "assyria",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "assyria"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "aztec",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "aztec"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "babylonia",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "babylonia"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "buddhism",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "buddhism"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "byzantium",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "byzantium"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "central_asia",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "central_asia"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "christianity",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "christianity"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "confucianism",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "confucianism"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "daoism",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "daoism"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "egypt",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "egypt"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "egyptian_religion",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "egyptian_religion"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "ethiopia",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "ethiopia"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "greece",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "greece"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "greek_religion",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "greek_religion"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "hinduism",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "hinduism"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "hittites",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "hittites"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "inca",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "inca"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "india",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "india"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "indonesia",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "indonesia"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "indus",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "indus"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "islam",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "islam"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "israel_judah",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "israel_judah"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "jainism",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "jainism"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "japan",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "japan"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "judaism",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "judaism"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "manichaeism",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "manichaeism"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "maya",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "maya"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "mesoamerican_religion",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "mesoamerican_religion"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "mesopotamian_religion",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "mesopotamian_religion"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "north_america",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "north_america"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "nubia",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "nubia"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "oceania",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "oceania"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "persia",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "persia"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "phoenicia",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "phoenicia"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "roman_religion",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "roman_religion"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "rome",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "rome"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "shinto",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "shinto"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "sikhism",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "sikhism"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "southeast_asia",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "southeast_asia"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "steppe",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "steppe"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "teotihuacan",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "teotihuacan"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "west_africa",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "west_africa"
+    },
+    {
+      "severity": "warning",
+      "code": "legacy-track",
+      "path": "zoroastrianism",
+      "message": "Legacy track has not yet received record-level academic review",
+      "trackId": "zoroastrianism"
+    }
+  ]
+}

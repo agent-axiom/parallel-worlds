@@ -1,4 +1,5 @@
 const assert = require('assert');
+const childProcess = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -212,6 +213,15 @@ test('academic audit promotes invalid reviewed records to blocking errors', func
   });
   assert.ok(report.summary.blockingIssues > 0);
   assert.ok(report.issues.some(function (item) { return item.severity === 'error' && item.trackId === 'broken-reviewed'; }));
+});
+
+test('academic audit build script serializes the canonical deterministic report', function () {
+  const script = path.join(root, 'scripts/build-academic-audit.mjs');
+  const output = childProcess.spawnSync(process.execPath, [script], { cwd: root, encoding: 'utf8' });
+  assert.strictEqual(output.status, 0, output.stderr || output.stdout);
+  const serialized = fs.readFileSync(path.join(root, 'academic-audit.json'), 'utf8');
+  assert.ok(serialized.endsWith('\n'));
+  assert.deepStrictEqual(JSON.parse(serialized), require(path.join(root, 'academic-audit.js')).buildAudit(data));
 });
 
 test('academic data shell and source URL validation are explicit', function () {
@@ -897,9 +907,10 @@ test('CSV export carries reviewed dating evidence and exact source links', funct
 
 test('required static site and Pages files exist and use relative assets', function () {
   const evidenceAssets = ['chronology.js', 'academic-data.js', 'data-quality.js'];
+  const auditAssets = ['academic-audit.js', 'academic-audit.json'];
   const atlasAssets = ['atlas-data.js', 'insights.js', 'atlas.js', 'explorer-state.js', 'atlas-view.js'];
   const mapAssets = ['world-map-data.js'];
-  ['index.html', 'styles.css', 'app.js', 'data.js', 'i18n.js', 'timeline.js'].concat(evidenceAssets).concat(atlasAssets).concat(mapAssets).concat(['.nojekyll',
+  ['index.html', 'styles.css', 'app.js', 'data.js', 'i18n.js', 'timeline.js'].concat(evidenceAssets).concat(auditAssets).concat(atlasAssets).concat(mapAssets).concat(['.nojekyll',
     '.github/workflows/deploy-pages.yml', 'scripts/validate.sh', 'README.md']
     ).forEach(function (file) { assert.ok(fs.existsSync(path.join(root, file)), 'missing ' + file); });
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
@@ -907,7 +918,7 @@ test('required static site and Pages files exist and use relative assets', funct
     assert.ok(html.indexOf('="' + asset + '"') !== -1, 'asset is not relative: ' + asset);
   });
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/deploy-pages.yml'), 'utf8');
-  evidenceAssets.forEach(function (asset) {
+  evidenceAssets.concat(auditAssets).forEach(function (asset) {
     assert.ok(workflow.indexOf(asset) !== -1, 'Pages artifact omits evidence asset ' + asset);
   });
   assert.ok(html.indexOf('id="timeline"') !== -1);
@@ -925,6 +936,10 @@ test('required static site and Pages files exist and use relative assets', funct
   });
   assert.ok(workflow.indexOf('i18n.js') !== -1, 'Pages artifact does not include i18n.js');
   const validator = fs.readFileSync(path.join(root, 'scripts/validate.sh'), 'utf8');
+  assert.ok(validator.indexOf('scripts/build-academic-audit.mjs') !== -1, 'validator does not regenerate the academic audit');
+  auditAssets.forEach(function (asset) {
+    assert.ok(validator.indexOf(asset) !== -1, 'validator does not cover audit asset ' + asset);
+  });
   atlasAssets.concat(mapAssets).forEach(function (asset) {
     assert.ok(workflow.indexOf(asset) !== -1, 'Pages artifact does not include ' + asset);
     assert.ok(validator.indexOf(asset) !== -1, 'validator does not cover ' + asset);

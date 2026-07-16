@@ -6,6 +6,7 @@ cd "$(dirname "$0")/.."
 node --check chronology.js
 node --check academic-data.js
 node --check data-quality.js
+node --check academic-audit.js
 node --check data.js
 node --check i18n.js
 node --check timeline.js
@@ -16,9 +17,10 @@ node --check atlas.js
 node --check explorer-state.js
 node --check atlas-view.js
 node --check app.js
+node scripts/build-academic-audit.mjs
 node tests/run-tests.js
 
-for asset in index.html styles.css app.js chronology.js academic-data.js data-quality.js data.js i18n.js timeline.js atlas-data.js world-map-data.js insights.js atlas.js explorer-state.js atlas-view.js .nojekyll; do
+for asset in index.html styles.css app.js chronology.js academic-data.js data-quality.js academic-audit.js academic-audit.json data.js i18n.js timeline.js atlas-data.js world-map-data.js insights.js atlas.js explorer-state.js atlas-view.js .nojekyll; do
   test -f "$asset"
 done
 
