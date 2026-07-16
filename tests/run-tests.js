@@ -691,9 +691,9 @@ test('playback advances by a fixed historical step and wraps at the visible rang
 
 test('atlas model combines filters, region selection, focus, and missing geography', function () {
   const tracks = [
-    { id: 'alpha', name: 'Alpha Empire', summary: 'River cities', region: 'east-asia', type: 'civilization', periods: [{ name: 'Early Alpha', start: -600, end: -400 }], events: [] },
-    { id: 'beta', name: 'Beta tradition', summary: 'Ritual teaching', region: 'east-asia', type: 'tradition', periods: [{ name: 'Oracle schools', start: -550, end: -300 }], events: [] },
-    { id: 'gamma', name: 'Gamma', summary: 'Later society', region: 'americas', type: 'civilization', periods: [{ name: 'Gamma age', start: 100, end: 500 }], events: [] }
+    { id: 'alpha', name: 'Alpha Empire', summary: 'River cities', region: 'east-asia', type: 'polity', reviewStatus: 'reviewed', periods: [{ name: 'Early Alpha', start: -600, end: -400 }], events: [] },
+    { id: 'beta', name: 'Beta tradition', summary: 'Ritual teaching', region: 'east-asia', type: 'tradition', reviewStatus: 'legacy', periods: [{ name: 'Oracle schools', start: -550, end: -300 }], events: [] },
+    { id: 'gamma', name: 'Gamma', summary: 'Later society', region: 'americas', type: 'civilization', reviewStatus: 'legacy', periods: [{ name: 'Gamma age', start: 100, end: 500 }], events: [] }
   ];
   const geography = {
     regions: { 'east-asia': { longitude: 118, latitude: 34, radius: 14 } },
@@ -722,6 +722,16 @@ test('atlas model combines filters, region selection, focus, and missing geograp
   assert.deepStrictEqual(filtered.regions, []);
   assert.strictEqual(filtered.insight, null);
   assert.strictEqual(filtered.stats.regions, 1);
+
+  const reviewed = atlas.buildModel({
+    tracks: tracks, year: -500, geography: geography, filters: { query: '', region: 'all', type: 'reviewed' }
+  });
+  assert.deepStrictEqual(reviewed.activeTracks.map(function (track) { return track.id; }), ['alpha']);
+
+  const legacy = atlas.buildModel({
+    tracks: tracks, year: -500, geography: geography, filters: { query: '', region: 'all', type: 'legacy' }
+  });
+  assert.deepStrictEqual(legacy.activeTracks.map(function (track) { return track.id; }), ['beta']);
 });
 
 test('missing URL numbers stay absent instead of becoming year zero', function () {

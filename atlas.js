@@ -142,8 +142,9 @@
     filters = filters || {};
     if (filters.region && filters.region !== 'all' && track.region !== filters.region) return false;
     if (filters.type === 'society' && track.type === 'tradition') return false;
-    if (filters.type === 'legacy' && track.type !== 'civilization') return false;
-    if (filters.type && filters.type !== 'all' && filters.type !== 'society' && filters.type !== 'legacy' && track.type !== filters.type) return false;
+    if (filters.type === 'reviewed' && track.reviewStatus !== 'reviewed') return false;
+    if (filters.type === 'legacy' && track.reviewStatus !== 'legacy') return false;
+    if (filters.type && filters.type !== 'all' && filters.type !== 'society' && filters.type !== 'reviewed' && filters.type !== 'legacy' && track.type !== filters.type) return false;
     var query = String(filters.query || '').trim().toLocaleLowerCase();
     if (!query) return true;
     var searchable = [track.name, track.summary]
