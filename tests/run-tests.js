@@ -88,6 +88,100 @@ test('directed journey validation rejects sparse stop focus and record lists', f
   assert.ok(refResult.issues.some(function (item) { return item.code === 'invalid-record-ref'; }));
 });
 
+test('directed journey validation safely detects prototype-like duplicate ids', function () {
+  const duplicateRoutes = JSON.parse(JSON.stringify(journeysData));
+  duplicateRoutes.routes[0].id = 'constructor';
+  duplicateRoutes.routes.push(JSON.parse(JSON.stringify(duplicateRoutes.routes[0])));
+  const routeResult = journey.validateCollection(duplicateRoutes, data);
+  assert.deepStrictEqual(routeResult.routes, []);
+  assert.strictEqual(routeResult.issues.filter(function (item) {
+    return item.code === 'duplicate-journey-id';
+  }).length, 2);
+
+  const duplicateStops = JSON.parse(JSON.stringify(journeysData));
+  duplicateStops.routes[0].stops[0].id = 'constructor';
+  duplicateStops.routes[0].stops[1].id = 'constructor';
+  const stopResult = journey.validateCollection(duplicateStops, data);
+  assert.deepStrictEqual(stopResult.routes, []);
+  assert.strictEqual(stopResult.issues.filter(function (item) {
+    return item.code === 'duplicate-stop-id';
+  }).length, 2);
+});
+
+test('directed journey validation resolves a reviewed prototype-like track id', function () {
+  const fixture = JSON.parse(JSON.stringify(journeysData));
+  const fixtureData = JSON.parse(JSON.stringify(data));
+  fixture.routes[0].stops[0].focusTrackIds = ['constructor'];
+  fixture.routes[0].stops[0].recordRefs[0].trackId = 'constructor';
+  fixtureData.tracks.filter(function (track) { return track.id === 'xianrendong'; })[0].id = 'constructor';
+  const result = journey.validateCollection(fixture, fixtureData);
+  assert.deepStrictEqual(result.issues, []);
+  assert.strictEqual(result.routes[0].stops[0].records[0].track.id, 'constructor');
+});
+
+test('directed journey validation fails closed for malformed canonical tracks', function () {
+  assert.deepStrictEqual(journey.validateCollection(journeysData, { tracks: {}, sources: data.sources }), {
+    routes: [],
+    issues: [{
+      code: 'invalid-dataset',
+      path: 'data.tracks',
+      message: 'Canonical data tracks must be an array'
+    }]
+  });
+});
+
+test('directed journey validation rejects fractional and year-zero period stop years', function () {
+  const fractional = JSON.parse(JSON.stringify(journeysData));
+  fractional.routes[0].stops[0].recordRefs = [{ trackId: 'xianrendong', periodId: 'xianrendong-pottery' }];
+  fractional.routes[0].stops[0].year = -18000.5;
+  const fractionalResult = journey.validateCollection(fractional, data);
+
+  const yearZero = JSON.parse(JSON.stringify(journeysData));
+  const yearZeroData = JSON.parse(JSON.stringify(data));
+  yearZero.routes[0].stops[0].recordRefs = [{ trackId: 'xianrendong', periodId: 'xianrendong-pottery' }];
+  yearZero.routes[0].stops[0].year = 0;
+  const xianrendong = yearZeroData.tracks.filter(function (track) { return track.id === 'xianrendong'; })[0];
+  xianrendong.periods[0].start = -1;
+  xianrendong.periods[0].end = 1;
+  const yearZeroResult = journey.validateCollection(yearZero, yearZeroData);
+
+  assert.deepStrictEqual([fractionalResult.routes.length, yearZeroResult.routes.length], [0, 0]);
+  [fractionalResult, yearZeroResult].forEach(function (result) {
+    assert.ok(result.issues.some(function (item) { return item.code === 'journey-year-mismatch'; }));
+  });
+});
+
+test('directed journey route lookup returns existing routes and null for unknown ids', function () {
+  assert.strictEqual(journey.findRoute(journeysData, 'birth-of-cities'), journeysData.routes[0]);
+  assert.strictEqual(journey.findRoute(journeysData, 'unknown-route'), null);
+});
+
+test('directed journey localization falls back to RU and preserves resolved records without mutation', function () {
+  const route = journey.validateCollection(journeysData, data).routes[0];
+  const before = JSON.parse(JSON.stringify(route));
+  const english = journey.localizeRoute(route, 'en');
+  const fallback = journey.localizeRoute(route, 'unsupported');
+
+  assert.deepStrictEqual({
+    title: english.title,
+    summary: english.summary,
+    conclusion: english.conclusion,
+    headline: english.stops[0].headline,
+    body: english.stops[0].body
+  }, {
+    title: journeysData.routes[0].copy.en.title,
+    summary: journeysData.routes[0].copy.en.summary,
+    conclusion: journeysData.routes[0].copy.en.conclusion,
+    headline: journeysData.routes[0].stops[0].copy.en.headline,
+    body: journeysData.routes[0].stops[0].copy.en.body
+  });
+  assert.strictEqual(fallback.title, journeysData.routes[0].copy.ru.title);
+  assert.strictEqual(fallback.stops[0].body, journeysData.routes[0].stops[0].copy.ru.body);
+  assert.strictEqual(english.stops[0].records, route.stops[0].records);
+  assert.strictEqual(english.stops[0].records[0].ref, route.stops[0].records[0].ref);
+  assert.deepStrictEqual(route, before);
+});
+
 test('historical calendar skips year zero in both directions', function () {
   assert.strictEqual(chronology.isValidHistoricalYear(-1), true);
   assert.strictEqual(chronology.isValidHistoricalYear(1), true);

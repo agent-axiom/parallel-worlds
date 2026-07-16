@@ -17,6 +17,14 @@
     return typeof value === 'string' && Boolean(value.trim());
   }
 
+  function isHistoricalYear(value) {
+    return Number.isFinite(value) && Math.floor(value) === value && value !== 0;
+  }
+
+  function hasOwn(object, key) {
+    return Object.prototype.hasOwnProperty.call(object, key);
+  }
+
   function validateCopy(copy, fields, path, issues) {
     LOCALES.forEach(function (locale) {
       fields.forEach(function (field) {
@@ -30,9 +38,9 @@
 
   function trackIndex(data) {
     return (data.tracks || []).reduce(function (index, track) {
-      if (track && isNonEmptyString(track.id) && !index[track.id]) index[track.id] = track;
+      if (track && isNonEmptyString(track.id) && !hasOwn(index, track.id)) index[track.id] = track;
       return index;
-    }, {});
+    }, Object.create(null));
   }
 
   function findRecord(track, recordType, recordId) {
@@ -49,7 +57,7 @@
   }
 
   function validateTrack(trackId, path, tracks, issues) {
-    var track = tracks[trackId];
+    var track = hasOwn(tracks, trackId) ? tracks[trackId] : null;
     if (!track) {
       issues.push(issue('unknown-track', path, 'Journey references an unknown track'));
       return null;
@@ -82,8 +90,8 @@
     }
 
     var matchesYear = recordType === 'event'
-      ? Number.isFinite(stop.year) && Number.isFinite(record.year) && record.year === stop.year
-      : Number.isFinite(stop.year) && Number.isFinite(record.start) && Number.isFinite(record.end) &&
+      ? isHistoricalYear(stop.year) && Number.isFinite(record.year) && record.year === stop.year
+      : isHistoricalYear(stop.year) && Number.isFinite(record.start) && Number.isFinite(record.end) &&
         stop.year >= record.start && stop.year <= record.end;
     if (!matchesYear) {
       issues.push(issue('journey-year-mismatch', refPath, 'Journey year does not match the referenced record'));
@@ -108,7 +116,7 @@
     if (!isNonEmptyString(stop.id) || !SLUG.test(stop.id)) {
       issues.push(issue('invalid-journey-id', stopPath + '.id', 'Journey and stop IDs must be stable slugs'));
     }
-    if (isNonEmptyString(stop.id) && duplicateStopIds[stop.id] > 1) {
+    if (isNonEmptyString(stop.id) && hasOwn(duplicateStopIds, stop.id) && duplicateStopIds[stop.id] > 1) {
       issues.push(issue('duplicate-stop-id', stopPath + '.id', 'Stop IDs must be unique within a route'));
     }
     if (!Number.isFinite(stop.holdMs) || stop.holdMs < 12000 || stop.holdMs > 18000) {
@@ -117,11 +125,11 @@
     validateCopy(stop.copy, ['headline', 'body'], stopPath, issues);
 
     var focusTrackIds = Array.isArray(stop.focusTrackIds) ? stop.focusTrackIds : [];
-    var uniqueFocusIds = {};
+    var uniqueFocusIds = Object.create(null);
     var invalidFocus = !Array.isArray(stop.focusTrackIds) || focusTrackIds.length > 2;
     for (var focusIndex = 0; focusIndex < focusTrackIds.length; focusIndex += 1) {
       var trackId = focusTrackIds[focusIndex];
-      if (!isNonEmptyString(trackId) || uniqueFocusIds[trackId]) invalidFocus = true;
+      if (!isNonEmptyString(trackId) || hasOwn(uniqueFocusIds, trackId)) invalidFocus = true;
       if (isNonEmptyString(trackId)) uniqueFocusIds[trackId] = true;
       if (isNonEmptyString(trackId)) {
         validateTrack(trackId, stopPath + '.focusTrackIds[' + focusIndex + ']', tracks, issues);
@@ -154,13 +162,21 @@
   function validateCollection(collection, data) {
     collection = collection || {};
     data = data || {};
+    if (!Array.isArray(data.tracks)) {
+      return {
+        routes: [],
+        issues: [issue('invalid-dataset', 'data.tracks', 'Canonical data tracks must be an array')]
+      };
+    }
     var manifestRoutes = Array.isArray(collection.routes) ? collection.routes : [];
     var tracks = trackIndex(data);
     var sources = data.sources || {};
     var routeIdCounts = manifestRoutes.reduce(function (counts, route) {
-      if (route && isNonEmptyString(route.id)) counts[route.id] = (counts[route.id] || 0) + 1;
+      if (route && isNonEmptyString(route.id)) {
+        counts[route.id] = hasOwn(counts, route.id) ? counts[route.id] + 1 : 1;
+      }
       return counts;
-    }, {});
+    }, Object.create(null));
     var routes = [];
     var issues = [];
 
@@ -171,7 +187,7 @@
       if (!isNonEmptyString(route.id) || !SLUG.test(route.id)) {
         routeIssues.push(issue('invalid-journey-id', routePath + '.id', 'Journey and stop IDs must be stable slugs'));
       }
-      if (isNonEmptyString(route.id) && routeIdCounts[route.id] > 1) {
+      if (isNonEmptyString(route.id) && hasOwn(routeIdCounts, route.id) && routeIdCounts[route.id] > 1) {
         routeIssues.push(issue('duplicate-journey-id', routePath + '.id', 'Journey IDs must be unique'));
       }
       validateCopy(route.copy, ['title', 'summary', 'conclusion'], routePath, routeIssues);
@@ -181,9 +197,11 @@
         routeIssues.push(issue('invalid-stop-count', routePath + '.stops', 'Journey routes need six to eight stops'));
       }
       var stopIdCounts = stops.reduce(function (counts, stop) {
-        if (stop && isNonEmptyString(stop.id)) counts[stop.id] = (counts[stop.id] || 0) + 1;
+        if (stop && isNonEmptyString(stop.id)) {
+          counts[stop.id] = hasOwn(counts, stop.id) ? counts[stop.id] + 1 : 1;
+        }
         return counts;
-      }, {});
+      }, Object.create(null));
       var resolvedStops = [];
       for (var stopIndex = 0; stopIndex < stops.length; stopIndex += 1) {
         resolvedStops.push(validateStop(stops[stopIndex], routePath + '.stops[' + stopIndex + ']',
