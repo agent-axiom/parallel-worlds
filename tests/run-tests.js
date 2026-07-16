@@ -385,6 +385,47 @@ test('Hittite and Persian tracks expose bounded polities and honest alternatives
   assert.ok(persia.periods[2].dating.disputeNote);
 });
 
+test('Greek, Roman, and Byzantine chronology preserves conventional boundaries', function () {
+  assertReviewedBatch(['greece', 'rome', 'byzantium']);
+
+  const greece = data.tracks.find(function (track) { return track.id === 'greece'; });
+  assert.deepStrictEqual(greece.periods.map(function (period) { return [period.id, period.start, period.end]; }), [
+    ['greece-aegean-bronze', -3000, -1100], ['greece-archaic', -700, -480],
+    ['greece-classical', -480, -323], ['greece-hellenistic', -323, -31]
+  ]);
+  const olympics = greece.events.find(function (event) { return event.id === 'greece-olympics-traditional'; });
+  assert.strictEqual(olympics.year, -776);
+  assert.strictEqual(olympics.dating.precision, 'traditional');
+  assert.strictEqual(olympics.dating.basis, 'traditional');
+
+  const rome = data.tracks.find(function (track) { return track.id === 'rome'; });
+  assert.deepStrictEqual(rome.periods.map(function (period) { return [period.id, period.start, period.end]; }), [
+    ['rome-kings', -753, -509], ['rome-republic', -509, -27],
+    ['rome-principate', -27, 284], ['rome-late-empire', 284, 476]
+  ]);
+  assert.strictEqual(rome.periods[0].dating.precision, 'traditional');
+  assert.strictEqual(rome.events.find(function (event) { return event.id === 'rome-republic-traditional'; }).dating.precision, 'traditional');
+  assert.strictEqual(rome.events.find(function (event) { return event.id === 'rome-augustus'; }).dating.precision, 'exact');
+
+  const byzantium = data.tracks.find(function (track) { return track.id === 'byzantium'; });
+  assert.deepStrictEqual(byzantium.periods.map(function (period) { return [period.id, period.start, period.end]; }), [
+    ['byzantium-early', 330, 843], ['byzantium-middle', 843, 1204],
+    ['byzantium-latin', 1204, 1261], ['byzantium-late', 1261, 1453]
+  ]);
+  assert.ok(byzantium.periods.every(function (period) { return period.start !== 610 && period.end !== 610; }));
+});
+
+test('first academic migration milestone has exact auditable coverage', function () {
+  const audit = require(path.join(root, 'academic-audit.js')).buildAudit(data);
+  assert.deepStrictEqual(audit.summary, {
+    tracks: 62, reviewedTracks: 25, legacyTracks: 37, blockingIssues: 0, warnings: 42
+  });
+  assert.deepStrictEqual(audit.coverage, {
+    periods: { total: 217, sourced: 69, dated: 69 },
+    events: { total: 161, sourced: 50, dated: 50 }
+  });
+});
+
 test('reviewed deep-time corpus is balanced across seven macroregions', function () {
   const required = [
     'xianrendong', 'jomon', 'liangzhu', 'natufian', 'gobekli-tepe', 'catalhoyuk',

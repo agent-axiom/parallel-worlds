@@ -467,6 +467,75 @@
           eventCopy('Установление Сасанидской династии', 'Ардашир I побеждает последнего Аршакида.', 'Sasanian dynasty is established', 'Ardashir I defeats the last Arsacid ruler.', '萨珊王朝建立', '阿尔达希尔一世击败最后一位阿尔萨息统治者。'), { confidence: 'high' })
       ], ['iranica-chronology-2004', 'iranica-arsacid-dynasty-1986', 'iranica-sasanian-dynasty-2005']),
 
+    greece: patch('regional-sequence',
+      trackCopy(
+        'Эгейский и древнегреческий мир', 'Археологическая и историческая последовательность Эгейского бронзового века, архаической, классической и эллинистической эпох; это не одна непрерывная полития.',
+        'Aegean and ancient Greek world', 'An archaeological and historical sequence spanning the Aegean Bronze Age, Archaic, Classical, and Hellenistic eras; it is not one continuous polity.',
+        '爱琴海与古希腊世界', '涵盖爱琴海青铜时代、古风、古典和希腊化时期的考古与历史序列；并非一个连续政体。'
+      ), [
+        period('greece-aegean-bronze', -3000, -1100, 'approximate', 'archaeological-chronology', 'broad Aegean Bronze Age, ca. 3000–1100 BCE', ['met-greek-prehistoric-classical-2000'],
+          periodCopy('Эгейский бронзовый век', 'Широкая рамка для кикладской, минойской и микенской последовательностей, а не единое государство.', 'Aegean Bronze Age', 'A broad frame for Cycladic, Minoan, and Mycenaean sequences, not a single state.', '爱琴海青铜时代', '基克拉泽斯、米诺斯和迈锡尼序列的宽泛框架，并非单一国家。'), { confidence: 'medium' }),
+        period('greece-archaic', -700, -480, 'approximate', 'historical', 'seventh century to 480 BCE', ['met-greek-archaic-2003'],
+          periodCopy('Архаическая эпоха', 'Начальная граница округляет переход от геометрической эпохи; конец связан с Персидскими войнами.', 'Archaic period', 'The opening rounds the transition from the Geometric era; the end is associated with the Persian Wars.', '古风时期', '起点概括了从几何风格时代的过渡；终点与希波战争相关。'), { confidence: 'medium', model: 'Conventional art-historical periodization' }),
+        period('greece-classical', -480, -323, 'range', 'historical', 'ca. 480–323 BCE', ['met-greek-classical-2008'],
+          periodCopy('Классическая эпоха', 'Принятая историко-художественная граница от Персидских войн до смерти Александра.', 'Classical period', 'The conventional art-historical span from the Persian Wars to Alexander’s death.', '古典时期', '从希波战争至亚历山大去世的通行艺术史分期。'), { confidence: 'high' }),
+        period('greece-hellenistic', -323, -31, 'range', 'historical', '323–31 BCE; conventional end at Actium', ['met-greek-hellenistic-2007'],
+          periodCopy('Эллинистическая эпоха', 'От смерти Александра до принятого завершения при Акции в 31 году до н. э.', 'Hellenistic period', 'From Alexander’s death to the conventional end at Actium in 31 BCE.', '希腊化时期', '从亚历山大去世至公元前31年亚克兴战役这一通行终点。'), { confidence: 'high' })
+      ], [
+        event('greece-olympics-traditional', -776, 'traditional', 'traditional', 'traditional inauguration in 776 BCE', ['met-greek-athletics-2002'],
+          eventCopy('Традиционная дата первых Олимпийских игр', 'Источник прямо обозначает 776 год до н. э. как традиционную, а не археологически точную дату.', 'Traditional date of the first Olympic Games', 'The source explicitly presents 776 BCE as traditional rather than an archaeologically exact date.', '首届奥林匹克运动会的传统年代', '来源明确将公元前776年视为传统年代，而非考古学上的精确日期。'), { confidence: 'low' }),
+        event('greece-classical-begins', -480, 'approximate', 'historical', 'conventional boundary ca. 480 BCE', ['met-greek-classical-2008'],
+          eventCopy('Условное начало классической эпохи', 'Периодизационная граница, связанная с Персидскими войнами.', 'Conventional start of the Classical period', 'A period boundary associated with the Persian Wars.', '古典时期的通行起点', '与希波战争相关的分期边界。'), { confidence: 'high' }),
+        event('greece-alexander-dies', -323, 'exact', 'historical', '323 BCE', ['met-greek-classical-2008', 'met-greek-hellenistic-2007'],
+          eventCopy('Смерть Александра Македонского', 'Принятая граница между классической и эллинистической эпохами.', 'Death of Alexander the Great', 'The conventional boundary between the Classical and Hellenistic periods.', '亚历山大大帝去世', '古典时期与希腊化时期的通行分界。'), { confidence: 'high' })
+      ], ['met-greek-prehistoric-classical-2000', 'met-greek-archaic-2003', 'met-greek-classical-2008', 'met-greek-hellenistic-2007', 'met-greek-athletics-2002']),
+
+    rome: patch('polity',
+      trackCopy(
+        'Римское государство', 'Традиционный царский период, республика и западная империя; легендарные ранние границы отделены от хорошо засвидетельствованных имперских дат.',
+        'Roman state', 'The traditional regal period, Republic, and western empire; legendary early boundaries are distinguished from well-attested imperial dates.',
+        '罗马国家', '传统王政时期、共和国与西部帝国；传说性的早期边界与证据充分的帝国年代明确区分。'
+      ), [
+        period('rome-kings', -753, -509, 'traditional', 'traditional', 'traditional royal chronology, 753–509 BCE', ['met-roman-kings-1989', 'met-roman-republic-2000'],
+          periodCopy('Традиционный царский период', '753 год до н. э. происходит из литературной традиции о Ромуле; археология показывает более длительное развитие поселения.', 'Traditional regal period', '753 BCE comes from the literary tradition of Romulus; archaeology shows a longer settlement history.', '传统王政时期', '公元前753年来自罗慕路斯的文学传统；考古材料显示聚落经历了更长的发展过程。'), { confidence: 'low', model: 'Roman literary tradition' }),
+        period('rome-republic', -509, -27, 'traditional', 'traditional', 'traditional/conventional start 509 BCE; Augustus 27 BCE', ['met-roman-republic-2000'],
+          periodCopy('Римская республика', 'Начальная граница 509 года до н. э. традиционна; переход к принципату в 27 году засвидетельствован точнее.', 'Roman Republic', 'The 509 BCE opening is traditional; the transition to the Principate in 27 BCE is more securely attested.', '罗马共和国', '公元前509年的起点属传统年代；公元前27年向元首制的过渡证据更为确切。'), { confidence: 'medium', model: 'Traditional republican chronology' }),
+        period('rome-principate', -27, 284, 'range', 'historical', '27 BCE–284 CE', ['met-roman-empire-2000'],
+          periodCopy('Принципат и ранняя империя', 'От получения Октавианом титула Августа до прихода Диоклетиана.', 'Principate and early empire', 'From Octavian receiving the title Augustus to Diocletian’s accession.', '元首制与早期帝国', '从屋大维获“奥古斯都”称号至戴克里先即位。'), { confidence: 'high' }),
+        period('rome-late-empire', 284, 476, 'range', 'historical', '284–476 CE for the western empire', ['met-roman-empire-2000'],
+          periodCopy('Поздняя Западная Римская империя', 'Восточные провинции продолжаются после западной границы 476 года и показаны отдельно как Византия.', 'Late Western Roman Empire', 'The eastern provinces continue after the western boundary of 476 and are shown separately as Byzantium.', '西罗马帝国晚期', '东部行省在476年西部终点后继续存在，并作为拜占庭单独展示。'), { confidence: 'high' })
+      ], [
+        event('rome-republic-traditional', -509, 'traditional', 'traditional', 'traditional start in 509 BCE', ['met-roman-republic-2000'],
+          eventCopy('Традиционное установление республики', 'Это условная раннеримская граница, а не дата современной точности.', 'Traditional establishment of the Republic', 'This is a conventional early Roman boundary, not a date of modern precision.', '共和国建立的传统年代', '这是古罗马早期的通行边界，并非现代意义上的精确日期。'), { confidence: 'low' }),
+        event('rome-augustus', -27, 'exact', 'historical', '27 BCE', ['met-roman-republic-2000', 'met-roman-empire-2000'],
+          eventCopy('Октавиан получает титул Августа', 'Принятая граница начала принципата.', 'Octavian receives the title Augustus', 'The conventional opening of the Principate.', '屋大维获“奥古斯都”称号', '元首制开始的通行边界。'), { confidence: 'high' }),
+        event('rome-western-end', 476, 'exact', 'historical', '476 CE', ['met-roman-empire-2000'],
+          eventCopy('Смещение последнего западного императора', 'Одоакр смещает Ромула Августула; Восточная Римская империя продолжается.', 'Last western emperor is deposed', 'Odoacer deposes Romulus Augustulus; the Eastern Roman Empire continues.', '最后一位西部皇帝被废黜', '奥多亚塞废黜罗慕路斯·奥古斯都；东罗马帝国继续存在。'), { confidence: 'high' })
+      ], ['met-roman-kings-1989', 'met-roman-republic-2000', 'met-roman-empire-2000']),
+
+    byzantium: patch('polity',
+      trackCopy(
+        'Византийская империя', 'Восточная Римская империя с центром в Константинополе; периодизация следует музейной схеме 330–843, 843–1204, 1204–1261 и 1261–1453.',
+        'Byzantine Empire', 'The Eastern Roman Empire centered on Constantinople; the periodization follows the museum sequence 330–843, 843–1204, 1204–1261, and 1261–1453.',
+        '拜占庭帝国', '以君士坦丁堡为中心的东罗马帝国；分期采用博物馆的330–843、843–1204、1204–1261和1261–1453序列。'
+      ), [
+        period('byzantium-early', 330, 843, 'range', 'historical', 'Early Byzantine period, 330–843 CE', ['met-byzantium-2001'],
+          periodCopy('Ранневизантийский период', 'От основания Константинополя до принятой границы восстановления иконопочитания.', 'Early Byzantine period', 'From Constantinople’s foundation to the conventional boundary at the restoration of icons.', '早期拜占庭时期', '从君士坦丁堡建立至恢复圣像崇拜这一通行边界。'), { confidence: 'high' }),
+        period('byzantium-middle', 843, 1204, 'range', 'historical', 'Middle Byzantine period, 843–1204 CE', ['met-byzantium-2001'],
+          periodCopy('Средневизантийский период', 'Период после иконоборчества до захвата Константинополя крестоносцами.', 'Middle Byzantine period', 'The era after Iconoclasm until the crusader capture of Constantinople.', '中期拜占庭时期', '从圣像破坏运动结束至十字军占领君士坦丁堡。'), { confidence: 'high' }),
+        period('byzantium-latin', 1204, 1261, 'range', 'historical', 'Latin occupation, 1204–1261 CE', ['met-byzantium-2001'],
+          periodCopy('Латинская оккупация и государства-преемники', 'Константинополь находится под властью латинян; византийские центры существуют вне столицы.', 'Latin occupation and successor states', 'Constantinople is under Latin rule while Byzantine centers survive outside the capital.', '拉丁占领与继承国家', '君士坦丁堡处于拉丁统治之下，拜占庭中心在首都之外延续。'), { confidence: 'high' }),
+        period('byzantium-late', 1261, 1453, 'range', 'historical', 'Late Byzantine period, 1261–1453 CE', ['met-byzantium-2001'],
+          periodCopy('Поздневизантийский период', 'От возвращения столицы Палеологами до османского завоевания.', 'Late Byzantine period', 'From the Palaiologan recovery of the capital to the Ottoman conquest.', '晚期拜占庭时期', '从巴列奥略王朝收复首都至奥斯曼征服。'), { confidence: 'high' })
+      ], [
+        event('byzantium-constantinople-founded', 330, 'exact', 'historical', '330 CE', ['met-byzantium-2001'],
+          eventCopy('Основание Константинополя', 'Константин основывает новую имперскую столицу.', 'Constantinople is founded', 'Constantine establishes a new imperial capital.', '君士坦丁堡建立', '君士坦丁建立新的帝国首都。'), { confidence: 'high' }),
+        event('byzantium-latin-capture', 1204, 'exact', 'historical', '1204 CE', ['met-byzantium-2001'],
+          eventCopy('Захват Константинополя крестоносцами', 'Начало латинской оккупации 1204–1261 годов.', 'Crusaders capture Constantinople', 'The opening of the Latin occupation of 1204–1261.', '十字军占领君士坦丁堡', '1204至1261年拉丁占领开始。'), { confidence: 'high' }),
+        event('byzantium-constantinople-falls', 1453, 'exact', 'historical', '1453 CE', ['met-byzantium-2001'],
+          eventCopy('Падение Константинополя', 'Османское завоевание завершает византийскую государственную линию.', 'Fall of Constantinople', 'The Ottoman conquest ends the Byzantine state sequence.', '君士坦丁堡陷落', '奥斯曼征服结束拜占庭国家序列。'), { confidence: 'high' })
+      ], ['met-byzantium-2001']),
+
     china: patch('regional-sequence',
       trackCopy(
         'Исторические государства Китая', 'Последовательность и сосуществование династий и региональных государств на территории современного Китая.',

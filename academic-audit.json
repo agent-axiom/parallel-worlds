@@ -2,21 +2,21 @@
   "generatedFrom": "parallel-worlds-data-v1",
   "summary": {
     "tracks": 62,
-    "reviewedTracks": 22,
-    "legacyTracks": 40,
+    "reviewedTracks": 25,
+    "legacyTracks": 37,
     "blockingIssues": 0,
-    "warnings": 45
+    "warnings": 42
   },
   "coverage": {
     "periods": {
       "total": 217,
-      "sourced": 57,
-      "dated": 57
+      "sourced": 69,
+      "dated": 69
     },
     "events": {
       "total": 161,
-      "sourced": 41,
-      "dated": 41
+      "sourced": 50,
+      "dated": 50
     }
   },
   "tracks": [
@@ -127,17 +127,17 @@
     },
     {
       "id": "byzantium",
-      "reviewStatus": "legacy",
-      "type": "civilization",
+      "reviewStatus": "reviewed",
+      "type": "polity",
       "periods": {
         "total": 4,
-        "sourced": 0,
-        "dated": 0
+        "sourced": 4,
+        "dated": 4
       },
       "events": {
         "total": 3,
-        "sourced": 0,
-        "dated": 0
+        "sourced": 3,
+        "dated": 3
       }
     },
     {
@@ -307,17 +307,17 @@
     },
     {
       "id": "greece",
-      "reviewStatus": "legacy",
-      "type": "civilization",
+      "reviewStatus": "reviewed",
+      "type": "regional-sequence",
       "periods": {
         "total": 4,
-        "sourced": 0,
-        "dated": 0
+        "sourced": 4,
+        "dated": 4
       },
       "events": {
         "total": 3,
-        "sourced": 0,
-        "dated": 0
+        "sourced": 3,
+        "dated": 3
       }
     },
     {
@@ -772,17 +772,17 @@
     },
     {
       "id": "rome",
-      "reviewStatus": "legacy",
-      "type": "civilization",
+      "reviewStatus": "reviewed",
+      "type": "polity",
       "periods": {
         "total": 4,
-        "sourced": 0,
-        "dated": 0
+        "sourced": 4,
+        "dated": 4
       },
       "events": {
         "total": 3,
-        "sourced": 0,
-        "dated": 0
+        "sourced": 3,
+        "dated": 3
       }
     },
     {
@@ -1055,14 +1055,12 @@
       "usedByReviewed": [],
       "usedByLegacy": [
         "buddhism",
-        "byzantium",
         "central_asia",
         "christianity",
         "confucianism",
         "daoism",
         "egyptian_religion",
         "ethiopia",
-        "greece",
         "greek_religion",
         "hinduism",
         "india",
@@ -1074,7 +1072,6 @@
         "nubia",
         "phoenicia",
         "roman_religion",
-        "rome",
         "shinto",
         "southeast_asia",
         "west_africa"
@@ -1115,7 +1112,9 @@
       "title": "Byzantium (ca. 330–1453)",
       "url": "https://www.metmuseum.org/essays/byzantium-ca-330-1453",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "byzantium"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1171,7 +1170,9 @@
       "title": "Greek Art in the Archaic Period",
       "url": "https://www.metmuseum.org/essays/greek-art-in-the-archaic-period",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "greece"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1179,7 +1180,9 @@
       "title": "Athletics in Ancient Greece",
       "url": "https://www.metmuseum.org/essays/athletics-in-ancient-greece",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "greece"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1187,7 +1190,9 @@
       "title": "The Art of Classical Greece (ca. 480–323 B.C.)",
       "url": "https://www.metmuseum.org/essays/the-art-of-classical-greece-ca-480-323-b-c",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "greece"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1195,7 +1200,9 @@
       "title": "Art of the Hellenistic Age and the Hellenistic Tradition",
       "url": "https://www.metmuseum.org/essays/art-of-the-hellenistic-age-and-the-hellenistic-tradition",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "greece"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1203,7 +1210,9 @@
       "title": "Greek Art from Prehistoric to Classical: A Resource for Educators",
       "url": "https://www.metmuseum.org/met-publications/greek-art-from-prehistoric-to-classical",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "greece"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1292,7 +1301,9 @@
       "title": "The Roman Empire (27 B.C.–393 A.D.)",
       "url": "https://www.metmuseum.org/essays/the-roman-empire-27-b-c-393-a-d",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "rome"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1300,7 +1311,9 @@
       "title": "Of Dragons, Basilisks, and the Arms of the Seven Kings of Rome",
       "url": "https://resources.metmuseum.org/resources/metpublications/pdf/Dragons_Basilisks_and_Arms_of_Seven_Kings_of_Rome_The_Metropolitan_Museum_Journal_v_24_1989.pdf",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "rome"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1308,7 +1321,9 @@
       "title": "The Roman Republic",
       "url": "https://www.metmuseum.org/essays/the-roman-republic",
       "exact": true,
-      "usedByReviewed": [],
+      "usedByReviewed": [
+        "rome"
+      ],
       "usedByLegacy": []
     },
     {
@@ -1554,13 +1569,6 @@
     {
       "severity": "warning",
       "code": "legacy-track",
-      "path": "byzantium",
-      "message": "Legacy track has not yet received record-level academic review",
-      "trackId": "byzantium"
-    },
-    {
-      "severity": "warning",
-      "code": "legacy-track",
       "path": "central_asia",
       "message": "Legacy track has not yet received record-level academic review",
       "trackId": "central_asia"
@@ -1599,13 +1607,6 @@
       "path": "ethiopia",
       "message": "Legacy track has not yet received record-level academic review",
       "trackId": "ethiopia"
-    },
-    {
-      "severity": "warning",
-      "code": "legacy-track",
-      "path": "greece",
-      "message": "Legacy track has not yet received record-level academic review",
-      "trackId": "greece"
     },
     {
       "severity": "warning",
@@ -1746,13 +1747,6 @@
       "path": "roman_religion",
       "message": "Legacy track has not yet received record-level academic review",
       "trackId": "roman_religion"
-    },
-    {
-      "severity": "warning",
-      "code": "legacy-track",
-      "path": "rome",
-      "message": "Legacy track has not yet received record-level academic review",
-      "trackId": "rome"
     },
     {
       "severity": "warning",

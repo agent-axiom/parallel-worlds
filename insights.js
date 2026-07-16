@@ -49,7 +49,7 @@
       ['Хетты и Новое царство', 'Хеттская держава и египетское Новое царство были современниками и соперниками восточного Средиземноморья.'],
       ['Hittites and the New Kingdom', 'The Hittite state and Egypt’s New Kingdom were contemporaries and rivals in the eastern Mediterranean.'],
       ['赫梯与新王国', '赫梯国家与埃及新王国同处一个时代，也是东地中海世界的竞争者。'], ['met']),
-    insight('assyria-greece', -800, -609, ['assyria', 'greece'],
+    insight('assyria-greece', -700, -609, ['assyria', 'greece'],
       ['Ассирия и архаическая Греция', 'Новоассирийская империя достигла расцвета тогда, когда в Греции формировались архаические полисы.'],
       ['Assyria and Archaic Greece', 'The Neo-Assyrian Empire flourished while the poleis of Archaic Greece were taking shape.'],
       ['亚述与古风希腊', '新亚述帝国繁荣之时，古风时期的希腊城邦也正在形成。'], ['met']),
