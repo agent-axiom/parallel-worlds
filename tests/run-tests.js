@@ -710,6 +710,10 @@ test('page exposes accessible scale modes, evidence note, and evidence rendering
   assert.ok(/scale-breakpoint/.test(app));
   assert.ok(/precision-badge/.test(app));
   assert.ok(/review-status/.test(app));
+  ['confidenceLabel', 'calibrationCurve', 'chronologyModel', 'chronologyAlternatives', 'disputeNote'].forEach(function (marker) {
+    assert.ok(app.indexOf(marker) !== -1, 'missing extended evidence hook ' + marker);
+  });
+  assert.ok(/href="academic-audit\.json"[^>]*data-i18n="academicAudit"/.test(html));
 });
 
 test('adaptive timeline exposes one shared tooltip and period interaction hooks', function () {
@@ -925,6 +929,26 @@ test('CSV export carries reviewed dating evidence and exact source links', funct
   assert.ok(csv.indexOf('"Precision","Dating basis","Original dating","Review status","Sources"') !== -1);
   assert.ok(csv.indexOf('"range","radiocarbon dating","ca. 20,000–19,000 cal BP (approximately 18,050–17,050 cal BCE)","reviewed"') !== -1);
   assert.ok(csv.indexOf('"https://doi.org/10.1126/science.1218643"') !== -1);
+});
+
+test('CSV export includes confidence, model, calibration, alternatives, and dispute note', function () {
+  const csv = timeline.buildCsv([{
+    name: 'Test track', type: 'site', region: 'west-asia', reviewStatus: 'reviewed', sources: ['exact'],
+    periods: [{
+      name: 'Test period', start: -12000, end: -11000, note: '', sourceIds: ['exact'],
+      dating: {
+        precision: 'range', basis: 'radiocarbon', original: '12,000–11,000 BCE', confidence: 'high',
+        model: 'preferred', calibrationCurve: 'IntCal20',
+        alternatives: [{ id: 'short-model', label: 'Short model', start: -11900, end: -11100 }],
+        disputeNote: 'A narrower posterior interval is also published.'
+      }
+    }]
+  }], {
+    headers: ['Track', 'Type', 'Region', 'Period', 'Start', 'End', 'Note', 'Precision', 'Dating basis', 'Original dating', 'Review status', 'Sources', 'Confidence', 'Model', 'Calibration curve', 'Alternatives', 'Dispute note'],
+    sources: { exact: { url: 'https://doi.org/10.1000/example' } }, includeEvidence: true
+  });
+  assert.ok(csv.indexOf('"Confidence","Model","Calibration curve","Alternatives","Dispute note"') !== -1);
+  assert.ok(csv.indexOf('"high","preferred","IntCal20","Short model: -11900–-11100","A narrower posterior interval is also published."') !== -1);
 });
 
 test('required static site and Pages files exist and use relative assets', function () {

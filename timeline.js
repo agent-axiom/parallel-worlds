@@ -110,6 +110,7 @@
     options = options || {};
     var headers = options.headers || ['Линия', 'Тип', 'Регион', 'Период', 'Начало', 'Конец', 'Примечание'];
     var includeEvidence = Boolean(options.includeEvidence || headers.length > 7);
+    var includeExtendedEvidence = Boolean(options.includeExtendedEvidence || headers.length > 12);
     var rows = [headers];
     tracks.forEach(function (track) {
       track.periods.forEach(function (period) {
@@ -133,6 +134,17 @@
             options.reviewNames && options.reviewNames[track.reviewStatus] || track.reviewStatus || '',
             sourceUrls.join(' | ')
           );
+          if (includeExtendedEvidence) {
+            row.push(
+              options.confidenceNames && options.confidenceNames[dating.confidence] || dating.confidence || '',
+              dating.model || '',
+              dating.calibrationCurve || '',
+              (dating.alternatives || []).map(function (alternative) {
+                return (alternative.label || alternative.id) + ': ' + alternative.start + '–' + alternative.end;
+              }).join(' | '),
+              dating.disputeNote || ''
+            );
+          }
         }
         rows.push(row);
       });

@@ -218,6 +218,10 @@
     return t({ reviewed: 'reviewedStatus', provisional: 'provisionalStatus', legacy: 'legacyStatus' }[status] || 'legacyStatus');
   }
 
+  function confidenceLabel(confidence) {
+    return t({ high: 'confidenceHigh', medium: 'confidenceMedium', low: 'confidenceLow' }[confidence] || 'confidenceUnknown');
+  }
+
   function reviewStatusHtml(track) {
     var status = track.reviewStatus || 'legacy';
     return '<span class="review-status ' + escapeHtml(status) + '">' + escapeHtml(reviewLabel(status)) + '</span>';
@@ -236,9 +240,17 @@
     var dating = record.dating;
     var original = dating.original ? '<span><strong>' + escapeHtml(t('originalDating')) + '</strong> ' + escapeHtml(dating.original) + '</span>' : '';
     var sources = sourceLinksHtml(record.sourceIds);
+    var confidence = dating.confidence ? '<span><strong>' + escapeHtml(t('confidenceLabel')) + '</strong> ' + escapeHtml(confidenceLabel(dating.confidence)) + '</span>' : '';
+    var calibration = dating.calibrationCurve ? '<span><strong>' + escapeHtml(t('calibrationCurve')) + '</strong> ' + escapeHtml(dating.calibrationCurve) + '</span>' : '';
+    var model = dating.model ? '<span><strong>' + escapeHtml(t('chronologyModel')) + '</strong> ' + escapeHtml(dating.model) + '</span>' : '';
+    var alternatives = (dating.alternatives || []).map(function (alternative) {
+      return escapeHtml(alternative.label || alternative.id) + ': ' + escapeHtml(formatYear(alternative.start) + ' — ' + formatYear(alternative.end));
+    }).join('<br>');
+    var alternativesHtml = alternatives ? '<span class="evidence-alternatives"><strong>' + escapeHtml(t('chronologyAlternatives')) + '</strong><br>' + alternatives + '</span>' : '';
+    var dispute = dating.disputeNote ? '<span class="evidence-dispute"><strong>' + escapeHtml(t('disputeNote')) + '</strong> ' + escapeHtml(dating.disputeNote) + '</span>' : '';
     return '<div class="evidence-meta"><span class="precision-badge ' + escapeHtml(dating.precision) + '">' +
       escapeHtml(precisionSymbol(dating.precision) + ' ' + precisionLabel(dating.precision)) + '</span>' +
-      '<span><strong>' + escapeHtml(t('datingBasis')) + '</strong> ' + escapeHtml(basisLabel(dating.basis)) + '</span>' + original +
+      '<span><strong>' + escapeHtml(t('datingBasis')) + '</strong> ' + escapeHtml(basisLabel(dating.basis)) + '</span>' + original + confidence + calibration + model + alternativesHtml + dispute +
       (sources ? '<span class="record-sources"><strong>' + escapeHtml(t('recordSources')) + '</strong> ' + sources + '</span>' : '') + '</div>';
   }
 
@@ -569,7 +581,8 @@
   function downloadCsv() {
     var options = {
       headers: [t('csvLine'), t('csvType'), t('csvRegion'), t('csvPeriod'), t('csvStart'), t('csvEnd'), t('csvNote'),
-        t('csvPrecision'), t('csvDatingBasis'), t('csvOriginalDating'), t('csvReviewStatus'), t('csvSources')],
+        t('csvPrecision'), t('csvDatingBasis'), t('csvOriginalDating'), t('csvReviewStatus'), t('csvSources'),
+        t('csvConfidence'), t('csvChronologyModel'), t('csvCalibrationCurve'), t('csvAlternatives'), t('csvDisputeNote')],
       typeNames: {
         civilization: typeLabel('civilization'), tradition: typeLabel('tradition'),
         'archaeological-culture': typeLabel('archaeological-culture'), site: typeLabel('site'),
@@ -586,8 +599,10 @@
         stratigraphy: basisLabel('stratigraphy'), traditional: basisLabel('traditional')
       },
       reviewNames: { reviewed: reviewLabel('reviewed'), provisional: reviewLabel('provisional'), legacy: reviewLabel('legacy') },
+      confidenceNames: { high: confidenceLabel('high'), medium: confidenceLabel('medium'), low: confidenceLabel('low') },
       sources: rawData.sources,
-      includeEvidence: true
+      includeEvidence: true,
+      includeExtendedEvidence: true
     };
     var blob = new Blob(['\ufeff' + timeline.buildCsv(filteredTracks(), options)], { type: 'text/csv;charset=utf-8' });
     var url = URL.createObjectURL(blob);

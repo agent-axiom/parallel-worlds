@@ -37,6 +37,7 @@
       earliestShownNote: 'Самая ранняя видимая дата не означает «первую цивилизацию»: керамика, оседлость, земледелие, города, письменность и государства возникали как разные процессы.',
       footer: 'Параллельные миры · открытая сравнительная хронология', sourceCode: 'Исходный код', close: 'Закрыть',
       detailsPeriods: 'Периоды', detailsEvents: 'Ориентиры', detailsSources: 'Источники линии:', recordSources: 'Источники:', originalDating: 'Запись в источнике:', datingBasis: 'Основание:',
+      confidenceLabel: 'Уверенность:', confidenceHigh: 'высокая', confidenceMedium: 'средняя', confidenceLow: 'низкая', confidenceUnknown: 'не указана', calibrationCurve: 'Калибровочная кривая:', chronologyModel: 'Модель:', chronologyAlternatives: 'Альтернативы:', disputeNote: 'Почему спорно:', academicAudit: 'Открыть академический аудит данных ↗',
       linePeriod: 'Линия / период', tradition: 'традиция', civilization: 'цивилизация',
       legacySociety: 'наследуемая общественная линия', traditionMeta: 'религия / традиция', civilizationMeta: 'цивилизация / общество', openDetails: 'Открыть подробности: {name}',
       reviewedStatus: 'проверено', provisionalStatus: 'предварительно', legacyStatus: 'наследуемые данные',
@@ -45,7 +46,7 @@
       activeLines: '{count} линий активны в {year}', noContemporaries: 'В текущей выборке нет линий для этого года.',
       linkCopied: 'Ссылка скопирована', copyLinkPrompt: 'Скопируйте ссылку',
       csvFilename: 'parallel-worlds-ru.csv', csvLine: 'Линия', csvType: 'Тип', csvRegion: 'Регион', csvPeriod: 'Период', csvStart: 'Начало', csvEnd: 'Конец', csvNote: 'Примечание',
-      csvPrecision: 'Точность', csvDatingBasis: 'Основание датировки', csvOriginalDating: 'Исходная датировка', csvReviewStatus: 'Статус проверки', csvSources: 'Источники'
+      csvPrecision: 'Точность', csvDatingBasis: 'Основание датировки', csvOriginalDating: 'Исходная датировка', csvReviewStatus: 'Статус проверки', csvSources: 'Источники', csvConfidence: 'Уверенность', csvChronologyModel: 'Модель хронологии', csvCalibrationCurve: 'Калибровочная кривая', csvAlternatives: 'Альтернативы', csvDisputeNote: 'Примечание о споре'
     },
     en: {
       siteName: 'Parallel Worlds',
@@ -78,6 +79,7 @@
       earliestShownNote: 'The earliest visible date does not mean “the first civilization”: pottery, sedentism, farming, cities, writing, and states emerged as different processes.',
       footer: 'Parallel Worlds · an open comparative chronology', sourceCode: 'Source code', close: 'Close',
       detailsPeriods: 'Periods', detailsEvents: 'Milestones', detailsSources: 'Track sources:', recordSources: 'Sources:', originalDating: 'Source notation:', datingBasis: 'Dating basis:',
+      confidenceLabel: 'Confidence:', confidenceHigh: 'high', confidenceMedium: 'medium', confidenceLow: 'low', confidenceUnknown: 'unspecified', calibrationCurve: 'Calibration curve:', chronologyModel: 'Model:', chronologyAlternatives: 'Alternatives:', disputeNote: 'Why disputed:', academicAudit: 'Open the academic data audit ↗',
       linePeriod: 'Track / period', tradition: 'tradition', civilization: 'civilization',
       legacySociety: 'legacy society track', traditionMeta: 'religion / tradition', civilizationMeta: 'civilization / society', openDetails: 'Open details: {name}',
       reviewedStatus: 'reviewed', provisionalStatus: 'provisional', legacyStatus: 'legacy data',
@@ -86,7 +88,7 @@
       activeLines: '{count} tracks active in {year}', noContemporaries: 'No tracks in the current selection cover this year.',
       linkCopied: 'Link copied', copyLinkPrompt: 'Copy this link',
       csvFilename: 'parallel-worlds-en.csv', csvLine: 'Track', csvType: 'Type', csvRegion: 'Region', csvPeriod: 'Period', csvStart: 'Start', csvEnd: 'End', csvNote: 'Note',
-      csvPrecision: 'Precision', csvDatingBasis: 'Dating basis', csvOriginalDating: 'Original dating', csvReviewStatus: 'Review status', csvSources: 'Sources'
+      csvPrecision: 'Precision', csvDatingBasis: 'Dating basis', csvOriginalDating: 'Original dating', csvReviewStatus: 'Review status', csvSources: 'Sources', csvConfidence: 'Confidence', csvChronologyModel: 'Chronology model', csvCalibrationCurve: 'Calibration curve', csvAlternatives: 'Alternatives', csvDisputeNote: 'Dispute note'
     },
     zh: {
       siteName: '平行世界',
@@ -119,6 +121,7 @@
       earliestShownNote: '最早显示的日期并不代表“第一文明”：陶器、定居、农业、城市、文字和国家是不同的历史过程。',
       footer: '平行世界 · 开放的世界历史对照年表', sourceCode: '源代码', close: '关闭',
       detailsPeriods: '时期', detailsEvents: '里程碑', detailsSources: '历史线来源：', recordSources: '来源：', originalDating: '来源原始年代：', datingBasis: '测年依据：',
+      confidenceLabel: '置信度：', confidenceHigh: '高', confidenceMedium: '中', confidenceLow: '低', confidenceUnknown: '未注明', calibrationCurve: '校准曲线：', chronologyModel: '年代模型：', chronologyAlternatives: '替代方案：', disputeNote: '争议说明：', academicAudit: '打开学术数据审计 ↗',
       linePeriod: '历史线 / 时期', tradition: '传统', civilization: '文明',
       legacySociety: '旧版社会历史线', traditionMeta: '宗教 / 传统', civilizationMeta: '文明 / 社会', openDetails: '查看详情：{name}',
       reviewedStatus: '已审核', provisionalStatus: '暂定', legacyStatus: '旧版数据',
@@ -127,7 +130,7 @@
       activeLines: '{year}共有{count}条历史线活跃', noContemporaries: '当前筛选中没有覆盖这一年份的历史线。',
       linkCopied: '链接已复制', copyLinkPrompt: '复制此链接',
       csvFilename: 'parallel-worlds-zh.csv', csvLine: '历史线', csvType: '类型', csvRegion: '地区', csvPeriod: '时期', csvStart: '开始', csvEnd: '结束', csvNote: '说明',
-      csvPrecision: '年代精度', csvDatingBasis: '测年依据', csvOriginalDating: '来源原始年代', csvReviewStatus: '审核状态', csvSources: '来源链接'
+      csvPrecision: '年代精度', csvDatingBasis: '测年依据', csvOriginalDating: '来源原始年代', csvReviewStatus: '审核状态', csvSources: '来源链接', csvConfidence: '置信度', csvChronologyModel: '年代模型', csvCalibrationCurve: '校准曲线', csvAlternatives: '替代方案', csvDisputeNote: '争议说明'
     }
   };
 

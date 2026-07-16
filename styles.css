@@ -843,6 +843,8 @@ dialog h2 { margin: 1rem 0; }
 .evidence-meta { display: grid; gap: .35rem; margin-top: .65rem; padding: .6rem; border-radius: 5px; background: color-mix(in srgb, var(--accent) 6%, transparent); }
 .detail-list .evidence-meta > span { display: block; color: var(--muted); font-size: .62rem; }
 .detail-list .evidence-meta strong { display: inline; font-size: inherit; }
+.evidence-alternatives, .evidence-dispute { overflow-wrap: anywhere; }
+.evidence-dispute { padding-top: .35rem; border-top: 1px solid var(--rule); line-height: 1.55; }
 .record-sources a { color: var(--accent); text-underline-offset: .15em; }
 .dialog-sources { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--rule); }
 
