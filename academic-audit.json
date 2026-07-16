@@ -1009,6 +1009,22 @@
       "usedByLegacy": []
     },
     {
+      "id": "iranica-chronology-2004",
+      "title": "Chronology of Iranian History, Part 1",
+      "url": "https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-1/",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
+      "id": "iranica-sasanian-dynasty-2005",
+      "title": "Sasanian Dynasty",
+      "url": "https://www.iranicaonline.org/articles/sasanian-dynasty/",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
       "id": "kenoyer-indus-2011",
       "title": "Changing Perspectives of the Indus Civilization: New Discoveries and Challenges",
       "url": "https://www.harappa.com/sites/default/files/pdf/Kenoyer_Changing%20Perspectives%20of%20the%20Indus%20Civilization.pdf",
@@ -1057,6 +1073,38 @@
       ]
     },
     {
+      "id": "met-akkadian-period-2004",
+      "title": "The Akkadian Period (ca. 2350–2150 B.C.)",
+      "url": "https://www.metmuseum.org/essays/the-akkadian-period-ca-2350-2150-b-c",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-assyria-2004",
+      "title": "Assyria, 1365–609 B.C.",
+      "url": "https://www.metmuseum.org/essays/assyria-1365-609-b-c",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-babylon-2016",
+      "title": "Babylon",
+      "url": "https://www.metmuseum.org/essays/babylon",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-byzantium-2001",
+      "title": "Byzantium (ca. 330–1453)",
+      "url": "https://www.metmuseum.org/essays/byzantium-ca-330-1453",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
       "id": "met-china-three-kingdoms",
       "title": "Tile with Buddhist images — Three Kingdoms period (220–280)",
       "url": "https://www.metmuseum.org/art/collection/search/61612",
@@ -1075,6 +1123,78 @@
       "usedByLegacy": []
     },
     {
+      "id": "met-egypt-middle-kingdom-2019",
+      "title": "Egypt in the Middle Kingdom (ca. 2030–1650 B.C.)",
+      "url": "https://www.metmuseum.org/essays/egypt-in-the-middle-kingdom-2030-1640-b-c",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-egypt-new-kingdom-2000",
+      "title": "Egypt in the New Kingdom (ca. 1550–1070 B.C.)",
+      "url": "https://www.metmuseum.org/essays/egypt-in-the-new-kingdom-ca-1550-1070-b-c",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-egypt-old-kingdom-2019",
+      "title": "Egypt in the Old Kingdom (ca. 2649–2130 B.C.)",
+      "url": "https://www.metmuseum.org/essays/egypt-in-the-old-kingdom-ca-2649-2150-b-c",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-greek-archaic-2003",
+      "title": "Greek Art in the Archaic Period",
+      "url": "https://www.metmuseum.org/essays/greek-art-in-the-archaic-period",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-greek-athletics-2002",
+      "title": "Athletics in Ancient Greece",
+      "url": "https://www.metmuseum.org/essays/athletics-in-ancient-greece",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-greek-classical-2008",
+      "title": "The Art of Classical Greece (ca. 480–323 B.C.)",
+      "url": "https://www.metmuseum.org/essays/the-art-of-classical-greece-ca-480-323-b-c",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-greek-hellenistic-2007",
+      "title": "Art of the Hellenistic Age and the Hellenistic Tradition",
+      "url": "https://www.metmuseum.org/essays/art-of-the-hellenistic-age-and-the-hellenistic-tradition",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-greek-prehistoric-classical-2000",
+      "title": "Greek Art from Prehistoric to Classical: A Resource for Educators",
+      "url": "https://www.metmuseum.org/met-publications/greek-art-from-prehistoric-to-classical",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-hittites-2002",
+      "title": "The Hittites",
+      "url": "https://www.metmuseum.org/essays/the-hittites",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
       "id": "met-jomon-2002",
       "title": "Jōmon Culture (ca. 10,500–ca. 300 B.C.)",
       "url": "https://www.metmuseum.org/essays/jomon-culture-ca-10500-ca-300-b-c",
@@ -1082,6 +1202,14 @@
       "usedByReviewed": [
         "jomon"
       ],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-kassite-babylonia-2016",
+      "title": "The Middle Babylonian / Kassite Period (ca. 1595–1155 B.C.) in Mesopotamia",
+      "url": "https://www.metmuseum.org/essays/the-middle-babylonian-kassite-period-ca-1595-1155-b-c-in-mesopotamia",
+      "exact": true,
+      "usedByReviewed": [],
       "usedByLegacy": []
     },
     {
@@ -1106,6 +1234,22 @@
       "usedByLegacy": []
     },
     {
+      "id": "met-old-assyrian-2017",
+      "title": "The Old Assyrian Period",
+      "url": "https://www.metmuseum.org/essays/the-old-assyrian-period",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-old-babylonian-2017",
+      "title": "The Isin-Larsa and Old Babylonian Periods (2004–1595 B.C.)",
+      "url": "https://www.metmuseum.org/essays/the-isin-larsa-and-old-babylonian-periods-2004-1595-b-c",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
       "id": "met-prehistoric-art-2007",
       "title": "Introduction to Prehistoric Art, 20,000–8000 B.C.",
       "url": "https://www.metmuseum.org/essays/introduction-to-prehistoric-art-20000-8000-b-c",
@@ -1113,6 +1257,30 @@
       "usedByReviewed": [
         "european-palaeolithic-mesolithic"
       ],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-roman-empire-2000",
+      "title": "The Roman Empire (27 B.C.–393 A.D.)",
+      "url": "https://www.metmuseum.org/essays/the-roman-empire-27-b-c-393-a-d",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-roman-kings-1989",
+      "title": "Of Dragons, Basilisks, and the Arms of the Seven Kings of Rome",
+      "url": "https://resources.metmuseum.org/resources/metpublications/pdf/Dragons_Basilisks_and_Arms_of_Seven_Kings_of_Rome_The_Metropolitan_Museum_Journal_v_24_1989.pdf",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
+      "id": "met-roman-republic-2000",
+      "title": "The Roman Republic",
+      "url": "https://www.metmuseum.org/essays/the-roman-republic",
+      "exact": true,
+      "usedByReviewed": [],
       "usedByLegacy": []
     },
     {
@@ -1186,9 +1354,33 @@
       "usedByLegacy": []
     },
     {
+      "id": "plos-mesopotamian-chronology-2016",
+      "title": "Integrated Tree-Ring-Radiocarbon High-Resolution Timeframe to Resolve Earlier Second Millennium BCE Mesopotamian Chronology",
+      "url": "https://doi.org/10.1371/journal.pone.0157144",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
       "id": "radiocarbon-near-east-2001",
       "title": "Proto-Neolithic and Neolithic Cultures in the Middle East—a Calibrated 14C Chronology 12,500–5500 cal BC",
       "url": "https://doi.org/10.1017/S0033822200038480",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
+      "id": "royal-society-early-egypt-2013",
+      "title": "An absolute chronology for early Egypt using radiocarbon dating and Bayesian statistical modelling",
+      "url": "https://doi.org/10.1098/rspa.2013.0395",
+      "exact": true,
+      "usedByReviewed": [],
+      "usedByLegacy": []
+    },
+    {
+      "id": "science-egypt-chronology-2010",
+      "title": "Radiocarbon-Based Chronology for Dynastic Egypt",
+      "url": "https://doi.org/10.1126/science.1189395",
       "exact": true,
       "usedByReviewed": [],
       "usedByLegacy": []

@@ -118,6 +118,126 @@
       tier: 'A', kind: 'scholarly-museum-essay', title: 'Introduction to Prehistoric Art, 20,000–8000 B.C.',
       authors: ['Laura Anne Tedesco'], publisher: 'The Metropolitan Museum of Art', year: 2007,
       url: 'https://www.metmuseum.org/essays/introduction-to-prehistoric-art-20000-8000-b-c', accessed: accessed
+    },
+    'science-egypt-chronology-2010': {
+      tier: 'A', kind: 'peer-reviewed-article', title: 'Radiocarbon-Based Chronology for Dynastic Egypt',
+      authors: ['Christopher Bronk Ramsey', 'Michael W. Dee', 'Joanne M. Rowland', 'Thomas F. G. Higham', 'Stephen A. Harris', 'Fiona Brock', 'Anita Quiles', 'Eva M. Wild', 'Ezra S. Marcus', 'Andrew J. Shortland'],
+      publisher: 'Science', year: 2010, url: 'https://doi.org/10.1126/science.1189395', accessed: '2026-07-16'
+    },
+    'royal-society-early-egypt-2013': {
+      tier: 'A', kind: 'peer-reviewed-article', title: 'An absolute chronology for early Egypt using radiocarbon dating and Bayesian statistical modelling',
+      authors: ['Michael Dee', 'David Wengrow', 'Andrew Shortland', 'Alice Stevenson', 'Fiona Brock', 'Linus Girdland Flink', 'Christopher Bronk Ramsey'],
+      publisher: 'Proceedings of the Royal Society A', year: 2013, url: 'https://doi.org/10.1098/rspa.2013.0395', accessed: '2026-07-16'
+    },
+    'met-egypt-old-kingdom-2019': {
+      tier: 'A', kind: 'scholarly-museum-essay', title: 'Egypt in the Old Kingdom (ca. 2649–2130 B.C.)',
+      authors: ['Tara Prakash'], publisher: 'The Metropolitan Museum of Art', year: 2019,
+      url: 'https://www.metmuseum.org/essays/egypt-in-the-old-kingdom-ca-2649-2150-b-c', accessed: '2026-07-16'
+    },
+    'met-egypt-middle-kingdom-2019': {
+      tier: 'A', kind: 'scholarly-museum-essay', title: 'Egypt in the Middle Kingdom (ca. 2030–1650 B.C.)',
+      authors: ['Adela Oppenheim'], publisher: 'The Metropolitan Museum of Art', year: 2019,
+      url: 'https://www.metmuseum.org/essays/egypt-in-the-middle-kingdom-2030-1640-b-c', accessed: '2026-07-16'
+    },
+    'met-egypt-new-kingdom-2000': {
+      tier: 'A', kind: 'scholarly-museum-essay', title: 'Egypt in the New Kingdom (ca. 1550–1070 B.C.)',
+      authors: ['Catharine H. Roehrig'], publisher: 'The Metropolitan Museum of Art', year: 2000,
+      url: 'https://www.metmuseum.org/essays/egypt-in-the-new-kingdom-ca-1550-1070-b-c', accessed: '2026-07-16'
+    },
+    'met-akkadian-period-2004': {
+      tier: 'A', kind: 'scholarly-museum-essay', title: 'The Akkadian Period (ca. 2350–2150 B.C.)',
+      authors: ['Department of Ancient Near Eastern Art'], publisher: 'The Metropolitan Museum of Art', year: 2004,
+      url: 'https://www.metmuseum.org/essays/the-akkadian-period-ca-2350-2150-b-c', accessed: '2026-07-16'
+    },
+    'plos-mesopotamian-chronology-2016': {
+      tier: 'A', kind: 'peer-reviewed-article', title: 'Integrated Tree-Ring-Radiocarbon High-Resolution Timeframe to Resolve Earlier Second Millennium BCE Mesopotamian Chronology',
+      authors: ['Sturt W. Manning', 'Carol B. Griggs', 'Brita Lorentzen', 'Gökhan Barjamovic', 'Christopher Bronk Ramsey', 'Bernd Kromer', 'Eva Maria Wild'],
+      publisher: 'PLOS ONE', year: 2016, url: 'https://doi.org/10.1371/journal.pone.0157144', accessed: '2026-07-16'
+    },
+    'met-old-babylonian-2017': {
+      tier: 'A', kind: 'scholarly-museum-essay', title: 'The Isin-Larsa and Old Babylonian Periods (2004–1595 B.C.)',
+      authors: ['Elizabeth Knott'], publisher: 'The Metropolitan Museum of Art', year: 2017,
+      url: 'https://www.metmuseum.org/essays/the-isin-larsa-and-old-babylonian-periods-2004-1595-b-c', accessed: '2026-07-16'
+    },
+    'met-kassite-babylonia-2016': {
+      tier: 'A', kind: 'scholarly-museum-essay', title: 'The Middle Babylonian / Kassite Period (ca. 1595–1155 B.C.) in Mesopotamia',
+      authors: ['Elizabeth Knott'], publisher: 'The Metropolitan Museum of Art', year: 2016,
+      url: 'https://www.metmuseum.org/essays/the-middle-babylonian-kassite-period-ca-1595-1155-b-c-in-mesopotamia', accessed: '2026-07-16'
+    },
+    'met-babylon-2016': {
+      tier: 'A', kind: 'scholarly-museum-essay', title: 'Babylon',
+      authors: ['Michael Seymour'], publisher: 'The Metropolitan Museum of Art', year: 2016,
+      url: 'https://www.metmuseum.org/essays/babylon', accessed: '2026-07-16'
+    },
+    'met-old-assyrian-2017': {
+      tier: 'A', kind: 'scholarly-museum-essay', title: 'The Old Assyrian Period',
+      authors: ['Nancy Highcock'], publisher: 'The Metropolitan Museum of Art', year: 2017,
+      url: 'https://www.metmuseum.org/essays/the-old-assyrian-period', accessed: '2026-07-16'
+    },
+    'met-assyria-2004': {
+      tier: 'A', kind: 'scholarly-museum-essay', title: 'Assyria, 1365–609 B.C.',
+      authors: ['Department of Ancient Near Eastern Art'], publisher: 'The Metropolitan Museum of Art', year: 2004,
+      url: 'https://www.metmuseum.org/essays/assyria-1365-609-b-c', accessed: '2026-07-16'
+    },
+    'met-hittites-2002': {
+      tier: 'A', kind: 'scholarly-museum-essay', title: 'The Hittites',
+      authors: ['Department of Ancient Near Eastern Art'], publisher: 'The Metropolitan Museum of Art', year: 2002,
+      url: 'https://www.metmuseum.org/essays/the-hittites', accessed: '2026-07-16'
+    },
+    'iranica-chronology-2004': {
+      tier: 'A', kind: 'academic-encyclopedia-chronology', title: 'Chronology of Iranian History, Part 1',
+      authors: ['Ehsan Yarshater'], publisher: 'Encyclopaedia Iranica', year: 2004,
+      url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-1/', accessed: '2026-07-16'
+    },
+    'iranica-sasanian-dynasty-2005': {
+      tier: 'A', kind: 'academic-encyclopedia-article', title: 'Sasanian Dynasty',
+      authors: ['Alireza Shapur Shahbazi'], publisher: 'Encyclopaedia Iranica', year: 2005,
+      url: 'https://www.iranicaonline.org/articles/sasanian-dynasty/', accessed: '2026-07-16'
+    },
+    'met-greek-prehistoric-classical-2000': {
+      tier: 'A', kind: 'scholarly-museum-publication', title: 'Greek Art from Prehistoric to Classical: A Resource for Educators',
+      authors: ['Michael Norris'], publisher: 'The Metropolitan Museum of Art', year: 2000,
+      url: 'https://www.metmuseum.org/met-publications/greek-art-from-prehistoric-to-classical', accessed: '2026-07-16'
+    },
+    'met-greek-archaic-2003': {
+      tier: 'A', kind: 'scholarly-museum-essay', title: 'Greek Art in the Archaic Period',
+      authors: ['Department of Greek and Roman Art'], publisher: 'The Metropolitan Museum of Art', year: 2003,
+      url: 'https://www.metmuseum.org/essays/greek-art-in-the-archaic-period', accessed: '2026-07-16'
+    },
+    'met-greek-classical-2008': {
+      tier: 'A', kind: 'scholarly-museum-essay', title: 'The Art of Classical Greece (ca. 480–323 B.C.)',
+      authors: ['Colette Hemingway', 'Seán Hemingway'], publisher: 'The Metropolitan Museum of Art', year: 2008,
+      url: 'https://www.metmuseum.org/essays/the-art-of-classical-greece-ca-480-323-b-c', accessed: '2026-07-16'
+    },
+    'met-greek-hellenistic-2007': {
+      tier: 'A', kind: 'scholarly-museum-essay', title: 'Art of the Hellenistic Age and the Hellenistic Tradition',
+      authors: ['Department of Greek and Roman Art'], publisher: 'The Metropolitan Museum of Art', year: 2007,
+      url: 'https://www.metmuseum.org/essays/art-of-the-hellenistic-age-and-the-hellenistic-tradition', accessed: '2026-07-16'
+    },
+    'met-greek-athletics-2002': {
+      tier: 'A', kind: 'scholarly-museum-essay', title: 'Athletics in Ancient Greece',
+      authors: ['Colette Hemingway', 'Seán Hemingway'], publisher: 'The Metropolitan Museum of Art', year: 2002,
+      url: 'https://www.metmuseum.org/essays/athletics-in-ancient-greece', accessed: '2026-07-16'
+    },
+    'met-roman-republic-2000': {
+      tier: 'A', kind: 'scholarly-museum-essay', title: 'The Roman Republic',
+      authors: ['Department of Greek and Roman Art'], publisher: 'The Metropolitan Museum of Art', year: 2000,
+      url: 'https://www.metmuseum.org/essays/the-roman-republic', accessed: '2026-07-16'
+    },
+    'met-roman-empire-2000': {
+      tier: 'A', kind: 'scholarly-museum-essay', title: 'The Roman Empire (27 B.C.–393 A.D.)',
+      authors: ['Christopher S. Lightfoot'], publisher: 'The Metropolitan Museum of Art', year: 2000,
+      url: 'https://www.metmuseum.org/essays/the-roman-empire-27-b-c-393-a-d', accessed: '2026-07-16'
+    },
+    'met-roman-kings-1989': {
+      tier: 'A', kind: 'peer-reviewed-museum-journal', title: 'Of Dragons, Basilisks, and the Arms of the Seven Kings of Rome',
+      authors: ['Helmut Nickel'], publisher: 'The Metropolitan Museum Journal', year: 1989,
+      url: 'https://resources.metmuseum.org/resources/metpublications/pdf/Dragons_Basilisks_and_Arms_of_Seven_Kings_of_Rome_The_Metropolitan_Museum_Journal_v_24_1989.pdf', accessed: '2026-07-16'
+    },
+    'met-byzantium-2001': {
+      tier: 'A', kind: 'scholarly-museum-essay', title: 'Byzantium (ca. 330–1453)',
+      authors: ['Sarah Brooks'], publisher: 'The Metropolitan Museum of Art', year: 2001,
+      url: 'https://www.metmuseum.org/essays/byzantium-ca-330-1453', accessed: '2026-07-16'
     }
   };
 

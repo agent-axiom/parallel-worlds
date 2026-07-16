@@ -239,7 +239,19 @@ test('reviewed source registry covers every first-release region with exact reco
     'cambridge-natufian-2017', 'radiocarbon-near-east-2001', 'unesco-gobekli-2018', 'unesco-catalhoyuk-2012',
     'british-early-egypt', 'kenoyer-indus-2011', 'cambridge-mesolithic-europe-2008',
     'nature-americas-2020', 'nature-madjedbebe-2022', 'nature-lapita-2022',
-    'met-korea-1998', 'nm-korea-unified-silla', 'met-china-three-kingdoms', 'met-uruk-2003'
+    'met-korea-1998', 'nm-korea-unified-silla', 'met-china-three-kingdoms', 'met-uruk-2003',
+    'science-egypt-chronology-2010', 'royal-society-early-egypt-2013',
+    'met-egypt-old-kingdom-2019', 'met-egypt-middle-kingdom-2019', 'met-egypt-new-kingdom-2000',
+    'met-akkadian-period-2004',
+    'plos-mesopotamian-chronology-2016', 'met-old-babylonian-2017',
+    'met-kassite-babylonia-2016', 'met-babylon-2016',
+    'met-old-assyrian-2017', 'met-assyria-2004',
+    'met-hittites-2002',
+    'iranica-chronology-2004', 'iranica-sasanian-dynasty-2005',
+    'met-greek-prehistoric-classical-2000', 'met-greek-archaic-2003',
+    'met-greek-classical-2008', 'met-greek-hellenistic-2007', 'met-greek-athletics-2002',
+    'met-roman-republic-2000', 'met-roman-empire-2000', 'met-roman-kings-1989',
+    'met-byzantium-2001'
   ];
   required.forEach(function (id) {
     const source = academicData.sources[id];
