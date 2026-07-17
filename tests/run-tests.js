@@ -3139,6 +3139,23 @@ test('journey CSS covers the luminous full-screen stage and generated view hooks
   assert.ok(/@media \(prefers-reduced-motion: reduce\)[\s\S]*\.journey-dialog[\s\S]*transform:\s*none\s*!important/.test(css));
 });
 
+test('390px journey controls keep five and four button variants to two rows', function () {
+  const css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
+  const compactStart = css.indexOf('@media (max-width: 390px)');
+  const compactEnd = css.indexOf('@media (prefers-reduced-motion: reduce)', compactStart);
+  const compactCss = css.substring(compactStart, compactEnd);
+
+  assert.ok(compactStart !== -1 && compactEnd > compactStart, 'missing bounded 390px journey rules');
+  assert.ok(/\.journey-controls\s*\{[^}]*grid-template-columns:\s*repeat\(6,\s*minmax\(0,\s*1fr\)\)/s.test(compactCss),
+    '390px controls need six layout tracks');
+  assert.ok(/\.journey-controls\s*>\s*button\s*\{[^}]*grid-column:\s*span\s+2/s.test(compactCss),
+    'canonical controls must place three buttons on the first row');
+  assert.ok(/\.journey-controls\s*>\s*button:nth-child\(n\s*\+\s*4\)\s*\{[^}]*grid-column:\s*span\s+3/s.test(compactCss),
+    'canonical controls 4 and 5 must share the second row');
+  assert.ok(/button:first-child:nth-last-child\(4\)[\s\S]*~\s*button\s*\{[^}]*grid-column:\s*span\s+3/s.test(compactCss),
+    'four-button fallback must form a balanced two-by-two grid');
+});
+
 test('atlas view renders accessible region controls and bundled world SVG', function () {
   const html = atlasView.renderRegions([{ id: 'east-asia', count: 3, x: 76, y: 40, radius: 14 }], {
     regionNames: { 'east-asia': 'East Asia' },

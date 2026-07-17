@@ -1426,7 +1426,11 @@ body.journey-open { overflow: hidden; }
   .journey-stage > h2 { font-size: clamp(2rem, 10.5vw, 3rem); }
   .journey-body { max-height: 38vh; }
   .journey-progress { gap: .15rem; }
-  .journey-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .journey-controls { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .journey-controls > button { grid-column: span 2; }
+  .journey-controls > button:nth-child(n + 4) { grid-column: span 3; }
+  .journey-controls > button:first-child:nth-last-child(4),
+  .journey-controls > button:first-child:nth-last-child(4) ~ button { grid-column: span 3; }
   .journey-complete-actions { display: grid; grid-template-columns: 1fr; width: 100%; }
 }
 
