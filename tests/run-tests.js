@@ -130,6 +130,26 @@ test('directed journey validation fails closed for malformed canonical tracks', 
   });
 });
 
+test('directed journey validation fails closed for malformed collection routes', function () {
+  [{ routes: {} }, {}].forEach(function (collection) {
+    assert.deepStrictEqual(journey.validateCollection(collection, data), {
+      routes: [],
+      issues: [{
+        code: 'invalid-journey-collection',
+        path: 'routes',
+        message: 'Journey collection routes must be an array'
+      }]
+    });
+  });
+});
+
+test('directed journey validation accepts an explicit empty collection', function () {
+  assert.deepStrictEqual(journey.validateCollection({ version: 1, routes: [] }, data), {
+    routes: [],
+    issues: []
+  });
+});
+
 test('directed journey validation rejects fractional and year-zero period stop years', function () {
   const fractional = JSON.parse(JSON.stringify(journeysData));
   fractional.routes[0].stops[0].recordRefs = [{ trackId: 'xianrendong', periodId: 'xianrendong-pottery' }];

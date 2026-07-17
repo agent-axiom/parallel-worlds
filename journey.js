@@ -168,7 +168,13 @@
         issues: [issue('invalid-dataset', 'data.tracks', 'Canonical data tracks must be an array')]
       };
     }
-    var manifestRoutes = Array.isArray(collection.routes) ? collection.routes : [];
+    if (!Array.isArray(collection.routes)) {
+      return {
+        routes: [],
+        issues: [issue('invalid-journey-collection', 'routes', 'Journey collection routes must be an array')]
+      };
+    }
+    var manifestRoutes = collection.routes;
     var tracks = trackIndex(data);
     var sources = data.sources || {};
     var routeIdCounts = manifestRoutes.reduce(function (counts, route) {
