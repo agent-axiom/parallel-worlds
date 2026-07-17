@@ -11,6 +11,10 @@
   var atlas = window.ParallelWorldsAtlas;
   var explorerState = window.ParallelWorldsExplorerState;
   var atlasView = window.ParallelWorldsAtlasView;
+  var journeysData = window.PARALLEL_WORLDS_JOURNEYS;
+  var journey = window.ParallelWorldsJourney;
+  var journeyView = window.ParallelWorldsJourneyView;
+  var validatedJourneys = journey.validateCollection(journeysData, rawData);
   var activeData = rawData;
   var regionNames = {};
   var regionColors = {
@@ -34,12 +38,23 @@
   var defaults = {
     query: '', region: 'all', type: 'all', start: rawData.range.start, end: rawData.range.end,
     year: -500, zoom: 100, lang: initialLocale(), view: 'map', focus: [], selectedRegion: '', scaleMode: 'overview', playing: false, filtersOpen: false,
+    journey: '', stop: '', journeyMode: 'paused', journeyNotice: '',
     theme: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   };
   var state = Object.assign({}, defaults);
   var elements = {};
   var toastTimer;
   var playbackTimer;
+  var journeyTimer;
+  var journeyTransitionTimer;
+  var journeyState = null;
+  var journeyRoute = null;
+  var journeyAutoplay = false;
+  var preJourneyState = null;
+  var journeyTrigger = null;
+  var journeyTouchStart = null;
+  var journeyCatalogNotice = '';
+  var suppressJourneyFocusPause = false;
   var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
 
   function get(id) { return document.getElementById(id); }
@@ -55,7 +70,7 @@
 
   function readUrlState() {
     var params = new URLSearchParams(window.location.search);
-    state = explorerState.parse(params, defaults, rawData);
+    state = explorerState.parse(params, defaults, rawData, journeysData);
     var savedTheme = localStorage.getItem('parallel-worlds-theme');
     if (savedTheme === 'light' || savedTheme === 'dark') state.theme = savedTheme;
   }
@@ -80,7 +95,8 @@
       'source-links', 'theme-button', 'language-select', 'share-button', 'toast', 'track-count', 'period-count', 'event-count',
       'filter-toggle', 'filters-content', 'scale-mode',
       'view-map-button', 'view-chronology-button', 'atlas-view', 'chronology-view', 'atlas-map', 'atlas-world',
-      'atlas-regions', 'atlas-panel', 'atlas-region-list', 'atlas-play-button', 'atlas-year-input', 'atlas-year-output', 'atlas-map-summary']
+      'atlas-regions', 'atlas-panel', 'atlas-region-list', 'atlas-play-button', 'atlas-year-input', 'atlas-year-output', 'atlas-map-summary',
+      'journey-open', 'journey-dialog', 'journey-exit', 'journey-content', 'journey-announcement']
       .forEach(function (id) { elements[id] = get(id); });
   }
 
@@ -613,6 +629,371 @@
     URL.revokeObjectURL(url);
   }
 
+  function prefersReducedMotion() {
+    return Boolean(reducedMotion && reducedMotion.matches);
+  }
+
+  function journeyNow() {
+    return window.performance && typeof window.performance.now === 'function'
+      ? window.performance.now()
+      : Date.now();
+  }
+
+  function journeyCopy() {
+    return {
+      catalogTitle: t('journeyCatalogTitle'),
+      startJourney: t('journeyStart'),
+      minutesTemplate: t('journeyDuration'),
+      stopsTemplate: t('journeyStops'),
+      previousStop: t('journeyPrevious'),
+      nextStop: t('journeyNext'),
+      pauseJourney: t('journeyPause'),
+      resumeJourney: t('journeyResume'),
+      shareJourney: t('journeyShare'),
+      openEvidence: t('journeyEvidence'),
+      stopTemplate: t('journeyStopProgress'),
+      completeKicker: t('journeyCompleteKicker'),
+      exploreMoment: t('journeyExplore'),
+      replayJourney: t('journeyReplay'),
+      backCatalog: t('journeyBackCatalog')
+    };
+  }
+
+  function localizedJourneyRoutes() {
+    return validatedJourneys.routes.map(function (route) {
+      return journey.localizeRoute(route, state.lang);
+    });
+  }
+
+  function isJourneyOpen() {
+    return Boolean(elements['journey-dialog'] &&
+      (elements['journey-dialog'].open || elements['journey-dialog'].hasAttribute('open')));
+  }
+
+  function showJourneyDialog() {
+    if (!isJourneyOpen()) {
+      if (typeof elements['journey-dialog'].showModal === 'function') elements['journey-dialog'].showModal();
+      else elements['journey-dialog'].setAttribute('open', '');
+    }
+    document.body.classList.add('journey-open');
+  }
+
+  function closeJourneyDialog() {
+    if (isJourneyOpen()) {
+      if (typeof elements['journey-dialog'].close === 'function') elements['journey-dialog'].close();
+      else elements['journey-dialog'].removeAttribute('open');
+    }
+    document.body.classList.remove('journey-open');
+  }
+
+  function stopJourneyClock() {
+    if (journeyTimer) clearInterval(journeyTimer);
+    journeyTimer = null;
+  }
+
+  function clearJourneyTransition() {
+    if (journeyTransitionTimer) clearTimeout(journeyTransitionTimer);
+    journeyTransitionTimer = null;
+  }
+
+  function renderJourneyMap() {
+    var worldTarget = elements['journey-content'].querySelector('[data-journey-world]');
+    var regionsTarget = elements['journey-content'].querySelector('[data-journey-regions]');
+    if (!worldTarget || !regionsTarget) return;
+    var model = atlas.buildModel({
+      tracks: activeData.tracks,
+      year: state.year,
+      geography: atlasData,
+      insights: insights,
+      locale: state.lang,
+      filters: { query: '', region: 'all', type: 'all' },
+      selectedRegion: '',
+      focusIds: state.focus
+    });
+    var copy = atlasCopy();
+    worldTarget.innerHTML = atlasView.worldSvg(worldMapData, t('atlasAria'), model.comparisonConnector, copy);
+    regionsTarget.innerHTML = atlasView.renderRegions(model.regions, copy);
+  }
+
+  function copyJourneyAnnouncement() {
+    var source = elements['journey-content'].querySelector('[data-journey-announcement-source]');
+    var announcement = elements['journey-announcement'];
+    if (!source || !announcement) return;
+    var message = source.textContent;
+    announcement.textContent = '';
+    setTimeout(function () {
+      if (isJourneyOpen() && elements['journey-announcement'] === announcement) {
+        announcement.textContent = message;
+      }
+    }, 0);
+  }
+
+  function renderJourney() {
+    try {
+      var html;
+      if (!journeyRoute || !journeyState || journeyState.status === 'catalog') {
+        html = journeyView.catalogHtml(localizedJourneyRoutes(), journeyCopy());
+        html = html.replace('</h2>', '</h2><p>' + journeyView.escapeHtml(t('journeyCatalogText')) + '</p>');
+        if (journeyCatalogNotice) {
+          html = html.replace('</h2>', '</h2><p role="status">' + journeyView.escapeHtml(journeyCatalogNotice) + '</p>');
+        }
+      } else if (journeyState.status === 'complete') {
+        html = journeyView.completeHtml(journeyRoute, journeyCopy());
+        html = html.replace('</div></article>', '<button type="button" data-journey-action="restore">' +
+          journeyView.escapeHtml(t('journeyRestoreAtlas')) + '</button></div></article>');
+      } else {
+        html = journeyView.stageHtml(journeyRoute, journeyState, journeyCopy(), formatYear);
+      }
+      if (!html) throw new Error('Journey view returned no content');
+      elements['journey-content'].innerHTML = html;
+      if (journeyRoute && journeyState && journeyState.status !== 'complete') {
+        renderJourneyMap();
+        copyJourneyAnnouncement();
+      }
+      return true;
+    } catch (_) {
+      failJourney();
+      return false;
+    }
+  }
+
+  function applyJourneyStop() {
+    if (!journeyRoute || !journeyState || !journeyRoute.stops[journeyState.stopIndex]) return;
+    var stop = journeyRoute.stops[journeyState.stopIndex];
+    state.year = stop.year;
+    state.focus = stop.focusTrackIds.slice();
+    state.view = 'map';
+    state.scaleMode = stop.year <= rawData.scale.breakpoint ? 'deep' : 'historical';
+    var range = chronology.modeRange(state.scaleMode, {
+      start: rawData.range.start, end: rawData.range.end, breakpoint: rawData.scale.breakpoint
+    });
+    state.start = range.start;
+    state.end = range.end;
+    state.journey = journeyRoute.id;
+    state.stop = stop.id;
+    state.journeyMode = journeyState.status === 'playing' ? 'playing' : 'paused';
+    state.journeyNotice = '';
+  }
+
+  function startJourneyClock() {
+    stopJourneyClock();
+    if (!journeyRoute || !journeyState || journeyState.status !== 'playing') return;
+    journeyTimer = setInterval(function () {
+      var clockValue = journey.clock(journeyState, journeyNow(), journeyRoute);
+      journeyView.updateClock(elements['journey-content'], clockValue);
+      if (clockValue.shouldAdvance) {
+        stopJourneyClock();
+        journeyAutoplay = true;
+        dispatchJourney('next', journeyNow());
+      }
+    }, 250);
+  }
+
+  function armJourneyTransition() {
+    clearJourneyTransition();
+    if (!journeyState || journeyState.status !== 'transitioning') return;
+    var stage = elements['journey-content'].querySelector('[data-journey-stop]');
+    var stopIndex = journeyState.stopIndex;
+    var completed = false;
+    function completeTransition(event) {
+      if (event && event.target !== stage) return;
+      if (completed || !journeyState || journeyState.status !== 'transitioning' ||
+          journeyState.stopIndex !== stopIndex) return;
+      completed = true;
+      clearJourneyTransition();
+      dispatchJourney('transitionEnd', journeyNow(), !journeyAutoplay || prefersReducedMotion());
+    }
+    if (prefersReducedMotion()) {
+      completeTransition();
+      return;
+    }
+    if (stage) stage.addEventListener('transitionend', completeTransition, { once: true });
+    journeyTransitionTimer = setTimeout(completeTransition, 1400);
+  }
+
+  function dispatchJourney(type, now, forceReducedMotion) {
+    try {
+      if (!journeyRoute || !journeyState) return;
+      stopJourneyClock();
+      var event = typeof type === 'string' ? { type: type } : type;
+      journeyState = journey.reduce(journeyState, event, journeyRoute, {
+        now: Number.isFinite(now) ? now : journeyNow(),
+        reducedMotion: Boolean(forceReducedMotion) || prefersReducedMotion()
+      });
+      if (journeyState.status !== 'transitioning') clearJourneyTransition();
+      applyJourneyStop();
+      writeUrlState();
+      if (!renderJourney() || !journeyState) return;
+      if (journeyState.status === 'transitioning') {
+        armJourneyTransition();
+      } else {
+        journeyView.updateClock(elements['journey-content'], journey.clock(journeyState, journeyNow(), journeyRoute));
+        startJourneyClock();
+      }
+    } catch (_) {
+      failJourney();
+    }
+  }
+
+  function cloneExplorerState(source) {
+    return Object.assign({}, source, { focus: (source.focus || []).slice() });
+  }
+
+  function startJourney(routeId, stopId, autoplay) {
+    try {
+      var resolvedRoute = journey.findRoute(validatedJourneys, routeId);
+      if (!resolvedRoute) {
+        openJourneyCatalog(t('journeyUnknownRoute'));
+        return;
+      }
+      stopPlayback(false);
+      if (!preJourneyState) {
+        preJourneyState = cloneExplorerState(state);
+        preJourneyState.journey = '';
+        preJourneyState.stop = '';
+        preJourneyState.journeyMode = 'paused';
+        preJourneyState.journeyNotice = '';
+      }
+      journeyRoute = journey.localizeRoute(resolvedRoute, state.lang);
+      var stopIndex = journeyRoute.stops.findIndex(function (stop) { return stop.id === stopId; });
+      if (stopIndex < 0) stopIndex = 0;
+      journeyState = journey.createState(journeyRoute, { stopIndex: stopIndex, status: 'paused' });
+      journeyAutoplay = Boolean(autoplay) && !prefersReducedMotion();
+      journeyCatalogNotice = '';
+      showJourneyDialog();
+      dispatchJourney({ type: 'start', stopIndex: stopIndex }, journeyNow());
+    } catch (_) {
+      failJourney();
+    }
+  }
+
+  function openJourneyCatalog(notice) {
+    try {
+      stopJourneyClock();
+      clearJourneyTransition();
+      if (!isJourneyOpen()) journeyTrigger = document.activeElement;
+      journeyRoute = null;
+      journeyState = null;
+      journeyAutoplay = false;
+      journeyCatalogNotice = notice || '';
+      state.journey = '';
+      state.stop = '';
+      state.journeyMode = 'paused';
+      state.journeyNotice = '';
+      showJourneyDialog();
+      writeUrlState();
+      renderJourney();
+    } catch (_) {
+      failJourney();
+    }
+  }
+
+  function finishJourney(restoreOriginal) {
+    stopJourneyClock();
+    clearJourneyTransition();
+    closeJourneyDialog();
+    if (restoreOriginal && preJourneyState) {
+      var currentTheme = state.theme;
+      var currentLang = state.lang;
+      state = cloneExplorerState(preJourneyState);
+      state.theme = currentTheme;
+      state.lang = currentLang;
+    } else {
+      state.journey = '';
+      state.stop = '';
+      state.journeyMode = 'paused';
+      state.journeyNotice = '';
+    }
+    journeyState = null;
+    journeyRoute = null;
+    journeyAutoplay = false;
+    journeyCatalogNotice = '';
+    preJourneyState = null;
+    render();
+    if (journeyTrigger && typeof journeyTrigger.focus === 'function') journeyTrigger.focus();
+    journeyTrigger = null;
+  }
+
+  function failJourney() {
+    stopJourneyClock();
+    clearJourneyTransition();
+    closeJourneyDialog();
+    state.journey = '';
+    state.stop = '';
+    state.journeyMode = 'paused';
+    state.journeyNotice = '';
+    journeyState = null;
+    journeyRoute = null;
+    journeyAutoplay = false;
+    preJourneyState = null;
+    render();
+    showToast(t('journeyRenderError'));
+  }
+
+  function shareJourney() {
+    var sharedState = Object.assign({}, state, { journeyMode: 'paused' });
+    sharedState.focus = (state.focus || []).slice();
+    var params = explorerState.serialize(sharedState, defaults);
+    var url = window.location.origin + window.location.pathname + '?' + params.toString();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () { showToast(t('journeyLinkCopied')); });
+    } else {
+      window.prompt(t('copyLinkPrompt'), url);
+    }
+  }
+
+  function openDirectJourney() {
+    if (state.journeyNotice === 'unknown-route') {
+      openJourneyCatalog(t('journeyUnknownRoute'));
+      return;
+    }
+    if (!state.journey) return;
+    var routeId = state.journey;
+    var stopId = state.stop;
+    var notice = state.journeyNotice;
+    var autoplay = state.journeyMode === 'playing' && !prefersReducedMotion();
+    startJourney(routeId, stopId, autoplay);
+    if (notice === 'unknown-stop') showToast(t('journeyUnknownStop'));
+  }
+
+  function pauseJourneyForInteraction() {
+    if (!journeyState || journeyState.status !== 'playing') return;
+    journeyAutoplay = false;
+    dispatchJourney('interact', journeyNow());
+  }
+
+  function journeyKeyboardIgnored(target) {
+    if (!target) return false;
+    var tagName = String(target.tagName || '').toLowerCase();
+    return ['input', 'textarea', 'select', 'button'].indexOf(tagName) !== -1 || target.isContentEditable;
+  }
+
+  function handleJourneyAction(action) {
+    if (!journeyState || !journeyRoute) return;
+    if (action === 'previous' || action === 'next') {
+      journeyAutoplay = journeyState.status === 'playing';
+      dispatchJourney(action, journeyNow());
+    } else if (action === 'toggle') {
+      if (journeyState.status === 'playing') {
+        journeyAutoplay = false;
+        dispatchJourney('pause', journeyNow());
+      } else {
+        journeyAutoplay = true;
+        dispatchJourney('resume', journeyNow());
+      }
+    } else if (action === 'share') {
+      shareJourney();
+    } else if (action === 'explore' || action === 'exit') {
+      finishJourney(false);
+    } else if (action === 'restore') {
+      finishJourney(true);
+    } else if (action === 'replay') {
+      startJourney(journeyRoute.id, journeyRoute.stops[0].id, !prefersReducedMotion());
+    } else if (action === 'catalog') {
+      openJourneyCatalog('');
+    }
+  }
+
   function bindEvents() {
     elements['filter-toggle'].addEventListener('click', function () {
       state.filtersOpen = !state.filtersOpen;
@@ -632,7 +1013,12 @@
     elements['view-chronology-button'].addEventListener('click', function () { setView('chronology'); });
     elements['scale-mode'].addEventListener('click', function (event) {
       var button = event.target.closest('[data-scale]');
-      if (button) setScaleMode(button.dataset.scale);
+      if (!button) return;
+      if (isJourneyOpen()) {
+        pauseJourneyForInteraction();
+        return;
+      }
+      setScaleMode(button.dataset.scale);
     });
     [elements['view-map-button'], elements['view-chronology-button']].forEach(function (button) {
       button.addEventListener('keydown', function (event) {
@@ -682,15 +1068,121 @@
     elements['detail-dialog'].addEventListener('click', function (event) {
       if (event.target === elements['detail-dialog']) closeDetails();
     });
+    elements['journey-open'].addEventListener('click', function () { openJourneyCatalog(''); });
+    elements['journey-exit'].addEventListener('click', function () { finishJourney(false); });
+    elements['journey-dialog'].addEventListener('cancel', function (event) {
+      event.preventDefault();
+      finishJourney(false);
+    });
+    elements['journey-content'].addEventListener('click', function (event) {
+      var target = event.target && event.target.closest ? event.target : null;
+      if (!target) return;
+      var startButton = target.closest('[data-journey-start]');
+      if (startButton) {
+        startJourney(startButton.dataset.journeyStart, '', !prefersReducedMotion());
+        return;
+      }
+      var progressButton = target.closest('[data-journey-go]');
+      if (progressButton && journeyState) {
+        journeyAutoplay = journeyState.status === 'playing';
+        dispatchJourney({ type: 'start', stopIndex: Number(progressButton.dataset.journeyGo) }, journeyNow());
+        return;
+      }
+      var evidenceButton = target.closest('[data-journey-evidence]');
+      if (evidenceButton) {
+        journeyAutoplay = false;
+        if (journeyState && (journeyState.status === 'playing' || journeyState.status === 'paused')) {
+          dispatchJourney('interact', journeyNow());
+        }
+        openDetails(evidenceButton.dataset.journeyEvidence, evidenceButton.dataset.recordId);
+        return;
+      }
+      var actionButton = target.closest('[data-journey-action]');
+      if (actionButton) {
+        handleJourneyAction(actionButton.dataset.journeyAction);
+        return;
+      }
+      if (target.closest('[data-region]')) pauseJourneyForInteraction();
+    });
+    elements['journey-content'].addEventListener('pointerdown', function (event) {
+      var target = event.target && event.target.closest ? event.target : null;
+      if (!target) return;
+      if (target.closest('[data-journey-action], [data-journey-go], [data-journey-evidence], [data-journey-start]')) {
+        suppressJourneyFocusPause = true;
+        setTimeout(function () { suppressJourneyFocusPause = false; }, 0);
+        return;
+      }
+      if (target.closest('.journey-body')) pauseJourneyForInteraction();
+    });
+    elements['journey-content'].addEventListener('focusin', function (event) {
+      if (suppressJourneyFocusPause || !event.target.closest || !event.target.closest('[data-journey-stop]')) return;
+      pauseJourneyForInteraction();
+    });
+    elements['journey-content'].addEventListener('touchstart', function (event) {
+      journeyTouchStart = event.touches && event.touches.length === 1 ? event.touches[0].clientX : null;
+    }, { passive: true });
+    elements['journey-content'].addEventListener('touchend', function (event) {
+      if (!Number.isFinite(journeyTouchStart) || !event.changedTouches || event.changedTouches.length !== 1) return;
+      var direction = journeyView.swipeDirection(journeyTouchStart, event.changedTouches[0].clientX, 56);
+      journeyTouchStart = null;
+      if (direction === 'next' || direction === 'previous') {
+        journeyAutoplay = journeyState && journeyState.status === 'playing';
+        dispatchJourney(direction, journeyNow());
+      }
+    }, { passive: true });
+    document.addEventListener('selectionchange', function () {
+      if (!isJourneyOpen() || !journeyState || journeyState.status !== 'playing') return;
+      var selection = typeof window.getSelection === 'function' ? window.getSelection() : null;
+      if (selection && String(selection).trim()) pauseJourneyForInteraction();
+    });
     document.addEventListener('keydown', function (event) {
+      if (isJourneyOpen()) {
+        if (event.key === 'Tab') {
+          journeyView.trapTab(event, elements['journey-dialog']);
+          return;
+        }
+        if (journeyKeyboardIgnored(event.target)) return;
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          finishJourney(false);
+        } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+          event.preventDefault();
+          journeyAutoplay = journeyState && journeyState.status === 'playing';
+          dispatchJourney(event.key === 'ArrowLeft' ? 'previous' : 'next', journeyNow());
+        } else if (event.key === ' ' || event.key === 'Spacebar') {
+          event.preventDefault();
+          handleJourneyAction('toggle');
+        }
+        return;
+      }
       if (event.key === '/' && document.activeElement.tagName !== 'INPUT') {
         event.preventDefault();
         elements['search-input'].focus();
       }
     });
     document.addEventListener('visibilitychange', function () {
-      if (document.hidden) stopPlayback(true);
+      if (document.hidden) {
+        if (isJourneyOpen() && journeyState) {
+          journeyAutoplay = false;
+          dispatchJourney('visibilityHidden', journeyNow());
+        } else {
+          stopPlayback(true);
+        }
+      } else if (isJourneyOpen() && journeyState) {
+        dispatchJourney('visibilityVisible', journeyNow());
+      }
     });
+    function handleReducedMotionChange(event) {
+      if (event.matches && journeyState && journeyState.status === 'playing') {
+        journeyAutoplay = false;
+        dispatchJourney('pause', journeyNow());
+      }
+    }
+    if (reducedMotion && typeof reducedMotion.addEventListener === 'function') {
+      reducedMotion.addEventListener('change', handleReducedMotionChange);
+    } else if (reducedMotion && typeof reducedMotion.addListener === 'function') {
+      reducedMotion.addListener(handleReducedMotionChange);
+    }
   }
 
   function init() {
@@ -700,6 +1192,7 @@
     bindEvents();
     renderStats();
     render();
+    openDirectJourney();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

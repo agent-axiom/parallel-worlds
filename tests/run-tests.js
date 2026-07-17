@@ -3633,6 +3633,85 @@ test('required static site and Pages files exist and use relative assets', funct
   assert.ok(app.indexOf("i18n.locales.some") !== -1, 'app does not validate locales through the locale registry');
 });
 
+test('app controller validates directed journeys and restores their URL state through the manifest', function () {
+  const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+
+  ['PARALLEL_WORLDS_JOURNEYS', 'ParallelWorldsJourney', 'ParallelWorldsJourneyView'].forEach(function (globalName) {
+    assert.ok(app.indexOf('window.' + globalName) !== -1, 'missing journey dependency ' + globalName);
+  });
+  assert.ok(/journey\.validateCollection\(\s*journeysData\s*,\s*rawData\s*\)/.test(app),
+    'journey routes are not validated against the canonical corpus');
+  assert.ok(/journey:\s*''/.test(app) && /stop:\s*''/.test(app) && /journeyMode:\s*'paused'/.test(app) &&
+    /journeyNotice:\s*''/.test(app), 'journey URL defaults are incomplete or unexpectedly autoplay');
+  assert.ok(/explorerState\.parse\(\s*params\s*,\s*defaults\s*,\s*rawData\s*,\s*journeysData\s*\)/.test(app),
+    'URL parser does not receive the journey manifest');
+  ['journey-open', 'journey-dialog', 'journey-exit', 'journey-content', 'journey-announcement'].forEach(function (id) {
+    assert.ok(app.indexOf("'" + id + "'") !== -1, 'controller does not collect ' + id);
+  });
+});
+
+test('app controller delegates journey state and timing to the pure modules', function () {
+  const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+  const intervals = app.match(/setInterval\s*\(/g) || [];
+
+  assert.ok(/journey\.reduce\s*\(/.test(app), 'controller bypasses the journey reducer');
+  assert.ok(/journey\.clock\s*\(/.test(app), 'controller bypasses the journey clock');
+  assert.ok(/journeyView\.updateClock\s*\(/.test(app), 'clock DOM updates bypass journey-view');
+  assert.strictEqual(intervals.length, 2, 'app must own one atlas interval and one journey interval');
+  assert.ok(/setInterval\s*\([\s\S]*?,\s*250\s*\)/.test(app), 'journey clock does not tick every 250ms');
+  assert.ok(/visibilityHidden/.test(app) && /visibilityVisible/.test(app),
+    'visibility lifecycle is not dispatched through the journey reducer');
+  assert.ok(/transitionend/.test(app) && /1400/.test(app),
+    'journey transitions need an event completion path and bounded fallback');
+  assert.ok(/event\s*&&\s*event\.target\s*!==\s*stage/.test(app),
+    'bubbled descendant transitions must not advance the journey');
+  assert.strictEqual(app.indexOf('fetch('), -1, 'journey controller must remain a static-site runtime');
+});
+
+test('app controller syncs journey stops through the existing atlas and persistent live region', function () {
+  const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+
+  assert.ok(/stop\.focusTrackIds\.slice\s*\(\s*\)/.test(app), 'stop focus is not defensively cloned');
+  assert.ok(/chronology\.modeRange\s*\(/.test(app), 'stop scale does not use chronology mode ranges');
+  assert.ok(/atlas\.buildModel\s*\(/.test(app), 'journey scene does not use the atlas model');
+  assert.ok(/atlasView\.worldSvg\s*\(/.test(app), 'journey scene does not reuse the world renderer');
+  assert.ok(/atlasView\.renderRegions\s*\(/.test(app), 'journey scene does not reuse region rendering');
+  assert.ok(/data-journey-announcement-source/.test(app) && /journey-announcement/.test(app) &&
+    /setTimeout\s*\([\s\S]*announcement[\s\S]*textContent/.test(app),
+    'stage announcements are not copied asynchronously into the persistent live region');
+  assert.ok(/journeyView\.catalogHtml\s*\(/.test(app) && /journeyView\.stageHtml\s*\(/.test(app) &&
+    /journeyView\.completeHtml\s*\(/.test(app), 'controller does not use all journey view renderers');
+  assert.ok(/journeyCatalogText/.test(app), 'catalog omits the localized introduction');
+});
+
+test('journey sharing serializes a paused clone without mutating active playback', function () {
+  const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+  const shareFunction = /function shareJourney\([^)]*\)\s*\{([\s\S]*?)\n\s*\}/.exec(app);
+
+  assert.ok(shareFunction, 'missing journey share controller');
+  assert.ok(/Object\.assign\(\s*\{\}\s*,\s*state\s*,\s*\{\s*journeyMode:\s*'paused'\s*\}\s*\)/.test(shareFunction[1]),
+    'journey share must clone state with paused playback');
+  assert.ok(/explorerState\.serialize\(\s*sharedState\s*,\s*defaults\s*\)/.test(shareFunction[1]),
+    'journey share does not serialize its paused clone');
+  assert.strictEqual(/state\.journeyMode\s*=\s*'paused'/.test(shareFunction[1]), false,
+    'journey sharing mutates active state');
+  assert.ok(/window\.location\.origin[\s\S]*window\.location\.pathname/.test(shareFunction[1]),
+    'journey share does not build a same-page permalink');
+});
+
+test('direct journey URLs open only after the ordinary render and never surprise-autoplay', function () {
+  const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+  const init = /function init\(\)\s*\{([\s\S]*?)\n\s*\}/.exec(app);
+
+  assert.ok(init, 'missing application initialization');
+  const renderIndex = init[1].indexOf('render();');
+  const directIndex = init[1].indexOf('openDirectJourney');
+  assert.ok(renderIndex !== -1 && directIndex > renderIndex,
+    'direct journeys must open after the ordinary explorer render');
+  assert.ok(/function openDirectJourney\([^)]*\)\s*\{[\s\S]*state\.journeyMode\s*===\s*'playing'[\s\S]*startJourney\([^;]+autoplay\s*\)/.test(app),
+    'direct journey links must autoplay only when the URL explicitly requests playing mode');
+});
+
 test('landing layout explicitly uses the compact atlas-first hero', function () {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
