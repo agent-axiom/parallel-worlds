@@ -74,6 +74,185 @@ function nullPrototypeClone(value) {
   }, Object.create(null));
 }
 
+function controllerState(overrides) {
+  return Object.assign({
+    query: '', region: 'all', type: 'all', start: data.range.start, end: data.range.end,
+    year: -500, zoom: 100, lang: 'en', view: 'map', focus: [], selectedRegion: '',
+    scaleMode: 'overview', playing: false, filtersOpen: false, theme: 'dark',
+    journey: '', stop: '', journeyMode: 'paused', journeyNotice: ''
+  }, overrides || {});
+}
+
+function makeJourneyControllerHarness() {
+  const source = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+  const timers = { timeouts: [], intervals: [] };
+  const reducerEvents = [];
+  const serializedStates = [];
+  const clipboardUrls = [];
+  const historyUrls = [];
+  const prompts = [];
+  const control = { now: 100, rejectClipboard: false, throwSerialize: false };
+  const bodyClasses = new Set(['journey-open']);
+  const stage = {
+    listeners: {}, listenerOptions: {}, removed: [],
+    addEventListener: function (type, listener, options) {
+      this.listeners[type] = listener;
+      this.listenerOptions[type] = options;
+    },
+    removeEventListener: function (type, listener) {
+      if (this.listeners[type] === listener) delete this.listeners[type];
+      this.removed.push([type, listener]);
+    }
+  };
+  const worldTarget = { innerHTML: '' };
+  const regionsTarget = { innerHTML: '' };
+  const announcementSource = { textContent: 'A stop · 18,000 BCE' };
+  const content = {
+    innerHTML: '',
+    querySelector: function (selector) {
+      return {
+        '[data-journey-stop]': stage,
+        '[data-journey-world]': worldTarget,
+        '[data-journey-regions]': regionsTarget,
+        '[data-journey-announcement-source]': announcementSource
+      }[selector] || null;
+    }
+  };
+  const dialog = {
+    open: true,
+    hasAttribute: function (name) { return name === 'open' && this.open; },
+    setAttribute: function (name) { if (name === 'open') this.open = true; },
+    removeAttribute: function (name) { if (name === 'open') this.open = false; },
+    showModal: function () { this.open = true; },
+    close: function () { this.open = false; }
+  };
+  const toast = {
+    textContent: '',
+    classList: {
+      add: function () {},
+      remove: function () {}
+    }
+  };
+  const elements = {
+    'journey-dialog': dialog,
+    'journey-content': content,
+    'journey-announcement': { textContent: '' },
+    toast: toast
+  };
+  const journeyModule = Object.assign({}, journey, {
+    reduce: function (state, event, route, options) {
+      reducerEvents.push(event.type);
+      return journey.reduce(state, event, route, options);
+    }
+  });
+  const explorerModule = Object.assign({}, explorerState, {
+    serialize: function (value, defaults) {
+      if (control.throwSerialize) throw new Error('serialize failed');
+      serializedStates.push(JSON.parse(JSON.stringify(value)));
+      return explorerState.serialize(value, defaults);
+    }
+  });
+  function addTimer(collection, fn, ms) {
+    const timer = { fn: fn, ms: ms, active: true };
+    collection.push(timer);
+    return timer;
+  }
+  const windowObject = {
+    PARALLEL_WORLDS_DATA: data,
+    PARALLEL_WORLDS_JOURNEYS: journeysData,
+    ParallelWorldsChronology: chronology,
+    ParallelTimeline: timeline,
+    ParallelWorldsI18n: i18n,
+    PARALLEL_WORLDS_ATLAS_DATA: atlasData,
+    PARALLEL_WORLDS_MAP_DATA: {},
+    PARALLEL_WORLDS_INSIGHTS: insights,
+    ParallelWorldsAtlas: atlas,
+    ParallelWorldsExplorerState: explorerModule,
+    ParallelWorldsAtlasView: atlasView,
+    ParallelWorldsJourney: journeyModule,
+    ParallelWorldsJourneyView: journeyView,
+    __PARALLEL_WORLDS_CONTROLLER_TEST__: {},
+    location: { search: '', pathname: '/parallel-worlds/', origin: 'https://example.test', hash: '' },
+    prompt: function (_, url) { prompts.push(url); },
+    matchMedia: function () { return { matches: false, addEventListener: function () {} }; },
+    performance: { now: function () { return control.now; } },
+    getSelection: function () { return ''; },
+    innerWidth: 1200,
+    innerHeight: 800
+  };
+  const documentObject = {
+    readyState: 'loading',
+    addEventListener: function () {},
+    body: {
+      classList: {
+        add: function (name) { bodyClasses.add(name); },
+        remove: function (name) { bodyClasses.delete(name); }
+      }
+    },
+    activeElement: null,
+    documentElement: { dataset: {}, style: { setProperty: function () {} } },
+    querySelector: function () { return null; },
+    querySelectorAll: function () { return []; }
+  };
+  const navigatorObject = {
+    language: 'en',
+    clipboard: {
+      writeText: function (url) {
+        clipboardUrls.push(url);
+        return {
+          then: function (resolve, reject) {
+            if (control.rejectClipboard) {
+              if (reject) reject(new Error('clipboard denied'));
+            } else if (resolve) {
+              resolve();
+            }
+            return { catch: function () {} };
+          }
+        };
+      }
+    }
+  };
+  const context = {
+    window: windowObject,
+    document: documentObject,
+    navigator: navigatorObject,
+    localStorage: { getItem: function () { return null; }, setItem: function () {} },
+    history: { replaceState: function (_, __, url) { historyUrls.push(url); } },
+    URLSearchParams: URLSearchParams,
+    Date: Date,
+    Number: Number,
+    Object: Object,
+    String: String,
+    Boolean: Boolean,
+    Math: Math,
+    Array: Array,
+    Error: Error,
+    setTimeout: function (fn, ms) { return addTimer(timers.timeouts, fn, ms); },
+    clearTimeout: function (timer) { if (timer) timer.active = false; },
+    setInterval: function (fn, ms) { return addTimer(timers.intervals, fn, ms); },
+    clearInterval: function (timer) { if (timer) timer.active = false; }
+  };
+  windowObject.document = documentObject;
+  windowObject.navigator = navigatorObject;
+  vm.runInNewContext(source, context, { filename: 'app.js' });
+  const api = windowObject.__PARALLEL_WORLDS_CONTROLLER_TEST__.api;
+  return {
+    api: api,
+    bodyClasses: bodyClasses,
+    clipboardUrls: clipboardUrls,
+    content: content,
+    control: control,
+    dialog: dialog,
+    elements: elements,
+    historyUrls: historyUrls,
+    prompts: prompts,
+    reducerEvents: reducerEvents,
+    serializedStates: serializedStates,
+    stage: stage,
+    timers: timers
+  };
+}
+
 test('directed journey resolves seven reviewed and exactly sourced stops', function () {
   const result = journey.validateCollection(journeysData, data);
   assert.deepStrictEqual(result.issues, []);
@@ -3631,6 +3810,187 @@ test('required static site and Pages files exist and use relative assets', funct
   const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
   assert.ok(app.indexOf('explorerState.serialize(state, defaults)') !== -1, 'shared explorer state is not persisted in the URL');
   assert.ok(app.indexOf("i18n.locales.some") !== -1, 'app does not validate locales through the locale registry');
+});
+
+test('journey controller transition ignores descendants then completes and cleans up exactly once', function () {
+  const harness = makeJourneyControllerHarness();
+  assert.ok(harness.api, 'missing gated journey controller test seam');
+  const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+  const initial = journey.createState(route, { stopIndex: 0, status: 'paused' });
+  const transitioning = journey.reduce(initial, { type: 'start', stopIndex: 0 }, route, { now: 100 });
+  harness.api.setContext({
+    state: controllerState(), elements: harness.elements, route: route,
+    playerState: transitioning, autoplay: true
+  });
+
+  harness.api.armTransition();
+  const listener = harness.stage.listeners.transitionend;
+  const fallback = harness.timers.timeouts.filter(function (timer) { return timer.ms === 1400; })[0];
+  assert.strictEqual(typeof listener, 'function');
+  assert.ok(!harness.stage.listenerOptions.transitionend || !harness.stage.listenerOptions.transitionend.once,
+    'descendant events must not consume a once listener');
+
+  listener({ target: {} });
+  assert.deepStrictEqual(harness.reducerEvents, []);
+  assert.strictEqual(harness.stage.listeners.transitionend, listener);
+  assert.strictEqual(fallback.active, true);
+
+  listener({ target: harness.stage });
+  assert.deepStrictEqual(harness.reducerEvents, ['transitionEnd']);
+  assert.strictEqual(harness.stage.listeners.transitionend, undefined);
+  assert.strictEqual(fallback.active, false);
+  fallback.fn();
+  assert.deepStrictEqual(harness.reducerEvents, ['transitionEnd']);
+});
+
+test('journey evidence deterministically converts a transition into exploring state', function () {
+  const harness = makeJourneyControllerHarness();
+  const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+  const transitioning = journey.reduce(journey.createState(route, { status: 'paused' }), {
+    type: 'start', stopIndex: 0
+  }, route, { now: 100 });
+  let opened = null;
+  harness.api.setContext({
+    state: controllerState(), elements: harness.elements, route: route,
+    playerState: transitioning, autoplay: true
+  });
+  harness.api.armTransition();
+  const fallback = harness.timers.timeouts.filter(function (timer) { return timer.ms === 1400; })[0];
+
+  harness.api.activateEvidence('xianrendong', 'xianrendong-pottery-evidence', function (trackId, recordId) {
+    opened = [trackId, recordId];
+  });
+
+  assert.deepStrictEqual(harness.reducerEvents, ['transitionEnd', 'interact']);
+  assert.strictEqual(harness.api.snapshot().playerState.status, 'exploring');
+  assert.strictEqual(fallback.active, false);
+  assert.strictEqual(harness.dialog.open, true);
+  assert.deepStrictEqual(opened, ['xianrendong', 'xianrendong-pottery-evidence']);
+});
+
+test('journey share serializes and returns a paused clone without mutating active state', function () {
+  const harness = makeJourneyControllerHarness();
+  const active = controllerState({
+    year: -3200, focus: ['uruk'], journey: 'birth-of-cities', stop: 'uruk-urban-center',
+    journeyMode: 'playing'
+  });
+  const before = JSON.stringify(active);
+  harness.api.setContext({ state: active, elements: harness.elements });
+
+  const url = harness.api.share();
+
+  assert.strictEqual(JSON.stringify(active), before);
+  assert.strictEqual(harness.serializedStates.length, 1);
+  assert.strictEqual(harness.serializedStates[0].journeyMode, 'paused');
+  assert.deepStrictEqual(harness.serializedStates[0].focus, ['uruk']);
+  assert.strictEqual(harness.clipboardUrls[0], url);
+  assert.ok(/^https:\/\/example\.test\/parallel-worlds\/\?/.test(url));
+});
+
+test('journey share handles clipboard rejection without closing or pausing the journey', function () {
+  const harness = makeJourneyControllerHarness();
+  const active = controllerState({
+    journey: 'birth-of-cities', stop: 'uruk-urban-center', journeyMode: 'playing'
+  });
+  harness.control.rejectClipboard = true;
+  harness.api.setContext({ state: active, elements: harness.elements });
+
+  const url = harness.api.share();
+
+  assert.strictEqual(harness.prompts[0], url);
+  assert.strictEqual(active.journeyMode, 'playing');
+  assert.strictEqual(active.journey, 'birth-of-cities');
+  assert.strictEqual(harness.dialog.open, true);
+  assert.strictEqual(harness.bodyClasses.has('journey-open'), true);
+});
+
+test('journey action and exit exceptions recover without leaking timers or modal state', function () {
+  const shareHarness = makeJourneyControllerHarness();
+  const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+  const playing = journey.createState(route, { stopIndex: 0, status: 'playing', deadline: 1000 });
+  shareHarness.api.setContext({
+    state: controllerState({ journey: route.id, stop: route.stops[0].id, journeyMode: 'playing' }),
+    elements: shareHarness.elements, route: route, playerState: playing, autoplay: true
+  });
+  shareHarness.api.startClock();
+  const interval = shareHarness.timers.intervals[0];
+  shareHarness.control.throwSerialize = true;
+  assert.doesNotThrow(function () { shareHarness.api.handleAction('share'); });
+  const recoveredShare = shareHarness.api.snapshot();
+  assert.strictEqual(interval.active, false);
+  assert.strictEqual(recoveredShare.state.journey, '');
+  assert.strictEqual(recoveredShare.state.stop, '');
+  assert.strictEqual(recoveredShare.state.journeyMode, 'paused');
+  assert.strictEqual(shareHarness.dialog.open, false);
+  assert.strictEqual(shareHarness.bodyClasses.has('journey-open'), false);
+
+  const exitHarness = makeJourneyControllerHarness();
+  const transitioning = journey.reduce(journey.createState(route, { status: 'paused' }), {
+    type: 'start', stopIndex: 0
+  }, route, { now: 100 });
+  exitHarness.api.setContext({
+    state: controllerState({ journey: route.id, stop: route.stops[0].id }),
+    elements: exitHarness.elements, route: route, playerState: transitioning,
+    preJourneyState: controllerState({ year: -7000 }), autoplay: false
+  });
+  exitHarness.api.armTransition();
+  const fallback = exitHarness.timers.timeouts.filter(function (timer) { return timer.ms === 1400; })[0];
+  assert.doesNotThrow(function () { exitHarness.api.finish(false); });
+  assert.strictEqual(fallback.active, false);
+  assert.strictEqual(exitHarness.dialog.open, false);
+  assert.strictEqual(exitHarness.api.snapshot().state.journey, '');
+  assert.ok(exitHarness.historyUrls.length > 0, 'recovery did not attempt to write the cleared URL state');
+});
+
+test('journey clock owns one interval and advances once at its deadline', function () {
+  const harness = makeJourneyControllerHarness();
+  const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+  const playing = journey.createState(route, { stopIndex: 0, status: 'playing', deadline: 150 });
+  harness.control.now = 200;
+  harness.api.setContext({
+    state: controllerState({ journey: route.id, stop: route.stops[0].id, journeyMode: 'playing' }),
+    elements: harness.elements, route: route, playerState: playing, autoplay: true
+  });
+
+  harness.api.startClock();
+  assert.strictEqual(harness.timers.intervals.length, 1);
+  const interval = harness.timers.intervals[0];
+  interval.fn();
+
+  assert.strictEqual(interval.active, false);
+  assert.deepStrictEqual(harness.reducerEvents, ['next']);
+  assert.strictEqual(harness.api.snapshot().playerState.stopIndex, 1);
+  assert.strictEqual(harness.api.snapshot().playerState.status, 'transitioning');
+  interval.fn();
+  assert.deepStrictEqual(harness.reducerEvents, ['next']);
+});
+
+test('journey exit state keeps the stop context by default and restores the snapshot on request', function () {
+  const harness = makeJourneyControllerHarness();
+  const current = controllerState({
+    year: -3000, focus: ['liangzhu'], start: data.scale.breakpoint, end: data.range.end,
+    scaleMode: 'historical', theme: 'dark', lang: 'zh', journey: 'birth-of-cities',
+    stop: 'liangzhu-regional-center', journeyMode: 'playing'
+  });
+  const original = controllerState({
+    year: -9500, focus: ['gobekli-tepe'], start: data.range.start, end: data.scale.breakpoint,
+    scaleMode: 'deep', theme: 'light', lang: 'ru'
+  });
+  const kept = JSON.parse(JSON.stringify(harness.api.resolveExitState(current, original, false)));
+  const restored = JSON.parse(JSON.stringify(harness.api.resolveExitState(current, original, true)));
+
+  assert.strictEqual(kept.year, -3000);
+  assert.deepStrictEqual(kept.focus, ['liangzhu']);
+  assert.strictEqual(kept.scaleMode, 'historical');
+  assert.strictEqual(kept.journey, '');
+  assert.strictEqual(kept.stop, '');
+  assert.strictEqual(kept.journeyMode, 'paused');
+
+  assert.strictEqual(restored.year, -9500);
+  assert.deepStrictEqual(restored.focus, ['gobekli-tepe']);
+  assert.strictEqual(restored.scaleMode, 'deep');
+  assert.strictEqual(restored.theme, 'dark');
+  assert.strictEqual(restored.lang, 'zh');
 });
 
 test('app controller validates directed journeys and restores their URL state through the manifest', function () {

@@ -47,6 +47,8 @@
   var playbackTimer;
   var journeyTimer;
   var journeyTransitionTimer;
+  var journeyTransitionStage = null;
+  var journeyTransitionHandler = null;
   var journeyState = null;
   var journeyRoute = null;
   var journeyAutoplay = false;
@@ -55,6 +57,7 @@
   var journeyTouchStart = null;
   var journeyCatalogNotice = '';
   var suppressJourneyFocusPause = false;
+  var journeyRecovering = false;
   var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
 
   function get(id) { return document.getElementById(id); }
@@ -692,6 +695,12 @@
   }
 
   function clearJourneyTransition() {
+    if (journeyTransitionStage && journeyTransitionHandler &&
+        typeof journeyTransitionStage.removeEventListener === 'function') {
+      journeyTransitionStage.removeEventListener('transitionend', journeyTransitionHandler);
+    }
+    journeyTransitionStage = null;
+    journeyTransitionHandler = null;
     if (journeyTransitionTimer) clearTimeout(journeyTransitionTimer);
     journeyTransitionTimer = null;
   }
@@ -729,32 +738,27 @@
   }
 
   function renderJourney() {
-    try {
-      var html;
-      if (!journeyRoute || !journeyState || journeyState.status === 'catalog') {
-        html = journeyView.catalogHtml(localizedJourneyRoutes(), journeyCopy());
-        html = html.replace('</h2>', '</h2><p>' + journeyView.escapeHtml(t('journeyCatalogText')) + '</p>');
-        if (journeyCatalogNotice) {
-          html = html.replace('</h2>', '</h2><p role="status">' + journeyView.escapeHtml(journeyCatalogNotice) + '</p>');
-        }
-      } else if (journeyState.status === 'complete') {
-        html = journeyView.completeHtml(journeyRoute, journeyCopy());
-        html = html.replace('</div></article>', '<button type="button" data-journey-action="restore">' +
-          journeyView.escapeHtml(t('journeyRestoreAtlas')) + '</button></div></article>');
-      } else {
-        html = journeyView.stageHtml(journeyRoute, journeyState, journeyCopy(), formatYear);
+    var html;
+    if (!journeyRoute || !journeyState || journeyState.status === 'catalog') {
+      html = journeyView.catalogHtml(localizedJourneyRoutes(), journeyCopy());
+      html = html.replace('</h2>', '</h2><p>' + journeyView.escapeHtml(t('journeyCatalogText')) + '</p>');
+      if (journeyCatalogNotice) {
+        html = html.replace('</h2>', '</h2><p role="status">' + journeyView.escapeHtml(journeyCatalogNotice) + '</p>');
       }
-      if (!html) throw new Error('Journey view returned no content');
-      elements['journey-content'].innerHTML = html;
-      if (journeyRoute && journeyState && journeyState.status !== 'complete') {
-        renderJourneyMap();
-        copyJourneyAnnouncement();
-      }
-      return true;
-    } catch (_) {
-      failJourney();
-      return false;
+    } else if (journeyState.status === 'complete') {
+      html = journeyView.completeHtml(journeyRoute, journeyCopy());
+      html = html.replace('</div></article>', '<button type="button" data-journey-action="restore">' +
+        journeyView.escapeHtml(t('journeyRestoreAtlas')) + '</button></div></article>');
+    } else {
+      html = journeyView.stageHtml(journeyRoute, journeyState, journeyCopy(), formatYear);
     }
+    if (!html) throw new Error('Journey view returned no content');
+    elements['journey-content'].innerHTML = html;
+    if (journeyRoute && journeyState && journeyState.status !== 'complete') {
+      renderJourneyMap();
+      copyJourneyAnnouncement();
+    }
+    return true;
   }
 
   function applyJourneyStop() {
@@ -778,7 +782,8 @@
   function startJourneyClock() {
     stopJourneyClock();
     if (!journeyRoute || !journeyState || journeyState.status !== 'playing') return;
-    journeyTimer = setInterval(function () {
+    var ownedTimer = setInterval(function () {
+      if (journeyTimer !== ownedTimer) return;
       var clockValue = journey.clock(journeyState, journeyNow(), journeyRoute);
       journeyView.updateClock(elements['journey-content'], clockValue);
       if (clockValue.shouldAdvance) {
@@ -787,6 +792,7 @@
         dispatchJourney('next', journeyNow());
       }
     }, 250);
+    journeyTimer = ownedTimer;
   }
 
   function armJourneyTransition() {
@@ -807,7 +813,11 @@
       completeTransition();
       return;
     }
-    if (stage) stage.addEventListener('transitionend', completeTransition, { once: true });
+    if (stage) {
+      journeyTransitionStage = stage;
+      journeyTransitionHandler = completeTransition;
+      stage.addEventListener('transitionend', completeTransition);
+    }
     journeyTransitionTimer = setTimeout(completeTransition, 1400);
   }
 
@@ -888,58 +898,100 @@
     }
   }
 
+  function resolveJourneyExitState(current, original, restoreOriginal) {
+    var resolved = restoreOriginal && original
+      ? cloneExplorerState(original)
+      : cloneExplorerState(current);
+    if (restoreOriginal && original) {
+      resolved.theme = current.theme;
+      resolved.lang = current.lang;
+    }
+    resolved.journey = '';
+    resolved.stop = '';
+    resolved.journeyMode = 'paused';
+    resolved.journeyNotice = '';
+    return resolved;
+  }
+
+  function runJourneyController(action) {
+    try {
+      return action();
+    } catch (_) {
+      failJourney();
+      return undefined;
+    }
+  }
+
   function finishJourney(restoreOriginal) {
-    stopJourneyClock();
-    clearJourneyTransition();
-    closeJourneyDialog();
-    if (restoreOriginal && preJourneyState) {
-      var currentTheme = state.theme;
-      var currentLang = state.lang;
-      state = cloneExplorerState(preJourneyState);
-      state.theme = currentTheme;
-      state.lang = currentLang;
-    } else {
+    return runJourneyController(function () {
+      stopJourneyClock();
+      clearJourneyTransition();
+      closeJourneyDialog();
+      state = resolveJourneyExitState(state, preJourneyState, restoreOriginal);
+      journeyState = null;
+      journeyRoute = null;
+      journeyAutoplay = false;
+      journeyCatalogNotice = '';
+      preJourneyState = null;
+      render();
+      if (journeyTrigger && typeof journeyTrigger.focus === 'function') journeyTrigger.focus();
+      journeyTrigger = null;
+    });
+  }
+
+  function failJourney() {
+    if (journeyRecovering) return;
+    journeyRecovering = true;
+    try {
+      try { stopJourneyClock(); } catch (_) {}
+      try { clearJourneyTransition(); } catch (_) {}
+      try {
+        closeJourneyDialog();
+      } catch (_) {
+        try { elements['journey-dialog'].removeAttribute('open'); } catch (__) {}
+        try { document.body.classList.remove('journey-open'); } catch (__) {}
+      }
       state.journey = '';
       state.stop = '';
       state.journeyMode = 'paused';
       state.journeyNotice = '';
+      journeyState = null;
+      journeyRoute = null;
+      journeyAutoplay = false;
+      journeyCatalogNotice = '';
+      preJourneyState = null;
+      try {
+        render();
+      } catch (_) {
+        try { writeUrlState(); } catch (__) {}
+      }
+      try { showToast(t('journeyRenderError')); } catch (_) {}
+    } finally {
+      journeyRecovering = false;
     }
-    journeyState = null;
-    journeyRoute = null;
-    journeyAutoplay = false;
-    journeyCatalogNotice = '';
-    preJourneyState = null;
-    render();
-    if (journeyTrigger && typeof journeyTrigger.focus === 'function') journeyTrigger.focus();
-    journeyTrigger = null;
-  }
-
-  function failJourney() {
-    stopJourneyClock();
-    clearJourneyTransition();
-    closeJourneyDialog();
-    state.journey = '';
-    state.stop = '';
-    state.journeyMode = 'paused';
-    state.journeyNotice = '';
-    journeyState = null;
-    journeyRoute = null;
-    journeyAutoplay = false;
-    preJourneyState = null;
-    render();
-    showToast(t('journeyRenderError'));
   }
 
   function shareJourney() {
-    var sharedState = Object.assign({}, state, { journeyMode: 'paused' });
-    sharedState.focus = (state.focus || []).slice();
-    var params = explorerState.serialize(sharedState, defaults);
-    var url = window.location.origin + window.location.pathname + '?' + params.toString();
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).then(function () { showToast(t('journeyLinkCopied')); });
-    } else {
-      window.prompt(t('copyLinkPrompt'), url);
-    }
+    return runJourneyController(function () {
+      var sharedState = Object.assign({}, state, { journeyMode: 'paused' });
+      sharedState.focus = (state.focus || []).slice();
+      var params = explorerState.serialize(sharedState, defaults);
+      var url = window.location.origin + window.location.pathname + '?' + params.toString();
+      function promptFallback() {
+        try { window.prompt(t('copyLinkPrompt'), url); } catch (_) {}
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        var write = navigator.clipboard.writeText(url);
+        if (write && typeof write.then === 'function') {
+          write.then(function () {
+            try { showToast(t('journeyLinkCopied')); } catch (_) {}
+          }, promptFallback);
+        }
+      } else {
+        promptFallback();
+      }
+      return url;
+    });
   }
 
   function openDirectJourney() {
@@ -968,30 +1020,47 @@
     return ['input', 'textarea', 'select', 'button'].indexOf(tagName) !== -1 || target.isContentEditable;
   }
 
-  function handleJourneyAction(action) {
-    if (!journeyState || !journeyRoute) return;
-    if (action === 'previous' || action === 'next') {
-      journeyAutoplay = journeyState.status === 'playing';
-      dispatchJourney(action, journeyNow());
-    } else if (action === 'toggle') {
-      if (journeyState.status === 'playing') {
-        journeyAutoplay = false;
-        dispatchJourney('pause', journeyNow());
-      } else {
-        journeyAutoplay = true;
-        dispatchJourney('resume', journeyNow());
+  function activateJourneyEvidence(trackId, recordId, detailsOpener) {
+    return runJourneyController(function () {
+      journeyAutoplay = false;
+      stopJourneyClock();
+      if (journeyState && journeyState.status === 'transitioning') {
+        clearJourneyTransition();
+        dispatchJourney('transitionEnd', journeyNow(), true);
       }
-    } else if (action === 'share') {
-      shareJourney();
-    } else if (action === 'explore' || action === 'exit') {
-      finishJourney(false);
-    } else if (action === 'restore') {
-      finishJourney(true);
-    } else if (action === 'replay') {
-      startJourney(journeyRoute.id, journeyRoute.stops[0].id, !prefersReducedMotion());
-    } else if (action === 'catalog') {
-      openJourneyCatalog('');
-    }
+      if (journeyState && (journeyState.status === 'playing' || journeyState.status === 'paused')) {
+        dispatchJourney('interact', journeyNow());
+      }
+      (typeof detailsOpener === 'function' ? detailsOpener : openDetails)(trackId, recordId);
+    });
+  }
+
+  function handleJourneyAction(action) {
+    return runJourneyController(function () {
+      if (!journeyState || !journeyRoute) return;
+      if (action === 'previous' || action === 'next') {
+        journeyAutoplay = journeyState.status === 'playing';
+        dispatchJourney(action, journeyNow());
+      } else if (action === 'toggle') {
+        if (journeyState.status === 'playing') {
+          journeyAutoplay = false;
+          dispatchJourney('pause', journeyNow());
+        } else {
+          journeyAutoplay = true;
+          dispatchJourney('resume', journeyNow());
+        }
+      } else if (action === 'share') {
+        return shareJourney();
+      } else if (action === 'explore' || action === 'exit') {
+        return finishJourney(false);
+      } else if (action === 'restore') {
+        return finishJourney(true);
+      } else if (action === 'replay') {
+        startJourney(journeyRoute.id, journeyRoute.stops[0].id, !prefersReducedMotion());
+      } else if (action === 'catalog') {
+        openJourneyCatalog('');
+      }
+    });
   }
 
   function bindEvents() {
@@ -1090,11 +1159,7 @@
       }
       var evidenceButton = target.closest('[data-journey-evidence]');
       if (evidenceButton) {
-        journeyAutoplay = false;
-        if (journeyState && (journeyState.status === 'playing' || journeyState.status === 'paused')) {
-          dispatchJourney('interact', journeyNow());
-        }
-        openDetails(evidenceButton.dataset.journeyEvidence, evidenceButton.dataset.recordId);
+        activateJourneyEvidence(evidenceButton.dataset.journeyEvidence, evidenceButton.dataset.recordId);
         return;
       }
       var actionButton = target.closest('[data-journey-action]');
@@ -1195,6 +1260,39 @@
     openDirectJourney();
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  function installJourneyControllerTestApi(target) {
+    target.api = {
+      setContext: function (context) {
+        context = context || {};
+        if (Object.prototype.hasOwnProperty.call(context, 'state')) state = context.state;
+        if (Object.prototype.hasOwnProperty.call(context, 'elements')) elements = context.elements;
+        if (Object.prototype.hasOwnProperty.call(context, 'route')) journeyRoute = context.route;
+        if (Object.prototype.hasOwnProperty.call(context, 'playerState')) journeyState = context.playerState;
+        if (Object.prototype.hasOwnProperty.call(context, 'preJourneyState')) preJourneyState = context.preJourneyState;
+        if (Object.prototype.hasOwnProperty.call(context, 'autoplay')) journeyAutoplay = context.autoplay;
+      },
+      snapshot: function () {
+        return {
+          state: state,
+          route: journeyRoute,
+          playerState: journeyState,
+          preJourneyState: preJourneyState,
+          autoplay: journeyAutoplay
+        };
+      },
+      armTransition: armJourneyTransition,
+      activateEvidence: activateJourneyEvidence,
+      share: shareJourney,
+      handleAction: handleJourneyAction,
+      startClock: startJourneyClock,
+      finish: finishJourney,
+      resolveExitState: resolveJourneyExitState
+    };
+  }
+
+  if (window.__PARALLEL_WORLDS_CONTROLLER_TEST__ &&
+      typeof window.__PARALLEL_WORLDS_CONTROLLER_TEST__ === 'object') {
+    installJourneyControllerTestApi(window.__PARALLEL_WORLDS_CONTROLLER_TEST__);
+  } else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 }());
