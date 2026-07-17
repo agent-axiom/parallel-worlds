@@ -3044,6 +3044,101 @@ test('luminous atlas and adaptive timeline CSS expose the approved visual states
   });
 });
 
+test('directed journey assets are loaded in dependency order and shipped by Pages', function () {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/deploy-pages.yml'), 'utf8');
+  const validator = fs.readFileSync(path.join(root, 'scripts/validate.sh'), 'utf8');
+
+  ['journeys-data.js', 'journey.js', 'journey-view.js'].forEach(function (asset) {
+    assert.ok(fs.existsSync(path.join(root, asset)), asset + ' is missing');
+    assert.ok(html.indexOf('<script src="' + asset + '"></script>') !== -1, asset + ' is not loaded relatively');
+    assert.ok(workflow.indexOf(asset) !== -1, asset + ' is not packaged by Pages');
+    assert.ok(validator.indexOf('node --check ' + asset) !== -1, asset + ' is not validated');
+  });
+
+  assert.ok(/<script src="atlas-view\.js"><\/script>\s*<script src="journeys-data\.js"><\/script>\s*<script src="journey\.js"><\/script>\s*<script src="journey-view\.js"><\/script>\s*<script src="app\.js"><\/script>/.test(html),
+    'journey scripts must load after atlas-view and before app in dependency order');
+});
+
+test('page exposes an inert accessible journey launcher and persistent dialog shell', function () {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const launcherIndex = html.indexOf('class="journey-launch"');
+  const headingIndex = html.indexOf('class="explorer-heading"');
+  const explorerIndex = html.indexOf('class="explorer-shell"');
+  const dialogIndex = html.indexOf('id="journey-dialog"');
+  const toastIndex = html.indexOf('id="toast"');
+
+  assert.ok(headingIndex < launcherIndex && launcherIndex < explorerIndex,
+    'journey launcher must sit between the explorer heading and atlas');
+  assert.ok(/<section class="journey-launch" aria-labelledby="journey-launch-title">/.test(html));
+  assert.ok(/id="journey-open"/.test(html));
+  ['journeyKicker', 'journeyLaunchTitle', 'journeyLaunchText', 'journeyOpen'].forEach(function (key) {
+    assert.ok(html.indexOf('data-i18n="' + key + '"') !== -1, 'missing launcher copy hook ' + key);
+  });
+
+  assert.ok(/<dialog id="journey-dialog"[^>]*aria-labelledby="journey-dialog-title"/.test(html));
+  ['journey-dialog-title', 'journey-exit', 'journey-announcement', 'journey-content'].forEach(function (id) {
+    assert.ok(html.indexOf('id="' + id + '"') !== -1, 'missing journey dialog hook ' + id);
+  });
+  assert.ok(dialogIndex < toastIndex, 'journey dialog must precede the toast');
+  assert.ok(/<p id="journey-announcement" class="sr-only" aria-live="polite" aria-atomic="true"><\/p>\s*<div id="journey-content" class="journey-content"><\/div>/.test(html),
+    'persistent empty announcement must be the content target sibling');
+  assert.strictEqual(/id="journey-content"[^>]*>[\s\S]*id="journey-announcement"/.test(html), false,
+    'persistent live region must not be rendered inside replaceable journey content');
+  ['siteName', 'journeyDialogTitle', 'journeyExit'].forEach(function (key) {
+    assert.ok(html.substring(dialogIndex, toastIndex).indexOf('data-i18n="' + key + '"') !== -1,
+      'missing dialog copy hook ' + key);
+  });
+
+  assert.strictEqual(/\son[a-z]+\s*=/.test(html), false, 'inline event handlers are forbidden');
+  assert.strictEqual(/<script(?![^>]*\bsrc=)[^>]*>/.test(html), false, 'inline scripts are forbidden');
+  assert.strictEqual(/<script[^>]+src=["'](?:https?:)?\/\//.test(html), false, 'external scripts are forbidden');
+  assert.strictEqual(/<link[^>]+href=["'](?:https?:)?\/\//.test(html), false, 'external stylesheets are forbidden');
+  assert.strictEqual(/(?:src|href)=["']\/(?!\/)/.test(html), false, 'absolute asset paths are forbidden');
+});
+
+test('journey CSS covers the luminous full-screen stage and generated view hooks', function () {
+  const css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
+  const hooks = [
+    '.journey-launch', '.journey-open', '.journey-dialog', '.journey-shell', '.journey-topbar',
+    '.journey-brand', '.journey-content', '.journey-catalog', '.journey-cards', '.journey-card',
+    '.journey-card-map', '.journey-card-summary', '.journey-card-meta', '.journey-stage',
+    '.journey-map-layer', '.journey-stage-header', '.journey-route-title', '.journey-progress-text',
+    '.journey-year', '.journey-body', '.journey-progress', '.journey-clock', '.journey-controls',
+    '.journey-complete', '.journey-complete-kicker', '.journey-complete-actions'
+  ];
+  hooks.forEach(function (selector) {
+    assert.ok(css.indexOf(selector) !== -1, 'missing journey CSS hook ' + selector);
+  });
+
+  const dialogRule = /\.journey-dialog\s*\{([^}]*)\}/.exec(css);
+  assert.ok(dialogRule, 'missing journey dialog rule');
+  ['width:\\s*100dvw', 'height:\\s*100dvh', 'max-width:\\s*none', 'max-height:\\s*none',
+    'margin:\\s*0', 'padding:\\s*0', 'border:\\s*0', 'border-radius:\\s*0'].forEach(function (pattern) {
+    assert.ok(new RegExp(pattern).test(dialogRule[1]), 'journey dialog is not full screen: ' + pattern);
+  });
+  assert.ok(/\.journey-dialog::backdrop\s*\{[^}]*background:\s*#[0-9a-f]{3,8}/i.test(css),
+    'journey backdrop must be an opaque dark color');
+  assert.ok(/body\.journey-open\s*\{[^}]*overflow:\s*hidden/.test(css));
+  assert.ok(/\.journey-shell\s*\{[^}]*min-height:\s*100dvh[^}]*grid-template-rows:\s*auto\s+1fr/s.test(css));
+  assert.ok(/\.journey-topbar\s*\{[^}]*min-height:\s*(?:6[4-9]|7[0-2])px[^}]*z-index:/s.test(css));
+  assert.ok(/\.journey-content\s*\{[^}]*min-width:\s*0[^}]*min-height:\s*0/s.test(css));
+  assert.ok(/\.journey-open\s*\{[^}]*min-height:\s*44px/s.test(css));
+  assert.ok(/\.journey-dialog[\s\S]*:focus-visible\s*\{[^}]*outline:\s*[23]px/s.test(css));
+  assert.ok(/\.journey-cards\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(/s.test(css));
+  assert.ok(/\.journey-map-layer\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0[^}]*pointer-events:\s*none/s.test(css));
+  assert.ok(/\.journey-stage\s*\{[^}]*min-height:\s*calc\(100dvh\s*-\s*(?:6[4-9]|7[0-2])px\)/s.test(css));
+  assert.ok(/\.journey-body\s*\{[^}]*max-width:\s*60ch/s.test(css));
+  assert.ok(/\.journey-clock\s*\{[^}]*--journey-progress:[^}]*conic-gradient\(/s.test(css));
+  assert.ok(/\.journey-(?:controls|complete-actions)[\s\S]*button\s*\{[^}]*min-height:\s*44px/s.test(css));
+  assert.ok(/@keyframes\s+journey-[\w-]+\s*\{[\s\S]*transform:[^;}]+;[\s\S]*opacity:/s.test(css));
+  assert.ok(/@media \(max-width: 620px\)[\s\S]*\.journey-/s.test(css));
+  assert.ok(/@media \(max-width: 390px\)[\s\S]*\.journey-/s.test(css));
+  assert.ok(/@media \(prefers-reduced-motion: reduce\)[\s\S]*\.journey-dialog/.test(css));
+  assert.ok(/\.journey-dialog \*,\s*\.journey-dialog::before,\s*\.journey-dialog::after/.test(css));
+  assert.ok(/@media \(prefers-reduced-motion: reduce\)[\s\S]*\.journey-dialog[\s\S]*transform:\s*none\s*!important/.test(css));
+});
+
 test('atlas view renders accessible region controls and bundled world SVG', function () {
   const html = atlasView.renderRegions([{ id: 'east-asia', count: 3, x: 76, y: 40, radius: 14 }], {
     regionNames: { 'east-asia': 'East Asia' },
@@ -3102,6 +3197,120 @@ test('locale metadata and normalization support Simplified Chinese', function ()
   assert.deepStrictEqual(i18n.locales.map(function (locale) { return locale.id; }), ['ru', 'en', 'zh']);
   assert.strictEqual(i18n.locales.find(function (locale) { return locale.id === 'zh'; }).htmlLang, 'zh-CN');
   assert.strictEqual(i18n.text('zh', 'siteName'), '平行世界');
+});
+
+test('journey interface copy is complete and exact in Russian English and Chinese', function () {
+  const expected = {
+    ru: {
+      journeyKicker: 'Режиссёрские маршруты',
+      journeyLaunchTitle: 'Пройдите историю как путешествие',
+      journeyLaunchText: 'Карта проведёт по семи проверенным остановкам, а исследование всегда останется под вашим контролем.',
+      journeyOpen: 'Начать путешествие · 2 минуты',
+      journeyDialogTitle: 'Путешествия во времени',
+      journeyCatalogTitle: 'Выберите маршрут',
+      journeyCatalogText: 'Короткие истории, составленные только из проверенных хронологических записей.',
+      journeyStart: 'Начать маршрут',
+      journeyDuration: '{minutes} мин',
+      journeyStops: '{count} остановок',
+      journeyStopProgress: 'Остановка {current} из {total}',
+      journeyPrevious: 'Назад',
+      journeyNext: 'Далее',
+      journeyPause: 'Пауза',
+      journeyResume: 'Продолжить',
+      journeyShare: 'Поделиться',
+      journeyExit: 'Выйти',
+      journeyEvidence: 'Открыть источники',
+      journeyExplore: 'Исследовать этот момент',
+      journeyReplay: 'Пройти ещё раз',
+      journeyBackCatalog: 'К выбору маршрутов',
+      journeyRestoreAtlas: 'Вернуться к исходному виду',
+      journeyUnknownRoute: 'Этот маршрут недоступен. Выберите другой.',
+      journeyUnknownStop: 'Остановка не найдена — маршрут открыт с начала.',
+      journeyRenderError: 'Не удалось открыть путешествие. Атлас восстановлен.',
+      journeyLinkCopied: 'Ссылка на остановку скопирована',
+      journeyCompleteKicker: 'Маршрут завершён'
+    },
+    en: {
+      journeyKicker: 'Directed journeys',
+      journeyLaunchTitle: 'Travel through history',
+      journeyLaunchText: 'The map guides you through seven reviewed stops, while exploration stays under your control.',
+      journeyOpen: 'Start journey · 2 minutes',
+      journeyDialogTitle: 'Time journeys',
+      journeyCatalogTitle: 'Choose a journey',
+      journeyCatalogText: 'Short guided stories built only from reviewed chronological records.',
+      journeyStart: 'Start journey',
+      journeyDuration: '{minutes} min',
+      journeyStops: '{count} stops',
+      journeyStopProgress: 'Stop {current} of {total}',
+      journeyPrevious: 'Previous',
+      journeyNext: 'Next',
+      journeyPause: 'Pause',
+      journeyResume: 'Resume',
+      journeyShare: 'Share',
+      journeyExit: 'Exit',
+      journeyEvidence: 'Open evidence',
+      journeyExplore: 'Explore this moment',
+      journeyReplay: 'Replay journey',
+      journeyBackCatalog: 'Back to journeys',
+      journeyRestoreAtlas: 'Restore the original atlas view',
+      journeyUnknownRoute: 'This journey is unavailable. Choose another.',
+      journeyUnknownStop: 'That stop was not found, so the journey opened at the beginning.',
+      journeyRenderError: 'The journey could not be opened. The atlas has been restored.',
+      journeyLinkCopied: 'Stop link copied',
+      journeyCompleteKicker: 'Journey complete'
+    },
+    zh: {
+      journeyKicker: '导演式路线',
+      journeyLaunchTitle: '像旅行一样穿越历史',
+      journeyLaunchText: '地图将带你走过七个已审核的站点，探索节奏始终由你掌控。',
+      journeyOpen: '开始旅程 · 2分钟',
+      journeyDialogTitle: '时间之旅',
+      journeyCatalogTitle: '选择一条路线',
+      journeyCatalogText: '仅依据已审核年代记录编排的简短导览故事。',
+      journeyStart: '开始路线',
+      journeyDuration: '{minutes}分钟',
+      journeyStops: '{count}个站点',
+      journeyStopProgress: '第{current}站，共{total}站',
+      journeyPrevious: '上一站',
+      journeyNext: '下一站',
+      journeyPause: '暂停',
+      journeyResume: '继续',
+      journeyShare: '分享',
+      journeyExit: '退出',
+      journeyEvidence: '查看证据',
+      journeyExplore: '探索这一时刻',
+      journeyReplay: '重新开始',
+      journeyBackCatalog: '返回路线',
+      journeyRestoreAtlas: '恢复原始地图视图',
+      journeyUnknownRoute: '此路线不可用，请选择其他路线。',
+      journeyUnknownStop: '未找到该站点，已从路线起点打开。',
+      journeyRenderError: '无法打开旅程，已恢复地图。',
+      journeyLinkCopied: '站点链接已复制',
+      journeyCompleteKicker: '旅程完成'
+    }
+  };
+
+  Object.keys(expected).forEach(function (locale) {
+    Object.keys(expected[locale]).forEach(function (key) {
+      assert.strictEqual(i18n.text(locale, key), expected[locale][key], locale + ' journey copy mismatch: ' + key);
+      assert.ok(i18n.text(locale, key).trim(), locale + ' journey copy is blank: ' + key);
+    });
+  });
+
+  const source = fs.readFileSync(path.join(root, 'i18n.js'), 'utf8');
+  const blocks = {
+    ru: /var copy = \{\s*ru:\s*\{([\s\S]*?)\n\s*\},\s*en:/.exec(source),
+    en: /\n\s*en:\s*\{([\s\S]*?)\n\s*\},\s*zh:/.exec(source),
+    zh: /\n\s*zh:\s*\{([\s\S]*?)\n\s*\}\s*\n\s*\};/.exec(source)
+  };
+  const localeKeys = {};
+  Object.keys(blocks).forEach(function (locale) {
+    assert.ok(blocks[locale], 'could not inspect ' + locale + ' interface copy');
+    localeKeys[locale] = Array.from(blocks[locale][1].matchAll(/(?:^|,)\s*([A-Za-z][A-Za-z0-9]*):\s*'/g))
+      .map(function (match) { return match[1]; }).sort();
+  });
+  assert.deepStrictEqual(localeKeys.ru, localeKeys.en, 'Russian and English interface keys differ');
+  assert.deepStrictEqual(localeKeys.en, localeKeys.zh, 'English and Chinese interface keys differ');
 });
 
 test('Simplified Chinese covers every interface key used by the site', function () {

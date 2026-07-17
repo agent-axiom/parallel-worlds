@@ -118,6 +118,18 @@
         </div>
       </div>
 
+      <section class="journey-launch" aria-labelledby="journey-launch-title">
+        <div>
+          <p class="kicker" data-i18n="journeyKicker">Режиссёрские маршруты</p>
+          <h3 id="journey-launch-title" data-i18n="journeyLaunchTitle">Пройдите историю как путешествие</h3>
+          <p data-i18n="journeyLaunchText">Карта проведёт по семи проверенным остановкам, а исследование всегда останется под вашим контролем.</p>
+        </div>
+        <button id="journey-open" class="journey-open" type="button">
+          <span aria-hidden="true">▶</span>
+          <span data-i18n="journeyOpen">Начать путешествие · 2 минуты</span>
+        </button>
+      </section>
+
       <div class="explorer-shell">
         <section id="atlas-view" class="explorer-view atlas-view" role="tabpanel" aria-labelledby="view-map-button">
           <div class="atlas-workspace">
@@ -229,6 +241,18 @@
     <div id="dialog-sources" class="dialog-sources"></div>
   </dialog>
 
+  <dialog id="journey-dialog" class="journey-dialog" aria-labelledby="journey-dialog-title">
+    <div class="journey-shell">
+      <header class="journey-topbar">
+        <a class="journey-brand" href="./" data-i18n="siteName">Параллельные миры</a>
+        <h2 id="journey-dialog-title" class="sr-only" data-i18n="journeyDialogTitle">Путешествия во времени</h2>
+        <button id="journey-exit" type="button" data-i18n="journeyExit">Выйти</button>
+      </header>
+      <p id="journey-announcement" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+      <div id="journey-content" class="journey-content"></div>
+    </div>
+  </dialog>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="chronology.js"></script>
@@ -243,6 +267,9 @@
   <script src="atlas.js"></script>
   <script src="explorer-state.js"></script>
   <script src="atlas-view.js"></script>
+  <script src="journeys-data.js"></script>
+  <script src="journey.js"></script>
+  <script src="journey-view.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
