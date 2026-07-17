@@ -2025,6 +2025,20 @@ test('explorer state normalizes empty and invalid journey modes to paused', func
   assert.strictEqual(invalid.journeyMode, 'paused');
 });
 
+test('explorer state normalizes a missing journey mode to paused', function () {
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'ru'
+  };
+  const parsed = explorerState.parse(
+    new URLSearchParams('journey=birth-of-cities&stop=uruk-urban-center'),
+    defaults, data, journeysData
+  );
+  assert.deepStrictEqual([parsed.journeyMode, parsed.journeyNotice], ['paused', '']);
+  assert.strictEqual(explorerState.serialize(parsed, defaults).toString(),
+    'lang=ru&journey=birth-of-cities&stop=uruk-urban-center&journeyMode=paused');
+});
+
 test('explorer state clears journey defaults when the URL has no journey', function () {
   const defaults = {
     view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
