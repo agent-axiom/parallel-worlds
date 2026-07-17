@@ -5,6 +5,9 @@
 }(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
+  var MAX_JOURNEY_ROUTES = 100;
+  var MAX_JOURNEY_STOPS = 8;
+
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
   }
@@ -42,14 +45,19 @@
     return { start: data.range.start, end: data.range.end };
   }
 
-  function ownValue(object, key) {
-    if (!object || typeof object !== 'object' && typeof object !== 'function') return undefined;
+  function ownDataProperty(object, key) {
+    if (!object || typeof object !== 'object' && typeof object !== 'function') return null;
     try {
       var descriptor = Object.getOwnPropertyDescriptor(object, key);
-      return descriptor ? descriptor.value : undefined;
+      return descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value') ? descriptor : null;
     } catch (error) {
-      return undefined;
+      return null;
     }
+  }
+
+  function ownValue(object, key) {
+    var property = ownDataProperty(object, key);
+    return property ? property.value : undefined;
   }
 
   function ownArray(object, key) {
@@ -70,15 +78,29 @@
     var routes = ownArray(journeys, 'routes');
     if (!routes) return null;
     var routeCount = arrayLength(routes);
+    if (routeCount > MAX_JOURNEY_ROUTES) return null;
+    var routeEntries = [];
     for (var routeIndex = 0; routeIndex < routeCount; routeIndex += 1) {
-      var route = ownValue(routes, String(routeIndex));
+      var routeProperty = ownDataProperty(routes, String(routeIndex));
+      if (!routeProperty) return null;
+      routeEntries.push(routeProperty.value);
+    }
+    for (var routeIndex = 0; routeIndex < routeEntries.length; routeIndex += 1) {
+      var route = routeEntries[routeIndex];
       if (ownValue(route, 'id') !== routeId) continue;
       var stops = ownArray(route, 'stops');
       if (!stops) return null;
-      var stopIds = [];
       var stopCount = arrayLength(stops);
+      if (stopCount < 1 || stopCount > MAX_JOURNEY_STOPS) return null;
+      var stopEntries = [];
       for (var stopIndex = 0; stopIndex < stopCount; stopIndex += 1) {
-        var stopId = ownValue(ownValue(stops, String(stopIndex)), 'id');
+        var stopProperty = ownDataProperty(stops, String(stopIndex));
+        if (!stopProperty) return null;
+        stopEntries.push(stopProperty.value);
+      }
+      var stopIds = [];
+      for (var stopIndex = 0; stopIndex < stopEntries.length; stopIndex += 1) {
+        var stopId = ownValue(stopEntries[stopIndex], 'id');
         if (typeof stopId === 'string' && stopId) stopIds.push(stopId);
       }
       return stopIds.length ? stopIds : null;
@@ -122,10 +144,6 @@
 
   function parse(params, defaults, data, journeys) {
     var state = Object.assign({}, defaults, { focus: (defaults.focus || []).slice() });
-    state.journey = defaults.journey || '';
-    state.stop = defaults.stop || '';
-    state.journeyMode = defaults.journeyMode === 'playing' ? 'playing' : 'paused';
-    state.journeyNotice = '';
     var view = params.get('view');
     if (view === 'map' || view === 'chronology') state.view = view;
     var scaleMode = params.get('scale');
@@ -171,10 +189,13 @@
     if (state.year !== defaults.year) params.set('year', state.year);
     if (state.zoom !== defaults.zoom) params.set('zoom', state.zoom);
     if (state.focus && state.focus.length) params.set('focus', state.focus.join(','));
-    if (typeof state.journey === 'string' && state.journey) {
-      params.set('journey', state.journey);
-      params.set('stop', typeof state.stop === 'string' ? state.stop : '');
-      params.set('journeyMode', state.journeyMode === 'playing' ? 'playing' : 'paused');
+    var journeyId = ownValue(state, 'journey');
+    if (typeof journeyId === 'string' && journeyId) {
+      var stopId = ownValue(state, 'stop');
+      var journeyMode = ownValue(state, 'journeyMode');
+      params.set('journey', journeyId);
+      params.set('stop', typeof stopId === 'string' ? stopId : '');
+      params.set('journeyMode', journeyMode === 'playing' ? 'playing' : 'paused');
     }
     return params;
   }

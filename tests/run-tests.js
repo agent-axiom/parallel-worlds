@@ -2056,6 +2056,22 @@ test('explorer state clears journey defaults when the URL has no journey', funct
   });
 });
 
+test('explorer state parsing ignores inherited journey default accessors', function () {
+  const prototype = {};
+  ['journey', 'stop', 'journeyMode', 'journeyNotice'].forEach(function (field) {
+    Object.defineProperty(prototype, field, {
+      get: function () { throw new Error('inherited default getter called: ' + field); }
+    });
+  });
+  const defaults = Object.assign(Object.create(prototype), {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'ru'
+  });
+  const parsed = explorerState.parse(new URLSearchParams(''), defaults, data, journeysData);
+  assert.deepStrictEqual([parsed.journey, parsed.stop, parsed.journeyMode, parsed.journeyNotice],
+    ['', '', 'paused', '']);
+});
+
 test('explorer state never serializes a journey notice', function () {
   const defaults = {
     view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
@@ -2067,6 +2083,55 @@ test('explorer state never serializes a journey notice', function () {
   const params = explorerState.serialize(state, defaults);
   assert.strictEqual(params.has('journeyNotice'), false);
   assert.strictEqual(params.get('stop'), 'uruk-urban-center');
+});
+
+test('explorer state serialization ignores inherited journey values', function () {
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'ru'
+  };
+  const state = Object.assign(Object.create({
+    journey: 'birth-of-cities', stop: 'uruk-urban-center', journeyMode: 'playing'
+  }), defaults);
+  assert.strictEqual(explorerState.serialize(state, defaults).toString(), 'lang=ru');
+});
+
+test('explorer state serialization never invokes journey accessors', function () {
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'ru'
+  };
+  [Object.create(null), Object.create({
+    get journey() { throw new Error('inherited journey getter called'); },
+    get stop() { throw new Error('inherited stop getter called'); },
+    get journeyMode() { throw new Error('inherited journey mode getter called'); }
+  })].forEach(function (state, index) {
+    Object.assign(state, defaults);
+    if (index === 0) {
+      ['journey', 'stop', 'journeyMode'].forEach(function (field) {
+        Object.defineProperty(state, field, {
+          get: function () { throw new Error('own ' + field + ' getter called'); }
+        });
+      });
+    }
+    assert.strictEqual(explorerState.serialize(state, defaults).toString(), 'lang=ru');
+  });
+});
+
+test('explorer state serialization normalizes accessor stop and mode for an own journey', function () {
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'ru'
+  };
+  const state = Object.assign({}, defaults, { journey: 'birth-of-cities' });
+  Object.defineProperty(state, 'stop', {
+    get: function () { throw new Error('stop getter called'); }
+  });
+  Object.defineProperty(state, 'journeyMode', {
+    get: function () { throw new Error('journey mode getter called'); }
+  });
+  assert.strictEqual(explorerState.serialize(state, defaults).toString(),
+    'lang=ru&journey=birth-of-cities&stop=&journeyMode=paused');
 });
 
 test('explorer state rejects malformed and inherited journey manifest entries without throwing', function () {
@@ -2083,6 +2148,16 @@ test('explorer state rejects malformed and inherited journey manifest entries wi
   const inheritedStopId = {
     routes: [{ id: 'birth-of-cities', stops: [Object.create({ id: 'xianrendong-pottery' })] }]
   };
+  const sparseRoutes = new Array(2);
+  sparseRoutes[1] = { id: 'birth-of-cities', stops: [canonicalStop] };
+  const accessorRoutes = [];
+  Object.defineProperty(accessorRoutes, '0', {
+    get: function () { throw new Error('route entry getter called'); }
+  });
+  const accessorStops = [];
+  Object.defineProperty(accessorStops, '0', {
+    get: function () { throw new Error('stop entry getter called'); }
+  });
   const throwingRoutes = {};
   Object.defineProperty(throwingRoutes, 'routes', {
     get: function () { throw new Error('routes getter called'); }
@@ -2102,6 +2177,8 @@ test('explorer state rejects malformed and inherited journey manifest entries wi
   const malformed = [
     undefined, null, {}, { routes: null }, { routes: {} }, { routes: new Array(1) },
     inheritedRoutes, inheritedRouteIndex, inheritedRouteId, inheritedStops, inheritedStopIndex, inheritedStopId,
+    { routes: sparseRoutes }, { routes: accessorRoutes },
+    { routes: [{ id: 'birth-of-cities', stops: accessorStops }] },
     throwingRoutes, { routes: [throwingRouteId] }, { routes: [throwingRouteStops] },
     { routes: [{ id: 'birth-of-cities', stops: [throwingStopId] }] },
     { routes: [null, 1, 'birth-of-cities'] },
@@ -2123,7 +2200,7 @@ test('explorer state rejects malformed and inherited journey manifest entries wi
     new URLSearchParams('journey=birth-of-cities'), defaults, data,
     { routes: [{ id: 'birth-of-cities', stops: stops }] }
   );
-  assert.strictEqual(parsed.stop, 'uruk-urban-center');
+  assert.deepStrictEqual([parsed.journey, parsed.stop, parsed.journeyNotice], ['', '', 'unknown-route']);
 });
 
 test('explorer state does not invoke journey manifest controlled array methods', function () {
@@ -2141,6 +2218,100 @@ test('explorer state does not invoke journey manifest controlled array methods',
   );
   assert.deepStrictEqual([parsed.journey, parsed.stop, parsed.journeyMode],
     ['birth-of-cities', 'xianrendong-pottery', 'playing']);
+});
+
+test('explorer state caps journey route scans and accepts exactly 100 routes', function () {
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'ru'
+  };
+  const hugeRoutes = [{ id: 'birth-of-cities', stops: [{ id: 'xianrendong-pottery' }] }];
+  hugeRoutes.length = 0xfffffffe;
+  let hugeNumericReads = 0;
+  const hugeProxy = new Proxy(hugeRoutes, {
+    getOwnPropertyDescriptor: function (target, field) {
+      if (typeof field === 'string' && /^\d+$/.test(field)) hugeNumericReads += 1;
+      return Reflect.getOwnPropertyDescriptor(target, field);
+    }
+  });
+  const rejected = explorerState.parse(
+    new URLSearchParams('journey=birth-of-cities'), defaults, data, { routes: hugeProxy }
+  );
+  assert.deepStrictEqual([rejected.journey, rejected.stop, rejected.journeyNotice], ['', '', 'unknown-route']);
+  assert.strictEqual(hugeNumericReads, 0);
+
+  const boundaryRoutes = [];
+  for (let index = 0; index < 99; index += 1) {
+    boundaryRoutes.push({ id: 'route-' + index, stops: [{ id: 'stop-' + index }] });
+  }
+  boundaryRoutes.push({ id: 'boundary-route', stops: [{ id: 'boundary-stop' }] });
+  let boundaryNumericReads = 0;
+  const boundaryProxy = new Proxy(boundaryRoutes, {
+    getOwnPropertyDescriptor: function (target, field) {
+      if (field === '100') throw new Error('read route beyond configured boundary');
+      if (typeof field === 'string' && /^\d+$/.test(field)) boundaryNumericReads += 1;
+      return Reflect.getOwnPropertyDescriptor(target, field);
+    }
+  });
+  const accepted = explorerState.parse(
+    new URLSearchParams('journey=boundary-route&stop=boundary-stop&journeyMode=playing'),
+    defaults, data, { routes: boundaryProxy }
+  );
+  assert.deepStrictEqual([accepted.journey, accepted.stop, accepted.journeyMode, accepted.journeyNotice],
+    ['boundary-route', 'boundary-stop', 'playing', '']);
+  assert.strictEqual(boundaryNumericReads, 100);
+});
+
+test('explorer state caps journey stop scans and accepts exactly eight stops', function () {
+  const probe = [
+    'const explorerState = require(' + JSON.stringify(path.join(root, 'explorer-state.js')) + ');',
+    "const URLSearchParams = require('url').URLSearchParams;",
+    "const data = { range: { start: -10, end: 10 }, regions: [], tracks: [] };",
+    "const defaults = { view: 'map', year: -1, focus: [], query: '', region: 'all', type: 'all', start: -10, end: 10, zoom: 100, lang: 'ru' };",
+    "const rawStops = [{ id: 'first-stop' }];",
+    'rawStops.length = 0xfffffffe;',
+    'let numericReads = 0;',
+    'const stops = new Proxy(rawStops, { getOwnPropertyDescriptor: function (target, field) {',
+    "  if (typeof field === 'string' && /^\\d+$/.test(field)) numericReads += 1;",
+    '  return Reflect.getOwnPropertyDescriptor(target, field);',
+    '} });',
+    "const parsed = explorerState.parse(new URLSearchParams('journey=huge-route'), defaults, data,",
+    "  { routes: [{ id: 'huge-route', stops: stops }] });",
+    'process.stdout.write(JSON.stringify({',
+    '  numericReads: numericReads,',
+    '  fields: [parsed.journey, parsed.stop, parsed.journeyNotice]',
+    '}));'
+  ].join('\n');
+  const result = childProcess.spawnSync(process.execPath, ['-e', probe], {
+    encoding: 'utf8', timeout: 2000
+  });
+  assert.ifError(result.error);
+  assert.strictEqual(result.status, 0, result.stderr);
+  const summary = JSON.parse(result.stdout);
+  assert.deepStrictEqual(summary.fields, ['', '', 'unknown-route']);
+  assert.strictEqual(summary.numericReads, 0);
+
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'ru'
+  };
+  const boundaryStops = [];
+  for (let index = 0; index < 8; index += 1) boundaryStops.push({ id: 'boundary-stop-' + index });
+  let boundaryNumericReads = 0;
+  const boundaryProxy = new Proxy(boundaryStops, {
+    getOwnPropertyDescriptor: function (target, field) {
+      if (field === '8') throw new Error('read stop beyond configured boundary');
+      if (typeof field === 'string' && /^\d+$/.test(field)) boundaryNumericReads += 1;
+      return Reflect.getOwnPropertyDescriptor(target, field);
+    }
+  });
+  const accepted = explorerState.parse(
+    new URLSearchParams('journey=boundary-route&stop=boundary-stop-7&journeyMode=playing'),
+    defaults, data, { routes: [{ id: 'boundary-route', stops: boundaryProxy }] }
+  );
+  assert.deepStrictEqual([accepted.journey, accepted.stop, accepted.journeyMode, accepted.journeyNotice],
+    ['boundary-route', 'boundary-stop-7', 'playing', '']);
+  assert.strictEqual(boundaryNumericReads, 8);
 });
 
 test('explorer state preserves existing fields and does not mutate parse inputs', function () {
