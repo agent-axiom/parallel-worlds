@@ -9,6 +9,23 @@
   var MAX_STOPS = 8;
   var FOCUSABLE_SELECTOR = 'button:not([disabled]), a[href], input:not([disabled]), ' +
     'select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  var FALLBACK_COPY = {
+    catalogTitle: 'Journeys',
+    startJourney: 'Start journey',
+    minutesTemplate: '{minutes} min',
+    stopsTemplate: '{count} stops',
+    previousStop: 'Previous stop',
+    nextStop: 'Next stop',
+    pauseJourney: 'Pause journey',
+    resumeJourney: 'Resume journey',
+    shareJourney: 'Share journey',
+    openEvidence: 'Open evidence',
+    stopTemplate: 'Stop {current} of {total}',
+    completeKicker: 'Journey complete',
+    exploreMoment: 'Explore this moment',
+    replayJourney: 'Replay journey',
+    backCatalog: 'Back to journeys'
+  };
 
   function read(value, key) {
     try {
@@ -91,7 +108,8 @@
   }
 
   function copyText(copy, key) {
-    return ownString(copy, key);
+    var value = ownString(copy, key);
+    return value && value.trim() ? value : ownString(FALLBACK_COPY, key);
   }
 
   function catalogHtml(routes, copy) {
@@ -201,6 +219,7 @@
     var progress;
     var status;
     var toggleLabel;
+    var toggleDisabled;
     var evidence;
     var evidenceHtml = '';
     if (!title || stopCount < 1 || !Number.isFinite(index) || Math.floor(index) !== index ||
@@ -215,6 +234,7 @@
     progress = template(copyText(copy, 'stopTemplate'), { current: index + 1, total: stopCount });
     status = ownValue(state, 'status');
     toggleLabel = status === 'playing' ? copyText(copy, 'pauseJourney') : copyText(copy, 'resumeJourney');
+    toggleDisabled = status === 'transitioning';
     evidence = evidenceRecord(stop);
     if (evidence) {
       evidenceHtml = '<button type="button" data-journey-evidence="' + escapeHtml(evidence.trackId) +
@@ -228,8 +248,8 @@
       '<header class="journey-stage-header"><p class="journey-route-title">' + escapeHtml(title) + '</p>' +
       '<p class="journey-progress-text">' + escapeHtml(progress) + '</p>' +
       '<p class="journey-year">' + escapeHtml(year) + '</p></header>' +
-      '<div class="journey-announcement" aria-live="polite" aria-atomic="true">' +
-      '<span>' + escapeHtml(headline) + '</span><span>' + escapeHtml(year) + '</span></div>' +
+      '<span data-journey-announcement-source hidden>' +
+      escapeHtml(headline + ' · ' + year) + '</span>' +
       '<h2>' + escapeHtml(headline) + '</h2><p class="journey-body">' + escapeHtml(body) + '</p>' +
       '<nav class="journey-progress" aria-label="' + escapeHtml(progress) + '">' +
       progressHtml(stops, stopCount, index, copyText(copy, 'stopTemplate')) + '</nav>' +
@@ -237,7 +257,8 @@
       '<div class="journey-controls">' +
       '<button type="button" data-journey-action="previous"' + (index === 0 ? ' disabled' : '') + '>' +
       escapeHtml(copyText(copy, 'previousStop')) + '</button>' +
-      '<button type="button" data-journey-action="toggle">' + escapeHtml(toggleLabel) + '</button>' +
+      '<button type="button" data-journey-action="toggle"' +
+      (toggleDisabled ? ' disabled aria-disabled="true"' : '') + '>' + escapeHtml(toggleLabel) + '</button>' +
       '<button type="button" data-journey-action="next">' + escapeHtml(copyText(copy, 'nextStop')) + '</button>' +
       '<button type="button" data-journey-action="share">' + escapeHtml(copyText(copy, 'shareJourney')) + '</button>' +
       evidenceHtml + '</div></article>';
@@ -320,28 +341,142 @@
     }
   }
 
-  function focusable(node) {
-    var disabled;
-    var hidden;
-    var tabIndex;
-    var getAttribute;
+  function hiddenAttribute(value) {
+    return value === true || typeof value === 'string' && value.toLowerCase() === 'true';
+  }
+
+  function hasReference(values, candidate) {
+    var index;
+    for (index = 0; index < values.length; index += 1) {
+      if (values[index] === candidate) return true;
+    }
+    return false;
+  }
+
+  function attributeBlocked(node) {
+    var getAttribute = read(node, 'getAttribute');
     var ariaHidden;
+    var hidden;
+    var inert;
+    if (!getAttribute.ok) return true;
+    if (getAttribute.value === undefined || getAttribute.value === null) return false;
+    if (typeof getAttribute.value !== 'function') return true;
+    try {
+      ariaHidden = getAttribute.value.call(node, 'aria-hidden');
+      hidden = getAttribute.value.call(node, 'hidden');
+      inert = getAttribute.value.call(node, 'inert');
+    } catch (_) {
+      return true;
+    }
+    return hiddenAttribute(ariaHidden) || hidden !== null && hidden !== undefined ||
+      inert !== null && inert !== undefined;
+  }
+
+  function cssBlocked(node) {
+    var ownerDocument = read(node, 'ownerDocument');
+    var defaultView;
+    var getComputedStyle;
+    var style;
+    var display;
+    var visibility;
+    if (!ownerDocument.ok) return true;
+    if (!ownerDocument.value) return false;
+    defaultView = read(ownerDocument.value, 'defaultView');
+    if (!defaultView.ok) return true;
+    if (!defaultView.value) return false;
+    getComputedStyle = read(defaultView.value, 'getComputedStyle');
+    if (!getComputedStyle.ok) return true;
+    if (typeof getComputedStyle.value !== 'function') return false;
+    try {
+      style = getComputedStyle.value.call(defaultView.value, node);
+    } catch (_) {
+      return true;
+    }
+    if (!style) return false;
+    display = read(style, 'display');
+    visibility = read(style, 'visibility');
+    if (!display.ok || !visibility.ok) return true;
+    return display.value === 'none' || visibility.value === 'hidden';
+  }
+
+  function treeBlocked(node) {
+    var current = node;
+    var visited = [];
+    var hidden;
+    var inert;
+    var connected;
+    var parent;
+    while (current && (typeof current === 'object' || typeof current === 'function')) {
+      if (visited.length >= 100 || hasReference(visited, current)) return true;
+      visited.push(current);
+      hidden = read(current, 'hidden');
+      inert = read(current, 'inert');
+      connected = read(current, 'isConnected');
+      if (!hidden.ok || !inert.ok || !connected.ok) return true;
+      if (hidden.value || inert.value || connected.value === false || attributeBlocked(current) ||
+          cssBlocked(current)) return true;
+      parent = read(current, 'parentElement');
+      if (!parent.ok) return true;
+      if (parent.value === undefined) {
+        parent = read(current, 'parentNode');
+        if (!parent.ok) return true;
+      }
+      current = parent.value;
+    }
+    return false;
+  }
+
+  function focusable(node, order) {
+    var disabled;
+    var tabIndex;
+    var focus;
     if (!node || typeof node !== 'object' && typeof node !== 'function') return false;
     disabled = read(node, 'disabled');
-    hidden = read(node, 'hidden');
     tabIndex = read(node, 'tabIndex');
-    if (!disabled.ok || !hidden.ok || !tabIndex.ok) return false;
-    if (disabled.value || hidden.value || typeof tabIndex.value === 'number' && tabIndex.value < 0) return false;
-    getAttribute = callable(node, 'getAttribute');
-    if (getAttribute) {
-      try {
-        ariaHidden = getAttribute.call(node, 'aria-hidden');
-      } catch (_) {
-        return false;
-      }
-      if (ariaHidden === true || typeof ariaHidden === 'string' && ariaHidden.toLowerCase() === 'true') return false;
+    focus = read(node, 'focus');
+    if (!disabled.ok || !tabIndex.ok || !focus.ok || disabled.value ||
+        typeof focus.value !== 'function') return null;
+    if (typeof tabIndex.value === 'number' && (!Number.isFinite(tabIndex.value) || tabIndex.value < 0)) return null;
+    if (treeBlocked(node)) return null;
+    return {
+      node: node,
+      tabIndex: typeof tabIndex.value === 'number' ? tabIndex.value : 0,
+      order: order
+    };
+  }
+
+  function compareFocusOrder(left, right) {
+    var leftPositive = left.tabIndex > 0;
+    var rightPositive = right.tabIndex > 0;
+    if (leftPositive !== rightPositive) return leftPositive ? -1 : 1;
+    if (leftPositive && left.tabIndex !== right.tabIndex) return left.tabIndex - right.tabIndex;
+    return left.order - right.order;
+  }
+
+  function focusTransferred(target, fallbackDocument) {
+    var connected = read(target, 'isConnected');
+    var focus = read(target, 'focus');
+    var ownerDocument;
+    var activeElement;
+    if (!connected.ok || connected.value === false || !focus.ok || typeof focus.value !== 'function') return false;
+    try {
+      focus.value.call(target);
+    } catch (_) {
+      return false;
     }
-    return true;
+    connected = read(target, 'isConnected');
+    if (!connected.ok || connected.value === false) return false;
+    ownerDocument = read(target, 'ownerDocument');
+    if (!ownerDocument.ok) return false;
+    ownerDocument = ownerDocument.value || fallbackDocument;
+    if (!ownerDocument) return true;
+    activeElement = read(ownerDocument, 'activeElement');
+    if (!activeElement.ok) return false;
+    return activeElement.value === undefined || activeElement.value === target;
+  }
+
+  function preventTab(event) {
+    callSafely(event, callable(event, 'preventDefault'));
   }
 
   function trapTab(event, dialog) {
@@ -349,6 +484,7 @@
     var querySelectorAll;
     var nodeList;
     var length;
+    var nodes = [];
     var controls = [];
     var index;
     var node;
@@ -356,7 +492,11 @@
     var activeElement;
     var shiftKey;
     var activeIndex = -1;
-    var target;
+    var direction;
+    var startIndex;
+    var attemptCount;
+    var attempt;
+    var candidate;
     if (!key.ok || key.value !== 'Tab') return false;
     querySelectorAll = callable(dialog, 'querySelectorAll');
     if (!querySelectorAll) return false;
@@ -371,36 +511,56 @@
     length = Math.min(length.value, 1000);
     for (index = 0; index < length; index += 1) {
       node = read(nodeList, String(index));
-      if (node.ok && focusable(node.value)) controls.push(node.value);
+      if (!node.ok || hasReference(nodes, node.value)) continue;
+      nodes.push(node.value);
+      candidate = focusable(node.value, index);
+      if (candidate) controls.push(candidate);
     }
+    controls.sort(compareFocusOrder);
+
+    ownerDocument = read(dialog, 'ownerDocument');
+    ownerDocument = ownerDocument.ok ? ownerDocument.value : null;
 
     if (!controls.length) {
-      callSafely(event, callable(event, 'preventDefault'));
-      callSafely(dialog, callable(dialog, 'focus'));
+      if (!focusTransferred(dialog, ownerDocument)) return false;
+      preventTab(event);
       return true;
     }
 
-    ownerDocument = read(dialog, 'ownerDocument');
-    if (ownerDocument.ok && ownerDocument.value) {
-      activeElement = read(ownerDocument.value, 'activeElement');
+    if (ownerDocument) {
+      activeElement = read(ownerDocument, 'activeElement');
       activeElement = activeElement.ok ? activeElement.value : undefined;
     }
     for (index = 0; index < controls.length; index += 1) {
-      if (controls[index] === activeElement) {
+      if (controls[index].node === activeElement) {
         activeIndex = index;
         break;
       }
     }
     shiftKey = read(event, 'shiftKey');
     shiftKey = shiftKey.ok && Boolean(shiftKey.value);
-    if (activeIndex < 0) target = shiftKey ? controls[controls.length - 1] : controls[0];
-    else if (shiftKey && activeIndex === 0) target = controls[controls.length - 1];
-    else if (!shiftKey && activeIndex === controls.length - 1) target = controls[0];
-    else return false;
+    direction = shiftKey ? -1 : 1;
+    if (activeIndex < 0) {
+      startIndex = shiftKey ? controls.length - 1 : 0;
+      attemptCount = controls.length;
+    } else if (shiftKey && activeIndex === 0) {
+      startIndex = controls.length - 1;
+      attemptCount = controls.length === 1 ? 1 : controls.length - 1;
+    } else if (!shiftKey && activeIndex === controls.length - 1) {
+      startIndex = 0;
+      attemptCount = controls.length === 1 ? 1 : controls.length - 1;
+    } else {
+      return false;
+    }
 
-    callSafely(event, callable(event, 'preventDefault'));
-    callSafely(target, callable(target, 'focus'));
-    return true;
+    for (attempt = 0; attempt < attemptCount; attempt += 1) {
+      index = (startIndex + direction * attempt + controls.length) % controls.length;
+      if (focusTransferred(controls[index].node, ownerDocument)) {
+        preventTab(event);
+        return true;
+      }
+    }
+    return false;
   }
 
   function swipeDirection(startX, endX, threshold) {

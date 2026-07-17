@@ -1068,13 +1068,54 @@ test('journey catalog escapes route identifiers and rejects accessor-controlled 
   assert.ok(html.indexOf('2 min') !== -1);
 });
 
-test('journey stage includes live announcement but never announces countdown', function () {
+test('journey view supplies non-empty English fallbacks for missing or blank interface copy', function () {
+  const route = {
+    id: 'safe-route', title: 'Safe route', summary: 'Summary', conclusion: 'Conclusion', durationSeconds: 60,
+    stops: [{
+      id: 'safe-stop', year: 1, headline: 'Safe stop', body: 'Safe body',
+      records: [{ track: { id: 'safe-track' }, ref: { eventId: 'safe-event' }, record: { id: 'safe-event' } }]
+    }]
+  };
+  const keys = [
+    'catalogTitle', 'startJourney', 'minutesTemplate', 'stopsTemplate', 'previousStop', 'nextStop',
+    'pauseJourney', 'resumeJourney', 'shareJourney', 'openEvidence', 'stopTemplate', 'completeKicker',
+    'exploreMoment', 'replayJourney', 'backCatalog'
+  ];
+  const blankCopy = keys.reduce(function (result, key) { result[key] = '   '; return result; }, {});
+  [null, blankCopy].forEach(function (copy) {
+    const catalog = journeyView.catalogHtml([route], copy);
+    assert.ok(catalog.indexOf('<h2>Journeys</h2>') !== -1);
+    assert.ok(catalog.indexOf('1 min') !== -1);
+    assert.ok(catalog.indexOf('1 stops') !== -1);
+    assert.ok(/data-journey-start="safe-route"[^>]*>Start journey<\/button>/.test(catalog));
+
+    const stage = journeyView.stageHtml(route, { stopIndex: 0, status: 'paused' }, copy, String);
+    assert.ok(stage.indexOf('Stop 1 of 1') !== -1);
+    assert.ok(/data-journey-action="previous"[^>]*>Previous stop<\/button>/.test(stage));
+    assert.ok(/data-journey-action="toggle"[^>]*>Resume journey<\/button>/.test(stage));
+    assert.ok(/data-journey-action="next"[^>]*>Next stop<\/button>/.test(stage));
+    assert.ok(/data-journey-action="share"[^>]*>Share journey<\/button>/.test(stage));
+    assert.ok(/data-journey-evidence="safe-track"[^>]*>Open evidence<\/button>/.test(stage));
+    const playingStage = journeyView.stageHtml(route, { stopIndex: 0, status: 'playing' }, copy, String);
+    assert.ok(/data-journey-action="toggle"[^>]*>Pause journey<\/button>/.test(playingStage));
+
+    const complete = journeyView.completeHtml(route, copy);
+    assert.ok(complete.indexOf('Journey complete') !== -1);
+    assert.ok(/data-journey-action="explore"[^>]*>Explore this moment<\/button>/.test(complete));
+    assert.ok(/data-journey-action="replay"[^>]*>Replay journey<\/button>/.test(complete));
+    assert.ok(/data-journey-action="catalog"[^>]*>Back to journeys<\/button>/.test(complete));
+    assert.ok(/data-journey-action="share"[^>]*>Share journey<\/button>/.test(complete));
+  });
+});
+
+test('journey stage exposes a hidden announcement source but no replaceable live region', function () {
   const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
   const html = journeyView.stageHtml(route, journey.createState(route, { status: 'paused' }), {
     previousStop: 'Previous', nextStop: 'Next', pauseJourney: 'Pause', resumeJourney: 'Resume',
     shareJourney: 'Share', exitJourney: 'Exit', openEvidence: 'Open evidence', stopTemplate: 'Stop {current} of {total}'
   }, function (year) { return String(year); });
-  assert.ok(/aria-live="polite"/.test(html));
+  assert.strictEqual(html.indexOf('aria-live='), -1);
+  assert.ok(/<span data-journey-announcement-source hidden>Pottery before cities · -18000<\/span>/.test(html));
   assert.ok(/data-journey-countdown[^>]*aria-hidden="true"/.test(html));
   assert.ok(/data-journey-evidence="xianrendong"/.test(html));
 });
@@ -1104,6 +1145,8 @@ test('journey stage escapes route stop copy templates years and attribute values
   assert.ok(html.indexOf('&lt;Headline&gt;') !== -1);
   assert.ok(html.indexOf('Body &amp; &lt;em&gt;detail&lt;/em&gt;') !== -1);
   assert.ok(html.indexOf('&lt;Year &amp; &quot;unsafe&quot;&gt;') !== -1);
+  assert.ok(html.indexOf('<span data-journey-announcement-source hidden>&lt;Headline&gt; · ' +
+    '&lt;Year &amp; &quot;unsafe&quot;&gt;</span>') !== -1);
   assert.ok(html.indexOf('&lt;Stop 1 of 2&gt;') !== -1);
   assert.ok(html.indexOf('data-journey-evidence="track&quot; onmouseover=&quot;bad"') !== -1);
   assert.ok(html.indexOf('data-record-id="record&quot; autofocus=&quot;bad"') !== -1);
@@ -1141,18 +1184,34 @@ test('journey stage renders exact progress and control states', function () {
   assert.ok(/data-journey-action="toggle"[^>]*>Resume<\/button>/.test(middle));
 });
 
-test('journey stage keeps the live region limited to headline and year', function () {
+test('journey stage disables only the transitioning toggle', function () {
+  const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+  const copy = {
+    previousStop: 'Previous', nextStop: 'Next', pauseJourney: 'Pause', resumeJourney: 'Resume',
+    shareJourney: 'Share', openEvidence: 'Open evidence', stopTemplate: 'Stop {current} of {total}'
+  };
+  const transitioning = journeyView.stageHtml(route, { stopIndex: 1, status: 'transitioning' }, copy, String);
+  assert.ok(/data-journey-action="toggle"[^>]*disabled[^>]*aria-disabled="true"[^>]*>Resume<\/button>/.test(transitioning));
+  ['playing', 'paused', 'exploring'].forEach(function (status) {
+    const html = journeyView.stageHtml(route, { stopIndex: 1, status: status }, copy, String);
+    const toggle = html.match(/<button[^>]*data-journey-action="toggle"[^>]*>/)[0];
+    assert.strictEqual(/\sdisabled(?:\s|>)/.test(toggle), false, status);
+    assert.strictEqual(toggle.indexOf('aria-disabled='), -1, status);
+  });
+});
+
+test('journey stage announcement source contains only escaped headline separator and year', function () {
   const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
   const html = journeyView.stageHtml(route, { stopIndex: 1, status: 'paused' }, {
     previousStop: 'Previous', nextStop: 'Next', pauseJourney: 'Pause', resumeJourney: 'Resume',
     shareJourney: 'Share', openEvidence: 'Evidence', stopTemplate: 'Stop {current} of {total}'
   }, String);
-  const live = html.match(/<div class="journey-announcement"[^>]*>([\s\S]*?)<\/div>/);
-  assert.ok(live);
-  assert.ok(live[1].indexOf('Monuments without a city') !== -1);
-  assert.ok(live[1].indexOf('-9500') !== -1);
-  assert.strictEqual(live[1].indexOf('data-journey-countdown'), -1);
-  assert.strictEqual(live[1].indexOf(route.stops[1].body), -1);
+  const source = html.match(/<span data-journey-announcement-source hidden>([\s\S]*?)<\/span>/);
+  assert.ok(source);
+  assert.strictEqual(source[1], 'Monuments without a city · -9500');
+  assert.strictEqual(source[1].indexOf('data-journey-countdown'), -1);
+  assert.strictEqual(source[1].indexOf(route.stops[1].body), -1);
+  assert.strictEqual(html.indexOf('aria-live='), -1);
 });
 
 test('journey stage omits evidence and fails closed for malformed current stops', function () {
@@ -1235,17 +1294,18 @@ test('journey clock view never throws for hostile roots values or fake DOM nodes
 
 test('journey focus trap wraps forward reverse and outside focus', function () {
   const focused = [];
+  const ownerDocument = { activeElement: null };
   function node(id) {
     return {
       id: id, disabled: false, hidden: false, tabIndex: 0,
       getAttribute: function () { return null; },
-      focus: function () { focused.push(id); }
+      focus: function () { focused.push(id); ownerDocument.activeElement = this; }
     };
   }
   const first = node('first');
   const middle = node('middle');
   const last = node('last');
-  const ownerDocument = { activeElement: last };
+  ownerDocument.activeElement = last;
   const dialog = {
     ownerDocument: ownerDocument,
     querySelectorAll: function (selector) {
@@ -1280,9 +1340,10 @@ test('journey focus trap filters unavailable controls and handles empty or hosti
     unavailable({ getAttribute: function () { return 'true'; } }), unavailable({ tabIndex: -1 }), good
   ];
   let focused = 0;
-  good.focus = function () { focused += 1; };
+  const ownerDocument = { activeElement: {} };
+  good.focus = function () { focused += 1; ownerDocument.activeElement = good; };
   const dialog = {
-    ownerDocument: { activeElement: {} },
+    ownerDocument: ownerDocument,
     querySelectorAll: function () { return { 0: nodes[0], 1: nodes[1], 2: nodes[2], 3: nodes[3], 4: nodes[4], length: 5 }; }
   };
   assert.strictEqual(journeyView.trapTab({ key: 'Tab', preventDefault: function () {} }, dialog), true);
@@ -1293,7 +1354,7 @@ test('journey focus trap filters unavailable controls and handles empty or hosti
   const empty = {
     ownerDocument: { activeElement: null },
     querySelectorAll: function () { return { length: 0 }; },
-    focus: function () { dialogFocused += 1; }
+    focus: function () { dialogFocused += 1; this.ownerDocument.activeElement = this; }
   };
   assert.strictEqual(journeyView.trapTab({ key: 'Tab', preventDefault: function () { prevented += 1; } }, empty), true);
   assert.deepStrictEqual([dialogFocused, prevented], [1, 1]);
@@ -1305,6 +1366,145 @@ test('journey focus trap filters unavailable controls and handles empty or hosti
   const hostileEvent = {};
   Object.defineProperty(hostileEvent, 'key', { get: function () { throw new Error('key read'); } });
   assert.strictEqual(journeyView.trapTab(hostileEvent, empty), false);
+});
+
+test('journey focus trap follows native positive tabindex order and deduplicates nodes', function () {
+  const ownerDocument = { activeElement: {} };
+  const attempts = [];
+  function node(id, tabIndex, transfers) {
+    return {
+      id: id, disabled: false, hidden: false, tabIndex: tabIndex, isConnected: true,
+      ownerDocument: ownerDocument,
+      getAttribute: function () { return null; },
+      focus: function () {
+        attempts.push(id);
+        if (transfers) ownerDocument.activeElement = this;
+      }
+    };
+  }
+  const zeroFirst = node('zero-first', 0, true);
+  const positiveThree = node('positive-three', 3, true);
+  const positiveOneFailed = node('positive-one-failed', 1, false);
+  const positiveOne = node('positive-one', 1, true);
+  const zeroLast = node('zero-last', 0, true);
+  const candidates = [zeroFirst, positiveThree, positiveOneFailed, positiveOneFailed, positiveOne, zeroLast];
+  const dialog = {
+    ownerDocument: ownerDocument,
+    querySelectorAll: function () {
+      return { 0: candidates[0], 1: candidates[1], 2: candidates[2], 3: candidates[3],
+        4: candidates[4], 5: candidates[5], length: 6 };
+    }
+  };
+  let prevented = 0;
+  assert.strictEqual(journeyView.trapTab({
+    key: 'Tab', preventDefault: function () { prevented += 1; }
+  }, dialog), true);
+  assert.strictEqual(ownerDocument.activeElement, positiveOne);
+  assert.deepStrictEqual(attempts, ['positive-one-failed', 'positive-one']);
+  assert.strictEqual(prevented, 1);
+
+  attempts.length = 0;
+  ownerDocument.activeElement = {};
+  assert.strictEqual(journeyView.trapTab({
+    key: 'Tab', shiftKey: true, preventDefault: function () { prevented += 1; }
+  }, dialog), true);
+  assert.strictEqual(ownerDocument.activeElement, zeroLast);
+  assert.deepStrictEqual(attempts, ['zero-last']);
+  assert.strictEqual(prevented, 2);
+});
+
+test('journey focus trap filters disconnected CSS-hidden inert and hostile candidates', function () {
+  const ownerDocument = {
+    activeElement: {},
+    defaultView: {
+      getComputedStyle: function (node) {
+        return node.computedStyle || { display: 'block', visibility: 'visible' };
+      }
+    }
+  };
+  const focused = [];
+  function node(id, properties) {
+    return Object.assign({
+      id: id, disabled: false, hidden: false, inert: false, tabIndex: 0, isConnected: true,
+      ownerDocument: ownerDocument, parentElement: null,
+      getAttribute: function (name) { return this.attributes && this.attributes[name] !== undefined ? this.attributes[name] : null; },
+      focus: function () { focused.push(id); ownerDocument.activeElement = this; }
+    }, properties || {});
+  }
+  const disconnected = node('disconnected', { isConnected: false });
+  const displayNone = node('display-none', { computedStyle: { display: 'none', visibility: 'visible' } });
+  const visibilityHidden = node('visibility-hidden', { computedStyle: { display: 'block', visibility: 'hidden' } });
+  const inertAncestor = node('inert-ancestor', { inert: true });
+  const underInert = node('under-inert', { parentElement: inertAncestor });
+  const hiddenAncestor = node('hidden-ancestor', { hidden: true });
+  const underHidden = node('under-hidden', { parentElement: hiddenAncestor });
+  const ariaAncestor = node('aria-ancestor', { attributes: { 'aria-hidden': 'true' } });
+  const underAriaHidden = node('under-aria-hidden', { parentElement: ariaAncestor });
+  const cssAncestor = node('css-ancestor', { computedStyle: { display: 'none', visibility: 'visible' } });
+  const underCssHidden = node('under-css-hidden', { parentElement: cssAncestor });
+  const noFocus = node('no-focus', { focus: null });
+  const throwing = node('throwing');
+  Object.defineProperty(throwing, 'inert', { get: function () { throw new Error('inert read'); } });
+  const throwingFocus = node('throwing-focus');
+  Object.defineProperty(throwingFocus, 'focus', { get: function () { throw new Error('focus read'); } });
+  const good = node('good');
+  const candidates = [
+    disconnected, displayNone, visibilityHidden, underInert, underHidden, underAriaHidden,
+    underCssHidden, noFocus, throwing, throwingFocus, good
+  ];
+  const list = { length: candidates.length };
+  candidates.forEach(function (candidate, index) { list[index] = candidate; });
+  const dialog = { ownerDocument: ownerDocument, querySelectorAll: function () { return list; } };
+  assert.doesNotThrow(function () {
+    assert.strictEqual(journeyView.trapTab({ key: 'Tab', preventDefault: function () {} }, dialog), true);
+  });
+  assert.deepStrictEqual(focused, ['good']);
+  assert.strictEqual(ownerDocument.activeElement, good);
+});
+
+test('journey focus trap verifies focus and falls back without trapping dead targets', function () {
+  const ownerDocument = { activeElement: {} };
+  const attempts = [];
+  function node(id, focus) {
+    return {
+      id: id, disabled: false, hidden: false, inert: false, tabIndex: 0, isConnected: true,
+      ownerDocument: ownerDocument, parentElement: null,
+      getAttribute: function () { return null; }, focus: focus
+    };
+  }
+  const throws = node('throws', function () { attempts.push('throws'); throw new Error('focus failed'); });
+  const noTransfer = node('no-transfer', function () { attempts.push('no-transfer'); });
+  const disconnects = node('disconnects', function () {
+    attempts.push('disconnects'); this.isConnected = false; ownerDocument.activeElement = this;
+  });
+  const good = node('good', function () { attempts.push('good'); ownerDocument.activeElement = this; });
+  function dialogFor(candidates) {
+    const list = { length: candidates.length };
+    candidates.forEach(function (candidate, index) { list[index] = candidate; });
+    return { ownerDocument: ownerDocument, querySelectorAll: function () { return list; } };
+  }
+  let prevented = 0;
+  assert.strictEqual(journeyView.trapTab({
+    key: 'Tab', preventDefault: function () { prevented += 1; }
+  }, dialogFor([throws, noTransfer, disconnects, good])), true);
+  assert.deepStrictEqual(attempts, ['throws', 'no-transfer', 'disconnects', 'good']);
+  assert.strictEqual(ownerDocument.activeElement, good);
+  assert.strictEqual(prevented, 1);
+
+  attempts.length = 0;
+  ownerDocument.activeElement = {};
+  assert.strictEqual(journeyView.trapTab({
+    key: 'Tab', preventDefault: function () { prevented += 1; }
+  }, dialogFor([throws, noTransfer])), false);
+  assert.deepStrictEqual(attempts, ['throws', 'no-transfer']);
+  assert.strictEqual(prevented, 1);
+
+  const empty = dialogFor([]);
+  empty.focus = function () { attempts.push('dialog-no-transfer'); };
+  assert.strictEqual(journeyView.trapTab({
+    key: 'Tab', preventDefault: function () { prevented += 1; }
+  }, empty), false);
+  assert.strictEqual(prevented, 1);
 });
 
 test('journey view maps swipes only beyond the deliberate threshold', function () {
