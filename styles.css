@@ -982,6 +982,12 @@ body.journey-open { overflow: hidden; }
   outline: 3px solid #ffd19f;
   outline-offset: 3px;
 }
+.journey-catalog > h2:focus-visible,
+.journey-stage > h2:focus-visible,
+.journey-complete > h2:focus-visible {
+  outline: 3px solid #ffd19f;
+  outline-offset: 5px;
+}
 .journey-dialog button:disabled,
 .journey-dialog button[aria-disabled="true"] { cursor: not-allowed; opacity: .42; }
 .journey-content {
@@ -1105,7 +1111,10 @@ body.journey-open { overflow: hidden; }
   position: absolute;
   inset: 0;
   z-index: 0;
+  min-width: 0;
+  max-inline-size: 100%;
   overflow: hidden;
+  overflow-wrap: anywhere;
   pointer-events: none;
   background: radial-gradient(circle at 64% 40%, #183e3a 0, #0a211f 48%, #06110f 100%);
   animation: journey-map-drift .8s ease-out both;
@@ -1150,6 +1159,7 @@ body.journey-open { overflow: hidden; }
 .journey-year { font: 500 1rem Georgia, "Times New Roman", serif; color: #8ad8ca; }
 .journey-stage > h2 {
   grid-column: 1;
+  min-width: 0;
   max-inline-size: 42rem;
   margin: .15rem 0 0;
   font: 500 clamp(2.5rem, 6.5vw, 6.1rem)/.9 Georgia, "Times New Roman", serif;
@@ -1158,7 +1168,8 @@ body.journey-open { overflow: hidden; }
 }
 .journey-body {
   grid-column: 1;
-  max-width: 60ch;
+  min-width: 0;
+  max-inline-size: 60ch;
   margin: 0;
   color: rgba(244, 237, 225, .78);
   font-size: clamp(.92rem, 1.35vw, 1.08rem);
@@ -1168,12 +1179,12 @@ body.journey-open { overflow: hidden; }
 .journey-progress {
   grid-column: 1;
   display: flex;
-  gap: .28rem;
+  gap: .5rem;
   max-inline-size: 42rem;
 }
 .journey-progress button {
   position: relative;
-  min-width: 0;
+  min-width: 44px;
   min-height: 44px;
   flex: 1;
   border: 0;
@@ -1215,7 +1226,9 @@ body.journey-open { overflow: hidden; }
   display: flex;
   flex-wrap: wrap;
   gap: .55rem;
+  min-width: 0;
   max-inline-size: 58rem;
+  overflow-wrap: anywhere;
 }
 .journey-controls button,
 .journey-complete-actions button { min-height: 44px; max-inline-size: 100%; overflow-wrap: anywhere; }
@@ -1426,7 +1439,7 @@ body.journey-open { overflow: hidden; }
   .journey-stage-header { gap: .25rem .6rem; }
   .journey-stage > h2 { font-size: clamp(2rem, 10.5vw, 3rem); }
   .journey-body { max-height: 38vh; }
-  .journey-progress { gap: .15rem; }
+  .journey-progress { gap: .5rem; }
   .journey-controls { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .journey-controls > button { grid-column: span 2; }
   .journey-controls > button:nth-child(n + 4) { grid-column: span 3; }

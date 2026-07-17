@@ -57,6 +57,10 @@
   var journeyTouchStart = null;
   var journeyCatalogNotice = '';
   var suppressJourneyFocusPause = false;
+  var journeyProgrammaticFocus = false;
+  var journeyFocusIdentity = '';
+  var journeyAnnouncementGeneration = 0;
+  var detailTrigger = null;
   var journeyRecovering = false;
   var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -481,9 +485,41 @@
     });
   }
 
-  function openDetails(id, recordId) {
+  function connectedFocusTarget(target) {
+    return Boolean(target) && target !== document.body && target !== document.documentElement &&
+      target.isConnected !== false && typeof target.focus === 'function';
+  }
+
+  function focusProgrammatically(target) {
+    if (!connectedFocusTarget(target)) return false;
+    var previous = journeyProgrammaticFocus;
+    journeyProgrammaticFocus = true;
+    try {
+      target.focus();
+    } catch (_) {
+      return false;
+    } finally {
+      journeyProgrammaticFocus = previous;
+    }
+    return true;
+  }
+
+  function captureDetailTrigger(target) {
+    if (isDetailOpen()) return;
+    target = target || document.activeElement;
+    detailTrigger = connectedFocusTarget(target) ? target : null;
+  }
+
+  function restoreDetailTrigger() {
+    var target = detailTrigger;
+    detailTrigger = null;
+    focusProgrammatically(target);
+  }
+
+  function openDetails(id, recordId, trigger) {
     var track = activeData.tracks.find(function (item) { return item.id === id; });
     if (!track) return;
+    captureDetailTrigger(trigger);
     elements['dialog-title'].textContent = track.name;
     elements['dialog-meta'].innerHTML = '<span>' + escapeHtml(regionNames[track.region]) + ' · ' + escapeHtml(typeLabel(track.type)) + '</span>' + reviewStatusHtml(track);
     elements['dialog-summary'].textContent = track.summary;
@@ -513,6 +549,7 @@
   function closeDetails() {
     if (typeof elements['detail-dialog'].close === 'function') elements['detail-dialog'].close();
     else elements['detail-dialog'].removeAttribute('open');
+    restoreDetailTrigger();
   }
 
   function renderStats() {
@@ -690,6 +727,23 @@
     return isDialogOpen(elements['detail-dialog']);
   }
 
+  function captureJourneyTrigger() {
+    if (isJourneyOpen()) return;
+    var target = document.activeElement;
+    journeyTrigger = connectedFocusTarget(target) ? target : null;
+  }
+
+  function restoreJourneyTrigger() {
+    var target = journeyTrigger;
+    journeyTrigger = null;
+    focusProgrammatically(target);
+  }
+
+  function cancelJourneyAnnouncement() {
+    journeyAnnouncementGeneration += 1;
+    if (elements['journey-announcement']) elements['journey-announcement'].textContent = '';
+  }
+
   function showJourneyDialog() {
     if (!isJourneyOpen()) {
       if (typeof elements['journey-dialog'].showModal === 'function') elements['journey-dialog'].showModal();
@@ -699,11 +753,13 @@
   }
 
   function closeJourneyDialog() {
+    cancelJourneyAnnouncement();
     if (isJourneyOpen()) {
       if (typeof elements['journey-dialog'].close === 'function') elements['journey-dialog'].close();
       else elements['journey-dialog'].removeAttribute('open');
     }
     document.body.classList.remove('journey-open');
+    journeyFocusIdentity = '';
   }
 
   function stopJourneyClock() {
@@ -751,21 +807,37 @@
     });
   }
 
-  function copyJourneyAnnouncement() {
+  function copyJourneyAnnouncement(identity) {
     var source = elements['journey-content'].querySelector('[data-journey-announcement-source]');
     var announcement = elements['journey-announcement'];
     if (!source || !announcement) return;
     var message = source.textContent;
-    announcement.textContent = '';
+    var generation = journeyAnnouncementGeneration;
     setTimeout(function () {
-      if (isJourneyOpen() && elements['journey-announcement'] === announcement) {
+      if (generation === journeyAnnouncementGeneration && identity === journeyFocusIdentity &&
+          isJourneyOpen() && elements['journey-announcement'] === announcement) {
         announcement.textContent = message;
       }
     }, 0);
   }
 
+  function journeySceneIdentity() {
+    if (!journeyRoute || !journeyState || journeyState.status === 'catalog') return 'catalog';
+    if (journeyState.status === 'complete') return 'complete:' + journeyRoute.id;
+    var stop = journeyRoute.stops[journeyState.stopIndex];
+    return stop ? journeyRoute.id + ':' + stop.id : '';
+  }
+
+  function focusJourneyHeading(identity) {
+    if (!identity || identity === journeyFocusIdentity) return;
+    journeyFocusIdentity = identity;
+    var heading = elements['journey-content'].querySelector('h2[tabindex="-1"]');
+    focusProgrammatically(heading);
+  }
+
   function renderJourney() {
     var html;
+    var identity = journeySceneIdentity();
     if (!journeyRoute || !journeyState || journeyState.status === 'catalog') {
       html = journeyView.catalogHtml(localizedJourneyRoutes(), journeyCopy());
       html = html.replace('</h2>', '</h2><p>' + journeyView.escapeHtml(t('journeyCatalogText')) + '</p>');
@@ -780,11 +852,13 @@
       html = journeyView.stageHtml(journeyRoute, journeyState, journeyCopy(), formatYear);
     }
     if (!html) throw new Error('Journey view returned no content');
+    cancelJourneyAnnouncement();
     elements['journey-content'].innerHTML = html;
     if (journeyRoute && journeyState && journeyState.status !== 'complete') {
       renderJourneyMap();
-      copyJourneyAnnouncement();
+      copyJourneyAnnouncement(identity);
     }
+    focusJourneyHeading(identity);
     return true;
   }
 
@@ -883,6 +957,7 @@
         openJourneyCatalog(t('journeyUnknownRoute'));
         return;
       }
+      captureJourneyTrigger();
       stopPlayback(false);
       if (!preJourneyState) {
         preJourneyState = cloneExplorerState(state);
@@ -908,7 +983,7 @@
     try {
       stopJourneyClock();
       clearJourneyTransition();
-      if (!isJourneyOpen()) journeyTrigger = document.activeElement;
+      captureJourneyTrigger();
       journeyRoute = null;
       journeyState = null;
       journeyAutoplay = false;
@@ -951,6 +1026,10 @@
 
   function finishJourney(restoreOriginal) {
     return runJourneyController(function () {
+      if (!isJourneyOpen() && !journeyState && !journeyRoute && !preJourneyState) {
+        restoreJourneyTrigger();
+        return;
+      }
       stopJourneyClock();
       clearJourneyTransition();
       closeJourneyDialog();
@@ -960,9 +1039,8 @@
       journeyAutoplay = false;
       journeyCatalogNotice = '';
       preJourneyState = null;
+      restoreJourneyTrigger();
       render();
-      if (journeyTrigger && typeof journeyTrigger.focus === 'function') journeyTrigger.focus();
-      journeyTrigger = null;
     });
   }
 
@@ -987,6 +1065,7 @@
       journeyAutoplay = false;
       journeyCatalogNotice = '';
       preJourneyState = null;
+      restoreJourneyTrigger();
       try {
         render();
       } catch (_) {
@@ -1053,7 +1132,24 @@
     return ['input', 'textarea', 'select', 'button'].indexOf(tagName) !== -1 || target.isContentEditable;
   }
 
-  function activateJourneyEvidence(trackId, recordId, detailsOpener) {
+  function currentJourneyEvidenceTrigger(trackId, recordId) {
+    var content = elements['journey-content'];
+    if (!content || typeof content.querySelectorAll !== 'function') return null;
+    var controls;
+    try {
+      controls = content.querySelectorAll('[data-journey-evidence]');
+    } catch (_) {
+      return null;
+    }
+    for (var index = 0; index < Math.min(controls.length, 100); index += 1) {
+      var control = controls[index];
+      if (control && control.dataset && control.dataset.journeyEvidence === trackId &&
+          control.dataset.recordId === recordId && connectedFocusTarget(control)) return control;
+    }
+    return null;
+  }
+
+  function activateJourneyEvidence(trackId, recordId, detailsOpener, trigger) {
     return runJourneyController(function () {
       journeyAutoplay = false;
       stopJourneyClock();
@@ -1064,7 +1160,9 @@
       if (journeyState && (journeyState.status === 'playing' || journeyState.status === 'paused')) {
         dispatchJourney('interact', journeyNow());
       }
-      (typeof detailsOpener === 'function' ? detailsOpener : openDetails)(trackId, recordId);
+      var connectedTrigger = currentJourneyEvidenceTrigger(trackId, recordId) || trigger;
+      captureDetailTrigger(connectedTrigger);
+      (typeof detailsOpener === 'function' ? detailsOpener : openDetails)(trackId, recordId, connectedTrigger);
     });
   }
 
@@ -1079,7 +1177,7 @@
           journeyAutoplay = false;
           dispatchJourney('pause', journeyNow());
         } else {
-          journeyAutoplay = true;
+          journeyAutoplay = !prefersReducedMotion();
           dispatchJourney('resume', journeyNow());
         }
       } else if (action === 'share') {
@@ -1112,7 +1210,8 @@
     }
     var evidenceButton = target.closest('[data-journey-evidence]');
     if (evidenceButton) {
-      activateJourneyEvidence(evidenceButton.dataset.journeyEvidence, evidenceButton.dataset.recordId);
+      activateJourneyEvidence(evidenceButton.dataset.journeyEvidence, evidenceButton.dataset.recordId,
+        undefined, evidenceButton);
       return;
     }
     var actionButton = target.closest('[data-journey-action]');
@@ -1123,6 +1222,13 @@
     if (target === elements['journey-content'].querySelector('.journey-stage')) {
       pauseJourneyForInteraction();
     }
+  }
+
+  function handleJourneyFocusIn(event) {
+    if (journeyProgrammaticFocus || suppressJourneyFocusPause || !event ||
+        !event.target || !event.target.closest ||
+        !event.target.closest('[data-journey-stop]')) return;
+    pauseJourneyForInteraction();
   }
 
   function handleDocumentKeydown(event) {
@@ -1156,6 +1262,26 @@
     if (event.key === '/' && activeTag !== 'INPUT') {
       event.preventDefault();
       elements['search-input'].focus();
+    }
+  }
+
+  function handleVisibilityChange() {
+    if (document.hidden) {
+      if (isJourneyOpen() && journeyState) {
+        journeyAutoplay = false;
+        dispatchJourney('visibilityHidden', journeyNow());
+      } else {
+        stopPlayback(true);
+      }
+    } else if (isJourneyOpen() && journeyState) {
+      dispatchJourney('visibilityVisible', journeyNow());
+    }
+  }
+
+  function handleReducedMotionChange(event) {
+    if (event.matches && journeyState && journeyState.status === 'playing') {
+      journeyAutoplay = false;
+      dispatchJourney('pause', journeyNow());
     }
   }
 
@@ -1230,6 +1356,7 @@
       }
     });
     elements['dialog-close'].addEventListener('click', closeDetails);
+    elements['detail-dialog'].addEventListener('close', restoreDetailTrigger);
     elements['detail-dialog'].addEventListener('click', function (event) {
       if (event.target === elements['detail-dialog']) closeDetails();
     });
@@ -1250,10 +1377,7 @@
       }
       if (target.closest('.journey-body')) pauseJourneyForInteraction();
     });
-    elements['journey-content'].addEventListener('focusin', function (event) {
-      if (suppressJourneyFocusPause || !event.target.closest || !event.target.closest('[data-journey-stop]')) return;
-      pauseJourneyForInteraction();
-    });
+    elements['journey-content'].addEventListener('focusin', handleJourneyFocusIn);
     elements['journey-content'].addEventListener('touchstart', function (event) {
       journeyTouchStart = event.touches && event.touches.length === 1 ? event.touches[0].clientX : null;
     }, { passive: true });
@@ -1272,24 +1396,7 @@
       if (selection && String(selection).trim()) pauseJourneyForInteraction();
     });
     document.addEventListener('keydown', handleDocumentKeydown);
-    document.addEventListener('visibilitychange', function () {
-      if (document.hidden) {
-        if (isJourneyOpen() && journeyState) {
-          journeyAutoplay = false;
-          dispatchJourney('visibilityHidden', journeyNow());
-        } else {
-          stopPlayback(true);
-        }
-      } else if (isJourneyOpen() && journeyState) {
-        dispatchJourney('visibilityVisible', journeyNow());
-      }
-    });
-    function handleReducedMotionChange(event) {
-      if (event.matches && journeyState && journeyState.status === 'playing') {
-        journeyAutoplay = false;
-        dispatchJourney('pause', journeyNow());
-      }
-    }
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     if (reducedMotion && typeof reducedMotion.addEventListener === 'function') {
       reducedMotion.addEventListener('change', handleReducedMotionChange);
     } else if (reducedMotion && typeof reducedMotion.addListener === 'function') {
@@ -1317,6 +1424,8 @@
         if (Object.prototype.hasOwnProperty.call(context, 'playerState')) journeyState = context.playerState;
         if (Object.prototype.hasOwnProperty.call(context, 'preJourneyState')) preJourneyState = context.preJourneyState;
         if (Object.prototype.hasOwnProperty.call(context, 'autoplay')) journeyAutoplay = context.autoplay;
+        if (Object.prototype.hasOwnProperty.call(context, 'journeyTrigger')) journeyTrigger = context.journeyTrigger;
+        if (Object.prototype.hasOwnProperty.call(context, 'detailTrigger')) detailTrigger = context.detailTrigger;
       },
       snapshot: function () {
         return {
@@ -1324,17 +1433,29 @@
           route: journeyRoute,
           playerState: journeyState,
           preJourneyState: preJourneyState,
-          autoplay: journeyAutoplay
+          autoplay: journeyAutoplay,
+          journeyTrigger: journeyTrigger,
+          detailTrigger: detailTrigger,
+          focusIdentity: journeyFocusIdentity,
+          announcementGeneration: journeyAnnouncementGeneration
         };
       },
       armTransition: armJourneyTransition,
       activateEvidence: activateJourneyEvidence,
+      closeDetails: closeDetails,
+      closeJourneyDialog: closeJourneyDialog,
+      dispatch: dispatchJourney,
+      handleFocusIn: handleJourneyFocusIn,
       handleKeydown: handleDocumentKeydown,
+      handleVisibilityChange: handleVisibilityChange,
       handleContentClick: handleJourneyContentClick,
+      openCatalog: openJourneyCatalog,
       openDetails: openDetails,
+      renderJourney: renderJourney,
       renderMap: renderJourneyMap,
       share: shareJourney,
       handleAction: handleJourneyAction,
+      start: startJourney,
       startClock: startJourneyClock,
       finish: finishJourney,
       resolveExitState: resolveJourneyExitState

@@ -91,8 +91,14 @@ function makeJourneyControllerHarness() {
   const clipboardUrls = [];
   const historyUrls = [];
   const prompts = [];
-  const control = { now: 100, rejectClipboard: false, throwClipboard: false, throwSerialize: false };
+  const control = {
+    now: 100, rejectClipboard: false, throwClipboard: false, throwSerialize: false,
+    reducedMotion: false
+  };
   const bodyClasses = new Set(['journey-open']);
+  const focusedHeadings = [];
+  let documentObject;
+  let windowObject;
   const stage = {
     listeners: {}, listenerOptions: {}, removed: [],
     closest: function (selector) { return selector === '.journey-stage' ? this : null; },
@@ -112,8 +118,68 @@ function makeJourneyControllerHarness() {
     querySelectorAll: function () { return [mapMarker]; }
   };
   const announcementSource = { textContent: 'A stop · 18,000 BCE' };
+  function decodeHtml(value) {
+    return String(value || '')
+      .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+      .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  }
+  function focusNode(kind, stopId) {
+    return {
+      kind: kind,
+      stopId: stopId || '',
+      isConnected: true,
+      tabIndex: -1,
+      focusCount: 0,
+      closest: function (selector) {
+        return selector === '[data-journey-stop]' && kind === 'stage' ? stage : null;
+      },
+      focus: function () {
+        this.focusCount += 1;
+        if (documentObject) documentObject.activeElement = this;
+        focusedHeadings.push(this);
+        var controller = windowObject && windowObject.__PARALLEL_WORLDS_CONTROLLER_TEST__;
+        if (controller && controller.api && controller.api.handleFocusIn) {
+          controller.api.handleFocusIn({ target: this });
+        }
+      }
+    };
+  }
+  let contentHtml = '';
   const content = {
-    innerHTML: '',
+    currentHeading: null,
+    currentEvidenceTrigger: null,
+    set innerHTML(value) {
+      if (this.currentHeading) this.currentHeading.isConnected = false;
+      if (this.currentEvidenceTrigger) this.currentEvidenceTrigger.isConnected = false;
+      contentHtml = String(value || '');
+      const sourceMatch = /data-journey-announcement-source hidden>([\s\S]*?)<\/span>/.exec(contentHtml);
+      announcementSource.textContent = sourceMatch ? decodeHtml(sourceMatch[1]) : '';
+      const stopMatch = /data-journey-stop="([^"]+)"/.exec(contentHtml);
+      if (contentHtml.indexOf('class="journey-catalog"') !== -1) {
+        this.currentHeading = focusNode('catalog');
+      } else if (stopMatch) {
+        this.currentHeading = focusNode('stage', decodeHtml(stopMatch[1]));
+      } else if (contentHtml.indexOf('class="journey-complete"') !== -1) {
+        this.currentHeading = focusNode('complete');
+      } else {
+        this.currentHeading = null;
+      }
+      const evidenceMatch = /data-journey-evidence="([^"]+)"\s+data-record-id="([^"]+)"/.exec(contentHtml);
+      if (evidenceMatch) {
+        const evidence = focusNode('evidence');
+        evidence.dataset = {
+          journeyEvidence: decodeHtml(evidenceMatch[1]),
+          recordId: decodeHtml(evidenceMatch[2])
+        };
+        evidence.closest = function (selector) {
+          return selector === '[data-journey-stop]' ? stage : null;
+        };
+        this.currentEvidenceTrigger = evidence;
+      } else {
+        this.currentEvidenceTrigger = null;
+      }
+    },
+    get innerHTML() { return contentHtml; },
     querySelector: function (selector) {
       return {
         '[data-journey-stop]': stage,
@@ -121,8 +187,14 @@ function makeJourneyControllerHarness() {
         '.journey-map-layer': mapLayer,
         '[data-journey-world]': worldTarget,
         '[data-journey-regions]': regionsTarget,
-        '[data-journey-announcement-source]': announcementSource
+        '[data-journey-announcement-source]': announcementSource,
+        'h2[tabindex="-1"]': this.currentHeading
       }[selector] || null;
+    },
+    querySelectorAll: function (selector) {
+      return selector === '[data-journey-evidence]' && this.currentEvidenceTrigger
+        ? [this.currentEvidenceTrigger]
+        : [];
     }
   };
   const dialog = {
@@ -201,7 +273,7 @@ function makeJourneyControllerHarness() {
     collection.push(timer);
     return timer;
   }
-  const windowObject = {
+  windowObject = {
     PARALLEL_WORLDS_DATA: data,
     PARALLEL_WORLDS_JOURNEYS: journeysData,
     ParallelWorldsChronology: chronology,
@@ -218,13 +290,18 @@ function makeJourneyControllerHarness() {
     __PARALLEL_WORLDS_CONTROLLER_TEST__: {},
     location: { search: '', pathname: '/parallel-worlds/', origin: 'https://example.test', hash: '' },
     prompt: function (_, url) { prompts.push(url); },
-    matchMedia: function () { return { matches: false, addEventListener: function () {} }; },
+    matchMedia: function (query) {
+      return {
+        get matches() { return query === '(prefers-reduced-motion: reduce)' ? control.reducedMotion : false; },
+        addEventListener: function () {}
+      };
+    },
     performance: { now: function () { return control.now; } },
     getSelection: function () { return ''; },
     innerWidth: 1200,
     innerHeight: 800
   };
-  const documentObject = {
+  documentObject = {
     readyState: 'loading',
     addEventListener: function () {},
     body: {
@@ -234,6 +311,7 @@ function makeJourneyControllerHarness() {
       }
     },
     activeElement: null,
+    hidden: false,
     documentElement: { dataset: {}, style: { setProperty: function () {} } },
     querySelector: function () { return null; },
     querySelectorAll: function () { return []; }
@@ -289,9 +367,11 @@ function makeJourneyControllerHarness() {
     control: control,
     dialog: dialog,
     detailDialog: detailDialog,
+    document: documentObject,
     elements: elements,
     eventList: eventList,
     historyUrls: historyUrls,
+    focusedHeadings: focusedHeadings,
     prompts: prompts,
     mapMarker: mapMarker,
     periodList: periodList,
@@ -1314,7 +1394,7 @@ test('journey view supplies non-empty English fallbacks for missing or blank int
   const blankCopy = keys.reduce(function (result, key) { result[key] = '   '; return result; }, {});
   [null, blankCopy].forEach(function (copy) {
     const catalog = journeyView.catalogHtml([route], copy);
-    assert.ok(catalog.indexOf('<h2>Journeys</h2>') !== -1);
+    assert.ok(catalog.indexOf('<h2 tabindex="-1">Journeys</h2>') !== -1);
     assert.ok(catalog.indexOf('1 min') !== -1);
     assert.ok(catalog.indexOf('1 stops') !== -1);
     assert.ok(/data-journey-start="safe-route"[^>]*>Start journey<\/button>/.test(catalog));
@@ -3358,7 +3438,7 @@ test('journey CSS covers the luminous full-screen stage and generated view hooks
   assert.ok(/\.journey-cards\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(/s.test(css));
   assert.ok(/\.journey-map-layer\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0[^}]*pointer-events:\s*none/s.test(css));
   assert.ok(/\.journey-stage\s*\{[^}]*min-height:\s*calc\(100dvh\s*-\s*(?:6[4-9]|7[0-2])px\)/s.test(css));
-  assert.ok(/\.journey-body\s*\{[^}]*max-width:\s*60ch/s.test(css));
+  assert.ok(/\.journey-body\s*\{[^}]*max-(?:width|inline-size):\s*60ch/s.test(css));
   assert.ok(/\.journey-clock\s*\{[^}]*--journey-progress:[^}]*conic-gradient\(/s.test(css));
   assert.ok(/\.journey-(?:controls|complete-actions)[\s\S]*button\s*\{[^}]*min-height:\s*44px/s.test(css));
   assert.ok(/@keyframes\s+journey-[\w-]+\s*\{[\s\S]*transform:[^;}]+;[\s\S]*opacity:/s.test(css));
@@ -4130,6 +4210,210 @@ test('synchronous clipboard failure falls back locally without recovering the jo
   assert.strictEqual(active.journey, 'birth-of-cities');
   assert.strictEqual(harness.dialog.open, true);
   assert.strictEqual(harness.bodyClasses.has('journey-open'), true);
+});
+
+test('journey rendered headings are focus targets and every silent control is named', function () {
+  const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+  const copy = {
+    catalogTitle: 'Journeys', startJourney: 'Start', minutesTemplate: '{minutes} min',
+    stopsTemplate: '{count} stops', previousStop: 'Previous', nextStop: 'Next',
+    pauseJourney: 'Pause', resumeJourney: 'Resume', shareJourney: 'Share',
+    openEvidence: 'Evidence', stopTemplate: 'Stop {current} of {total}'
+  };
+  const catalog = journeyView.catalogHtml([route], copy);
+  const stageHtml = journeyView.stageHtml(route, { stopIndex: 2, status: 'playing' }, copy, String);
+
+  assert.ok(/<h2 tabindex="-1">Journeys<\/h2>/.test(catalog), 'catalog heading is not programmatically focusable');
+  assert.ok(/<h2 tabindex="-1">/.test(stageHtml), 'current stop heading is not programmatically focusable');
+  assert.strictEqual((stageHtml.match(/aria-current="step"/g) || []).length, 1,
+    'the stage must expose exactly one current progress segment');
+  assert.ok(/data-journey-countdown aria-hidden="true"/.test(stageHtml),
+    'the visual countdown must stay outside the accessibility tree');
+  const controls = Array.from(stageHtml.matchAll(/<button([^>]*)>([\s\S]*?)<\/button>/g));
+  assert.ok(controls.length > 0);
+  controls.forEach(function (match) {
+    const visibleText = match[2].replace(/<[^>]+>/g, '').trim();
+    assert.ok(visibleText || /aria-label="[^"]+"/.test(match[1]), 'unnamed journey control: ' + match[0]);
+  });
+  assert.strictEqual(/\son[a-z]+\s*=/i.test(catalog + stageHtml), false, 'inline event handler found');
+});
+
+test('journey catalog and changed stops focus headings without treating programmatic focus as interaction', function () {
+  const harness = makeJourneyControllerHarness();
+  const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+  const trigger = {
+    isConnected: true, focusCount: 0,
+    focus: function () { this.focusCount += 1; harness.document.activeElement = this; }
+  };
+  harness.dialog.open = false;
+  harness.document.activeElement = trigger;
+  harness.api.setContext({ state: controllerState(), elements: harness.elements });
+
+  harness.api.openCatalog('');
+  assert.strictEqual(harness.content.currentHeading.kind, 'catalog');
+  assert.strictEqual(harness.content.currentHeading.focusCount, 1);
+
+  harness.api.start(route.id, route.stops[0].id, false);
+  assert.strictEqual(harness.content.currentHeading.kind, 'stage');
+  assert.strictEqual(harness.content.currentHeading.stopId, route.stops[0].id);
+  assert.strictEqual(harness.content.currentHeading.focusCount, 1);
+  assert.strictEqual(harness.reducerEvents.indexOf('interact'), -1,
+    'programmatic stop focus paused playback');
+
+  const focusCount = harness.focusedHeadings.length;
+  harness.api.renderJourney();
+  assert.strictEqual(harness.focusedHeadings.length, focusCount,
+    'a status-only rerender stole focus');
+
+  const playing = journey.createState(route, {
+    stopIndex: 1, status: 'playing', deadline: 10000, remainingMs: route.stops[1].holdMs
+  });
+  harness.api.setContext({ route: route, playerState: playing, autoplay: true });
+  harness.api.renderJourney();
+  assert.strictEqual(harness.content.currentHeading.stopId, route.stops[1].id);
+  assert.strictEqual(harness.content.currentHeading.focusCount, 1);
+  assert.strictEqual(harness.api.snapshot().playerState.status, 'playing',
+    'synchronous heading focus was interpreted as user focus');
+
+  harness.api.handleFocusIn({ target: harness.content.currentHeading });
+  assert.strictEqual(harness.api.snapshot().playerState.status, 'exploring',
+    'real user focus inside a playing stop did not pause playback');
+  assert.strictEqual(harness.reducerEvents[harness.reducerEvents.length - 1], 'interact');
+});
+
+test('journey close restores only a connected meaningful trigger and repeated close is harmless', function () {
+  function opener(connected) {
+    const harness = makeJourneyControllerHarness();
+    const trigger = {
+      isConnected: true, focusCount: 0,
+      focus: function () { this.focusCount += 1; harness.document.activeElement = this; }
+    };
+    harness.dialog.open = false;
+    harness.document.activeElement = trigger;
+    harness.api.setContext({ state: controllerState(), elements: harness.elements });
+    harness.api.openCatalog('');
+    trigger.isConnected = connected;
+    assert.doesNotThrow(function () { harness.api.finish(false); });
+    assert.doesNotThrow(function () { harness.api.finish(false); });
+    return trigger.focusCount;
+  }
+
+  assert.strictEqual(opener(true), 1, 'connected trigger was not restored exactly once');
+  assert.strictEqual(opener(false), 0, 'disconnected trigger received focus');
+
+  const direct = makeJourneyControllerHarness();
+  const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+  direct.dialog.open = false;
+  direct.document.activeElement = direct.document.body;
+  direct.api.setContext({ state: controllerState(), elements: direct.elements });
+  assert.doesNotThrow(function () { direct.api.start(route.id, route.stops[0].id, false); });
+  assert.doesNotThrow(function () { direct.api.finish(false); });
+});
+
+test('nested evidence detail restores its connected trigger without pausing the underlying journey', function () {
+  const harness = makeJourneyControllerHarness();
+  const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+  const playing = journey.createState(route, {
+    stopIndex: 0, status: 'playing', deadline: 10000, remainingMs: route.stops[0].holdMs
+  });
+  harness.api.setContext({
+    state: controllerState({ journey: route.id, stop: route.stops[0].id, journeyMode: 'playing' }),
+    elements: harness.elements, route: route, playerState: playing, autoplay: true
+  });
+  harness.api.renderJourney();
+  const evidence = harness.content.currentEvidenceTrigger;
+  assert.ok(evidence && evidence.isConnected, 'test stage did not render its evidence trigger');
+
+  harness.api.activateEvidence('xianrendong', 'xianrendong-pottery-evidence', undefined, evidence);
+  assert.strictEqual(harness.detailDialog.open, true);
+  const replacementEvidence = harness.content.currentEvidenceTrigger;
+  assert.notStrictEqual(replacementEvidence, evidence, 'journey rerender did not replace its evidence control');
+  harness.api.setContext({ playerState: playing, autoplay: true });
+  const eventCount = harness.reducerEvents.length;
+  harness.api.closeDetails();
+
+  assert.strictEqual(evidence.focusCount, 0, 'disconnected evidence trigger received focus');
+  assert.strictEqual(replacementEvidence.focusCount, 1, 'connected replacement evidence trigger was not restored');
+  assert.strictEqual(harness.api.snapshot().playerState.status, 'playing');
+  assert.strictEqual(harness.reducerEvents.length, eventCount,
+    'restoring evidence focus dispatched a journey pause');
+  assert.strictEqual(harness.dialog.open, true, 'closing nested details also closed the journey');
+});
+
+test('journey live announcements reject stale stop and closed-dialog callbacks', function () {
+  const harness = makeJourneyControllerHarness();
+  const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+  const first = journey.createState(route, { stopIndex: 0, status: 'paused' });
+  const second = journey.createState(route, { stopIndex: 1, status: 'paused' });
+  harness.api.setContext({
+    state: controllerState(), elements: harness.elements, route: route, playerState: first, autoplay: false
+  });
+  harness.api.renderJourney();
+  const firstAnnouncement = harness.timers.timeouts.filter(function (timer) { return timer.ms === 0; }).slice(-1)[0];
+
+  harness.api.setContext({ playerState: second });
+  harness.api.renderJourney();
+  const secondAnnouncement = harness.timers.timeouts.filter(function (timer) { return timer.ms === 0; }).slice(-1)[0];
+  firstAnnouncement.fn();
+  assert.strictEqual(harness.elements['journey-announcement'].textContent, '', 'stale stop was announced');
+  secondAnnouncement.fn();
+  assert.ok(harness.elements['journey-announcement'].textContent.indexOf(route.stops[1].headline) !== -1);
+
+  harness.api.setContext({ playerState: first });
+  harness.api.renderJourney();
+  const closingAnnouncement = harness.timers.timeouts.filter(function (timer) { return timer.ms === 0; }).slice(-1)[0];
+  harness.api.closeJourneyDialog();
+  closingAnnouncement.fn();
+  assert.strictEqual(harness.elements['journey-announcement'].textContent, '',
+    'a closed journey announced stale scene copy');
+});
+
+test('reduced motion and repeated lifecycle calls never create an autoplay deadline', function () {
+  const harness = makeJourneyControllerHarness();
+  const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+  harness.control.reducedMotion = true;
+  harness.dialog.open = false;
+  harness.api.setContext({ state: controllerState(), elements: harness.elements });
+  harness.api.start(route.id, route.stops[0].id, true);
+  assert.strictEqual(harness.api.snapshot().playerState.deadline, 0);
+  assert.notStrictEqual(harness.api.snapshot().playerState.status, 'playing');
+  assert.strictEqual(harness.timers.intervals.filter(function (timer) { return timer.active; }).length, 0);
+  assert.strictEqual(harness.timers.timeouts.filter(function (timer) { return timer.active && timer.ms === 1400; }).length, 0);
+
+  harness.document.hidden = true;
+  assert.doesNotThrow(function () {
+    harness.api.handleVisibilityChange();
+    harness.api.handleVisibilityChange();
+    harness.api.dispatch('pause', 500);
+    harness.api.dispatch('pause', 500);
+    harness.api.closeJourneyDialog();
+    harness.api.closeJourneyDialog();
+  });
+  assert.strictEqual(harness.api.snapshot().playerState.deadline, 0);
+  assert.strictEqual(harness.timers.intervals.filter(function (timer) { return timer.active; }).length, 0);
+});
+
+test('journey CSS exposes focus targets and compact content without overflow masking', function () {
+  const css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
+  const journeyCss = css.slice(css.indexOf('/* Directed journeys'), css.indexOf('@keyframes journey-stage-in'));
+  assert.strictEqual(/overflow-x:\s*hidden/.test(css), false, 'horizontal overflow is hidden instead of fixed');
+  assert.ok(/\.journey-dialog[\s\S]*:focus-visible[\s\S]*outline:\s*3px/.test(journeyCss));
+  assert.ok(/\.journey-(?:catalog\s*>\s*h2|stage\s*>\s*h2):focus-visible/.test(css),
+    'programmatically focused headings lack a strong visible focus style');
+  assert.ok(/\.journey-progress\s*\{[^}]*gap:\s*(?:\.5rem|8px)/s.test(journeyCss),
+    'progress targets need an eight-pixel gap');
+  assert.ok(/\.journey-progress button\s*\{[^}]*min-width:\s*44px[^}]*min-height:\s*44px/s.test(journeyCss),
+    'progress controls do not meet the 44px target size');
+  ['journey-map-layer', 'journey-stage > h2', 'journey-body', 'journey-controls'].forEach(function (selector) {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s*');
+    assert.ok(new RegExp('\\.' + escaped + '[\\s\\S]{0,700}min-width:\\s*0[\\s\\S]{0,700}' +
+      'max-inline-size:[\\s\\S]{0,700}overflow-wrap:\\s*anywhere').test(journeyCss),
+    selector + ' lacks compact overflow safeguards');
+  });
+  assert.ok(/@media \(max-width: 390px\)/.test(css));
+  const fixedWidths = Array.from(journeyCss.matchAll(/(?:min-|max-)?width:\s*(\d+)px/g))
+    .map(function (match) { return Number(match[1]); });
+  assert.ok(fixedWidths.every(function (width) { return width <= 390; }), 'journey CSS fixes a width beyond 390px');
 });
 
 test('app controller validates directed journeys and restores their URL state through the manifest', function () {

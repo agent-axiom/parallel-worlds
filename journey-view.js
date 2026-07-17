@@ -148,7 +148,7 @@
       }
     }
 
-    return '<section class="journey-catalog"><h2>' + escapeHtml(copyText(copy, 'catalogTitle')) +
+    return '<section class="journey-catalog"><h2 tabindex="-1">' + escapeHtml(copyText(copy, 'catalogTitle')) +
       '</h2><div class="journey-cards">' + cards.join('') + '</div></section>';
   }
 
@@ -250,7 +250,7 @@
       '<p class="journey-year">' + escapeHtml(year) + '</p></header>' +
       '<span data-journey-announcement-source hidden>' +
       escapeHtml(headline + ' · ' + year) + '</span>' +
-      '<h2>' + escapeHtml(headline) + '</h2><p class="journey-body">' + escapeHtml(body) + '</p>' +
+      '<h2 tabindex="-1">' + escapeHtml(headline) + '</h2><p class="journey-body">' + escapeHtml(body) + '</p>' +
       '<nav class="journey-progress" aria-label="' + escapeHtml(progress) + '">' +
       progressHtml(stops, stopCount, index, copyText(copy, 'stopTemplate')) + '</nav>' +
       '<div class="journey-clock" data-journey-clock><span data-journey-countdown aria-hidden="true" hidden></span></div>' +
@@ -269,7 +269,7 @@
     var conclusion = ownNonEmptyString(route, 'conclusion');
     if (!title || !conclusion) return '';
     return '<article class="journey-complete"><p class="journey-complete-kicker">' +
-      escapeHtml(copyText(copy, 'completeKicker')) + '</p><h2>' + escapeHtml(title) + '</h2><p>' +
+      escapeHtml(copyText(copy, 'completeKicker')) + '</p><h2 tabindex="-1">' + escapeHtml(title) + '</h2><p>' +
       escapeHtml(conclusion) + '</p><div class="journey-complete-actions">' +
       '<button type="button" data-journey-action="explore">' + escapeHtml(copyText(copy, 'exploreMoment')) + '</button>' +
       '<button type="button" data-journey-action="replay">' + escapeHtml(copyText(copy, 'replayJourney')) + '</button>' +
