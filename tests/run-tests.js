@@ -3947,6 +3947,65 @@ test('academic migration status and audit workflow are documented without overcl
   assert.ok(fs.readFileSync(deploymentPath, 'utf8').indexOf('academic-audit.json') !== -1);
 });
 
+test('directed journey documentation covers safe sharing, interaction and contribution workflow', function () {
+  const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
+  const sectionMatch = /## Режиссёрские путешествия\n([\s\S]*?)(?=\n## )/.exec(readme);
+  assert.ok(sectionMatch, 'README omits the directed journey section');
+  const section = sectionMatch[1];
+  [
+    'journey=birth-of-cities',
+    'journeyMode=paused',
+    'prefers-reduced-motion',
+    'journeys-data.js',
+    'journey.js',
+    'journey-view.js',
+    'Space',
+    'Escape',
+    'свайп',
+    'RU / EN / ZH',
+    'node scripts/build-academic-audit.mjs',
+    'npm test',
+    'bash scripts/validate.sh'
+  ].forEach(function (marker) {
+    assert.ok(section.indexOf(marker) !== -1, 'directed journey README omits ' + marker);
+  });
+  assert.ok(/7[^\n]{0,40}останов/i.test(section), 'README does not state the route length');
+  assert.ok(/общ[^\n]{0,100}ссыл[^\n]{0,100}paused/i.test(section),
+    'README does not explain paused shared links');
+  assert.ok(/manifest[^\n]{0,100}аудит[^\n]{0,100}тест/i.test(section),
+    'README does not document the manifest-to-audit contribution path');
+});
+
+test('academic method defines a blocking evidence gate for directed journeys', function () {
+  const method = fs.readFileSync(path.join(root, 'docs', 'academic-method.md'), 'utf8');
+  const sectionMatch = /## Гейт режиссёрских путешествий\n([\s\S]*?)(?=\n## )/.exec(method);
+  assert.ok(sectionMatch, 'academic method omits the directed journey gate');
+  const section = sectionMatch[1];
+  [
+    '`reviewed`',
+    '6–8',
+    'RU / EN / ZH',
+    'керамика',
+    'монументы',
+    'земледелие',
+    'node scripts/build-academic-audit.mjs',
+    'npm test',
+    'bash scripts/validate.sh'
+  ].forEach(function (marker) {
+    assert.ok(section.indexOf(marker) !== -1, 'academic journey gate omits ' + marker);
+  });
+  assert.ok(/точн[^\n]{0,80}источник/i.test(section), 'journey gate lacks the exact-source rule');
+  assert.ok(/год[^\n]{0,100}событ[^\n]{0,100}период/i.test(section), 'journey gate lacks the stop-date rule');
+  assert.ok(/ошиб[^\n]{0,100}блокир[^\n]{0,100}Pages/i.test(section), 'journey validation does not block Pages');
+});
+
+test('committed academic audit records complete reviewed journey coverage', function () {
+  const report = JSON.parse(fs.readFileSync(path.join(root, 'academic-audit.json'), 'utf8'));
+  assert.strictEqual(report.summary.blockingIssues, 0);
+  assert.deepStrictEqual(report.journeyCoverage, { routes: 1, stops: 7, reviewedStops: 7 });
+  assert.deepStrictEqual(report.journeys, [{ id: 'birth-of-cities', stops: 7, reviewedStops: 7 }]);
+});
+
 test('required static site and Pages files exist and use relative assets', function () {
   const evidenceAssets = ['chronology.js', 'academic-data.js', 'data-quality.js'];
   const auditAssets = ['academic-audit.js', 'academic-audit.json'];
