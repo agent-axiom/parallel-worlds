@@ -20,7 +20,39 @@ node --check journeys-data.js
 node --check journey.js
 node --check journey-view.js
 node --check app.js
+
+audit_snapshot="$(mktemp "${TMPDIR:-/tmp}/parallel-worlds-academic-audit.XXXXXX")"
+if ! cp academic-audit.json "$audit_snapshot"; then
+  rm -f "$audit_snapshot"
+  exit 1
+fi
+
+function restore_academic_audit() {
+  local status=$?
+  trap - EXIT HUP INT TERM
+  if [[ -f "$audit_snapshot" ]]; then
+    if ! cp "$audit_snapshot" academic-audit.json; then
+      echo "Could not restore academic-audit.json after validation" >&2
+      status=1
+    fi
+    if ! rm -f "$audit_snapshot"; then
+      echo "Could not remove academic audit snapshot" >&2
+      status=1
+    fi
+  fi
+  exit "$status"
+}
+
+trap restore_academic_audit EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
 node scripts/build-academic-audit.mjs
+if ! cmp -s "$audit_snapshot" academic-audit.json; then
+  echo "academic-audit.json is stale; run node scripts/build-academic-audit.mjs and commit the regenerated file" >&2
+  exit 1
+fi
 node tests/run-tests.js
 
 for asset in index.html styles.css app.js chronology.js academic-data.js data-quality.js academic-audit.js academic-audit.json data.js i18n.js timeline.js atlas-data.js world-map-data.js insights.js atlas.js explorer-state.js atlas-view.js journeys-data.js journey.js journey-view.js .nojekyll; do

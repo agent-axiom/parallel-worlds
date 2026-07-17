@@ -3985,6 +3985,11 @@ test('academic method defines a blocking evidence gate for directed journeys', f
     '`reviewed`',
     '6–8',
     'RU / EN / ZH',
+    'резюме',
+    'итог',
+    'текст каждой остановки',
+    '`journeys`',
+    '`journeyCoverage`',
     'керамика',
     'монументы',
     'земледелие',
@@ -3997,6 +4002,9 @@ test('academic method defines a blocking evidence gate for directed journeys', f
   assert.ok(/точн[^\n]{0,80}источник/i.test(section), 'journey gate lacks the exact-source rule');
   assert.ok(/год[^\n]{0,100}событ[^\n]{0,100}период/i.test(section), 'journey gate lacks the stop-date rule');
   assert.ok(/ошиб[^\n]{0,100}блокир[^\n]{0,100}Pages/i.test(section), 'journey validation does not block Pages');
+  assert.strictEqual(section.indexOf('переходы'), -1, 'journey gate documents a field the manifest does not contain');
+  assert.strictEqual(section.indexOf('`journeys` и `coverage`'), -1,
+    'journey gate names the wrong audit coverage section');
 });
 
 test('committed academic audit records complete reviewed journey coverage', function () {
@@ -4004,6 +4012,27 @@ test('committed academic audit records complete reviewed journey coverage', func
   assert.strictEqual(report.summary.blockingIssues, 0);
   assert.deepStrictEqual(report.journeyCoverage, { routes: 1, stops: 7, reviewedStops: 7 });
   assert.deepStrictEqual(report.journeys, [{ id: 'birth-of-cities', stops: 7, reviewedStops: 7 }]);
+});
+
+test('validation rejects a stale academic audit before tests and restores the worktree copy', function () {
+  const validator = fs.readFileSync(path.join(root, 'scripts', 'validate.sh'), 'utf8');
+  const snapshotIndex = validator.indexOf('mktemp');
+  const snapshotCopyIndex = validator.indexOf('cp academic-audit.json');
+  const trapIndex = validator.indexOf('trap restore_academic_audit EXIT');
+  const buildIndex = validator.indexOf('node scripts/build-academic-audit.mjs');
+  const compareIndex = validator.indexOf('cmp -s');
+  const testsIndex = validator.indexOf('node tests/run-tests.js');
+
+  assert.ok(snapshotIndex !== -1, 'validator does not create a secure audit snapshot');
+  assert.ok(snapshotCopyIndex > snapshotIndex, 'validator does not snapshot the committed audit');
+  assert.ok(trapIndex > snapshotCopyIndex && trapIndex < buildIndex,
+    'validator must arm restoration before regenerating the audit');
+  assert.ok(buildIndex < compareIndex && compareIndex < testsIndex,
+    'validator must compare the regenerated audit before running tests');
+  assert.ok(/function restore_academic_audit\(\)[\s\S]*cp "\$audit_snapshot" academic-audit\.json[\s\S]*rm -f "\$audit_snapshot"/.test(validator),
+    'validator trap does not restore and remove the audit snapshot');
+  assert.ok(/academic-audit\.json is stale[\s\S]*build-academic-audit\.mjs/.test(validator),
+    'validator does not explain how to regenerate a stale audit');
 });
 
 test('required static site and Pages files exist and use relative assets', function () {
