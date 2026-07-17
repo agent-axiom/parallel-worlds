@@ -481,25 +481,29 @@
     });
   }
 
-  function openDetails(id, periodId) {
+  function openDetails(id, recordId) {
     var track = activeData.tracks.find(function (item) { return item.id === id; });
     if (!track) return;
     elements['dialog-title'].textContent = track.name;
     elements['dialog-meta'].innerHTML = '<span>' + escapeHtml(regionNames[track.region]) + ' · ' + escapeHtml(typeLabel(track.type)) + '</span>' + reviewStatusHtml(track);
     elements['dialog-summary'].textContent = track.summary;
     elements['dialog-periods'].innerHTML = track.periods.map(function (period) {
-      var selected = periodId && period.id === periodId;
+      var selected = recordId && period.id === recordId;
       return '<li data-period="' + escapeHtml(period.id || '') + '" class="' + (selected ? 'emphasized' : '') + '"' + (selected ? ' tabindex="-1" aria-label="' + escapeHtml(t('selectedPeriodState') + ': ' + period.name) + '"' : '') + '><strong>' + escapeHtml(period.name) + '</strong><span>' + escapeHtml(formatYear(period.start)) + ' — ' + escapeHtml(formatYear(period.end)) + '</span>' +
         (period.note ? '<p>' + escapeHtml(period.note) + '</p>' : '') + evidenceHtml(period) + '</li>';
     }).join('');
     elements['dialog-events'].innerHTML = track.events.slice().sort(function (a, b) { return a.year - b.year; }).map(function (event) {
-      return '<li><strong>' + escapeHtml(formatYear(event.year)) + '</strong><span>' + escapeHtml(event.title) + '</span>' +
+      var selected = recordId && event.id === recordId;
+      return '<li data-event="' + escapeHtml(event.id || '') + '" class="' + (selected ? 'emphasized' : '') + '"' +
+        (selected ? ' tabindex="-1" aria-label="' + escapeHtml(t('selectedPeriodState') + ': ' + event.title) + '"' : '') +
+        '><strong>' + escapeHtml(formatYear(event.year)) + '</strong><span>' + escapeHtml(event.title) + '</span>' +
         (event.note ? '<p>' + escapeHtml(event.note) + '</p>' : '') + evidenceHtml(event) + '</li>';
     }).join('');
     elements['dialog-sources'].innerHTML = '<strong>' + escapeHtml(t('detailsSources')) + ' </strong>' + sourceLinksHtml(track.sources);
     if (typeof elements['detail-dialog'].showModal === 'function') elements['detail-dialog'].showModal();
     else elements['detail-dialog'].setAttribute('open', '');
-    var emphasized = elements['dialog-periods'].querySelector('.emphasized');
+    var emphasized = elements['dialog-periods'].querySelector('.emphasized') ||
+      elements['dialog-events'].querySelector('.emphasized');
     if (emphasized) {
       if (typeof emphasized.scrollIntoView === 'function') emphasized.scrollIntoView({ block: 'nearest' });
       emphasized.focus();
@@ -668,9 +672,22 @@
     });
   }
 
+  function isDialogOpen(dialog) {
+    if (!dialog) return false;
+    try {
+      return dialog.open === true ||
+        typeof dialog.hasAttribute === 'function' && dialog.hasAttribute('open');
+    } catch (_) {
+      return false;
+    }
+  }
+
   function isJourneyOpen() {
-    return Boolean(elements['journey-dialog'] &&
-      (elements['journey-dialog'].open || elements['journey-dialog'].hasAttribute('open')));
+    return isDialogOpen(elements['journey-dialog']);
+  }
+
+  function isDetailOpen() {
+    return isDialogOpen(elements['detail-dialog']);
   }
 
   function showJourneyDialog() {
@@ -722,6 +739,16 @@
     var copy = atlasCopy();
     worldTarget.innerHTML = atlasView.worldSvg(worldMapData, t('atlasAria'), model.comparisonConnector, copy);
     regionsTarget.innerHTML = atlasView.renderRegions(model.regions, copy);
+    neutralizeJourneyMap();
+  }
+
+  function neutralizeJourneyMap() {
+    var layer = elements['journey-content'].querySelector('.journey-map-layer');
+    if (!layer || typeof layer.querySelectorAll !== 'function') return;
+    Array.prototype.forEach.call(layer.querySelectorAll('button, a[href], input, select, textarea, [tabindex]'), function (control) {
+      control.tabIndex = -1;
+      if ('disabled' in control) control.disabled = true;
+    });
   }
 
   function copyJourneyAnnouncement() {
@@ -981,7 +1008,13 @@
         try { window.prompt(t('copyLinkPrompt'), url); } catch (_) {}
       }
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        var write = navigator.clipboard.writeText(url);
+        var write;
+        try {
+          write = navigator.clipboard.writeText(url);
+        } catch (_) {
+          promptFallback();
+          return url;
+        }
         if (write && typeof write.then === 'function') {
           write.then(function () {
             try { showToast(t('journeyLinkCopied')); } catch (_) {}
@@ -1061,6 +1094,69 @@
         openJourneyCatalog('');
       }
     });
+  }
+
+  function handleJourneyContentClick(event) {
+    var target = event.target && typeof event.target.closest === 'function' ? event.target : null;
+    if (!target) return;
+    var startButton = target.closest('[data-journey-start]');
+    if (startButton) {
+      startJourney(startButton.dataset.journeyStart, '', !prefersReducedMotion());
+      return;
+    }
+    var progressButton = target.closest('[data-journey-go]');
+    if (progressButton && journeyState) {
+      journeyAutoplay = journeyState.status === 'playing';
+      dispatchJourney({ type: 'start', stopIndex: Number(progressButton.dataset.journeyGo) }, journeyNow());
+      return;
+    }
+    var evidenceButton = target.closest('[data-journey-evidence]');
+    if (evidenceButton) {
+      activateJourneyEvidence(evidenceButton.dataset.journeyEvidence, evidenceButton.dataset.recordId);
+      return;
+    }
+    var actionButton = target.closest('[data-journey-action]');
+    if (actionButton) {
+      handleJourneyAction(actionButton.dataset.journeyAction);
+      return;
+    }
+    if (target === elements['journey-content'].querySelector('.journey-stage')) {
+      pauseJourneyForInteraction();
+    }
+  }
+
+  function handleDocumentKeydown(event) {
+    if (isDetailOpen()) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeDetails();
+      }
+      return;
+    }
+    if (isJourneyOpen()) {
+      if (event.key === 'Tab') {
+        journeyView.trapTab(event, elements['journey-dialog']);
+        return;
+      }
+      if (journeyKeyboardIgnored(event.target)) return;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        finishJourney(false);
+      } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        event.preventDefault();
+        journeyAutoplay = journeyState && journeyState.status === 'playing';
+        dispatchJourney(event.key === 'ArrowLeft' ? 'previous' : 'next', journeyNow());
+      } else if (event.key === ' ' || event.key === 'Spacebar') {
+        event.preventDefault();
+        handleJourneyAction('toggle');
+      }
+      return;
+    }
+    var activeTag = document.activeElement && document.activeElement.tagName;
+    if (event.key === '/' && activeTag !== 'INPUT') {
+      event.preventDefault();
+      elements['search-input'].focus();
+    }
   }
 
   function bindEvents() {
@@ -1143,32 +1239,7 @@
       event.preventDefault();
       finishJourney(false);
     });
-    elements['journey-content'].addEventListener('click', function (event) {
-      var target = event.target && event.target.closest ? event.target : null;
-      if (!target) return;
-      var startButton = target.closest('[data-journey-start]');
-      if (startButton) {
-        startJourney(startButton.dataset.journeyStart, '', !prefersReducedMotion());
-        return;
-      }
-      var progressButton = target.closest('[data-journey-go]');
-      if (progressButton && journeyState) {
-        journeyAutoplay = journeyState.status === 'playing';
-        dispatchJourney({ type: 'start', stopIndex: Number(progressButton.dataset.journeyGo) }, journeyNow());
-        return;
-      }
-      var evidenceButton = target.closest('[data-journey-evidence]');
-      if (evidenceButton) {
-        activateJourneyEvidence(evidenceButton.dataset.journeyEvidence, evidenceButton.dataset.recordId);
-        return;
-      }
-      var actionButton = target.closest('[data-journey-action]');
-      if (actionButton) {
-        handleJourneyAction(actionButton.dataset.journeyAction);
-        return;
-      }
-      if (target.closest('[data-region]')) pauseJourneyForInteraction();
-    });
+    elements['journey-content'].addEventListener('click', handleJourneyContentClick);
     elements['journey-content'].addEventListener('pointerdown', function (event) {
       var target = event.target && event.target.closest ? event.target : null;
       if (!target) return;
@@ -1200,31 +1271,7 @@
       var selection = typeof window.getSelection === 'function' ? window.getSelection() : null;
       if (selection && String(selection).trim()) pauseJourneyForInteraction();
     });
-    document.addEventListener('keydown', function (event) {
-      if (isJourneyOpen()) {
-        if (event.key === 'Tab') {
-          journeyView.trapTab(event, elements['journey-dialog']);
-          return;
-        }
-        if (journeyKeyboardIgnored(event.target)) return;
-        if (event.key === 'Escape') {
-          event.preventDefault();
-          finishJourney(false);
-        } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-          event.preventDefault();
-          journeyAutoplay = journeyState && journeyState.status === 'playing';
-          dispatchJourney(event.key === 'ArrowLeft' ? 'previous' : 'next', journeyNow());
-        } else if (event.key === ' ' || event.key === 'Spacebar') {
-          event.preventDefault();
-          handleJourneyAction('toggle');
-        }
-        return;
-      }
-      if (event.key === '/' && document.activeElement.tagName !== 'INPUT') {
-        event.preventDefault();
-        elements['search-input'].focus();
-      }
-    });
+    document.addEventListener('keydown', handleDocumentKeydown);
     document.addEventListener('visibilitychange', function () {
       if (document.hidden) {
         if (isJourneyOpen() && journeyState) {
@@ -1282,6 +1329,10 @@
       },
       armTransition: armJourneyTransition,
       activateEvidence: activateJourneyEvidence,
+      handleKeydown: handleDocumentKeydown,
+      handleContentClick: handleJourneyContentClick,
+      openDetails: openDetails,
+      renderMap: renderJourneyMap,
       share: shareJourney,
       handleAction: handleJourneyAction,
       startClock: startJourneyClock,

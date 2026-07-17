@@ -91,10 +91,11 @@ function makeJourneyControllerHarness() {
   const clipboardUrls = [];
   const historyUrls = [];
   const prompts = [];
-  const control = { now: 100, rejectClipboard: false, throwSerialize: false };
+  const control = { now: 100, rejectClipboard: false, throwClipboard: false, throwSerialize: false };
   const bodyClasses = new Set(['journey-open']);
   const stage = {
     listeners: {}, listenerOptions: {}, removed: [],
+    closest: function (selector) { return selector === '.journey-stage' ? this : null; },
     addEventListener: function (type, listener, options) {
       this.listeners[type] = listener;
       this.listenerOptions[type] = options;
@@ -106,12 +107,18 @@ function makeJourneyControllerHarness() {
   };
   const worldTarget = { innerHTML: '' };
   const regionsTarget = { innerHTML: '' };
+  const mapMarker = { tagName: 'BUTTON', tabIndex: 0, disabled: false };
+  const mapLayer = {
+    querySelectorAll: function () { return [mapMarker]; }
+  };
   const announcementSource = { textContent: 'A stop · 18,000 BCE' };
   const content = {
     innerHTML: '',
     querySelector: function (selector) {
       return {
         '[data-journey-stop]': stage,
+        '.journey-stage': stage,
+        '.journey-map-layer': mapLayer,
         '[data-journey-world]': worldTarget,
         '[data-journey-regions]': regionsTarget,
         '[data-journey-announcement-source]': announcementSource
@@ -126,6 +133,36 @@ function makeJourneyControllerHarness() {
     showModal: function () { this.open = true; },
     close: function () { this.open = false; }
   };
+  const detailDialog = {
+    open: false,
+    hasAttribute: function (name) { return name === 'open' && this.open; },
+    setAttribute: function (name) { if (name === 'open') this.open = true; },
+    removeAttribute: function (name) { if (name === 'open') this.open = false; },
+    showModal: function () { this.open = true; },
+    close: function () { this.open = false; }
+  };
+  const selectedPeriodNode = {
+    focused: false, scrolled: false,
+    focus: function () { this.focused = true; },
+    scrollIntoView: function () { this.scrolled = true; }
+  };
+  const selectedEventNode = {
+    focused: false, scrolled: false,
+    focus: function () { this.focused = true; },
+    scrollIntoView: function () { this.scrolled = true; }
+  };
+  function detailList(selectedNode) {
+    return {
+      innerHTML: '',
+      querySelector: function (selector) {
+        return selector === '.emphasized' && this.innerHTML.indexOf('emphasized') !== -1
+          ? selectedNode
+          : null;
+      }
+    };
+  }
+  const periodList = detailList(selectedPeriodNode);
+  const eventList = detailList(selectedEventNode);
   const toast = {
     textContent: '',
     classList: {
@@ -137,6 +174,13 @@ function makeJourneyControllerHarness() {
     'journey-dialog': dialog,
     'journey-content': content,
     'journey-announcement': { textContent: '' },
+    'detail-dialog': detailDialog,
+    'dialog-title': { textContent: '' },
+    'dialog-meta': { innerHTML: '' },
+    'dialog-summary': { textContent: '' },
+    'dialog-periods': periodList,
+    'dialog-events': eventList,
+    'dialog-sources': { innerHTML: '' },
     toast: toast
   };
   const journeyModule = Object.assign({}, journey, {
@@ -199,6 +243,7 @@ function makeJourneyControllerHarness() {
     clipboard: {
       writeText: function (url) {
         clipboardUrls.push(url);
+        if (control.throwClipboard) throw new Error('clipboard unavailable');
         return {
           then: function (resolve, reject) {
             if (control.rejectClipboard) {
@@ -243,12 +288,18 @@ function makeJourneyControllerHarness() {
     content: content,
     control: control,
     dialog: dialog,
+    detailDialog: detailDialog,
     elements: elements,
+    eventList: eventList,
     historyUrls: historyUrls,
     prompts: prompts,
+    mapMarker: mapMarker,
+    periodList: periodList,
     reducerEvents: reducerEvents,
     serializedStates: serializedStates,
     stage: stage,
+    selectedEventNode: selectedEventNode,
+    selectedPeriodNode: selectedPeriodNode,
     timers: timers
   };
 }
@@ -3991,6 +4042,94 @@ test('journey exit state keeps the stop context by default and restores the snap
   assert.strictEqual(restored.scaleMode, 'deep');
   assert.strictEqual(restored.theme, 'dark');
   assert.strictEqual(restored.lang, 'zh');
+});
+
+test('nested detail dialog exclusively owns journey keyboard routing', function () {
+  const harness = makeJourneyControllerHarness();
+  const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+  const playing = journey.createState(route, { stopIndex: 0, status: 'playing', deadline: 1000 });
+  harness.detailDialog.open = true;
+  harness.api.setContext({
+    state: controllerState({ journey: route.id, stop: route.stops[0].id, journeyMode: 'playing' }),
+    elements: harness.elements, route: route, playerState: playing, autoplay: true
+  });
+  function keyEvent(key) {
+    return {
+      key: key,
+      target: { tagName: 'DIV', isContentEditable: false },
+      prevented: false,
+      preventDefault: function () { this.prevented = true; }
+    };
+  }
+
+  const tab = keyEvent('Tab');
+  harness.api.handleKeydown(tab);
+  assert.strictEqual(tab.prevented, false, 'native Tab must remain with the top modal');
+  [' ', 'ArrowLeft', 'ArrowRight'].forEach(function (key) {
+    const event = keyEvent(key);
+    harness.api.handleKeydown(event);
+    assert.strictEqual(event.prevented, false, key + ' leaked to the underlying journey');
+  });
+  assert.deepStrictEqual(harness.reducerEvents, []);
+
+  const escape = keyEvent('Escape');
+  harness.api.handleKeydown(escape);
+  assert.strictEqual(escape.prevented, true);
+  assert.strictEqual(harness.detailDialog.open, false);
+  assert.strictEqual(harness.dialog.open, true);
+  assert.strictEqual(harness.api.snapshot().playerState.status, 'playing');
+  assert.deepStrictEqual(harness.reducerEvents, []);
+});
+
+test('journey event evidence is emphasized scrolled and focused in details', function () {
+  const harness = makeJourneyControllerHarness();
+  harness.api.setContext({ state: controllerState(), elements: harness.elements });
+
+  harness.api.openDetails('xianrendong', 'xianrendong-pottery-evidence');
+
+  assert.ok(/data-event="xianrendong-pottery-evidence"[^>]*class="emphasized"/.test(harness.eventList.innerHTML),
+    'selected journey event is not marked in event evidence');
+  assert.strictEqual(harness.periodList.innerHTML.indexOf('class="emphasized"'), -1,
+    'event id incorrectly selects a period');
+  assert.strictEqual(harness.selectedEventNode.scrolled, true);
+  assert.strictEqual(harness.selectedEventNode.focused, true);
+  assert.strictEqual(harness.selectedPeriodNode.focused, false);
+  assert.strictEqual(harness.detailDialog.open, true);
+});
+
+test('decorative journey map is inert and a real stage background click pauses playback', function () {
+  const harness = makeJourneyControllerHarness();
+  const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+  const playing = journey.createState(route, { stopIndex: 0, status: 'playing', deadline: 1000 });
+  harness.api.setContext({
+    state: controllerState({ journey: route.id, stop: route.stops[0].id, journeyMode: 'playing' }),
+    elements: harness.elements, route: route, playerState: playing, autoplay: true
+  });
+
+  harness.api.renderMap();
+  assert.strictEqual(harness.mapMarker.tabIndex, -1);
+  assert.strictEqual(harness.mapMarker.disabled, true);
+
+  harness.api.handleContentClick({ target: harness.stage });
+  assert.deepStrictEqual(harness.reducerEvents, ['interact']);
+  assert.strictEqual(harness.api.snapshot().playerState.status, 'exploring');
+});
+
+test('synchronous clipboard failure falls back locally without recovering the journey', function () {
+  const harness = makeJourneyControllerHarness();
+  const active = controllerState({
+    journey: 'birth-of-cities', stop: 'uruk-urban-center', journeyMode: 'playing'
+  });
+  harness.control.throwClipboard = true;
+  harness.api.setContext({ state: active, elements: harness.elements });
+
+  const url = harness.api.share();
+
+  assert.strictEqual(harness.prompts[0], url);
+  assert.strictEqual(active.journeyMode, 'playing');
+  assert.strictEqual(active.journey, 'birth-of-cities');
+  assert.strictEqual(harness.dialog.open, true);
+  assert.strictEqual(harness.bodyClasses.has('journey-open'), true);
 });
 
 test('app controller validates directed journeys and restores their URL state through the manifest', function () {
