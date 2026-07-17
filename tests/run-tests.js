@@ -1493,17 +1493,60 @@ test('journey focus trap verifies focus and falls back without trapping dead tar
 
   attempts.length = 0;
   ownerDocument.activeElement = {};
+  const exhausted = dialogFor([throws, noTransfer]);
+  exhausted.isConnected = true;
+  exhausted.focus = function () { attempts.push('dialog'); ownerDocument.activeElement = exhausted; };
   assert.strictEqual(journeyView.trapTab({
     key: 'Tab', preventDefault: function () { prevented += 1; }
-  }, dialogFor([throws, noTransfer])), false);
-  assert.deepStrictEqual(attempts, ['throws', 'no-transfer']);
-  assert.strictEqual(prevented, 1);
+  }, exhausted), true);
+  assert.deepStrictEqual(attempts, ['throws', 'no-transfer', 'dialog']);
+  assert.strictEqual(ownerDocument.activeElement, exhausted);
+  assert.strictEqual(prevented, 2);
 
   const empty = dialogFor([]);
   empty.focus = function () { attempts.push('dialog-no-transfer'); };
   assert.strictEqual(journeyView.trapTab({
     key: 'Tab', preventDefault: function () { prevented += 1; }
   }, empty), false);
+  assert.strictEqual(prevented, 2);
+});
+
+test('journey focus trap retains the dialog when candidate focus synchronously replaces its subtree', function () {
+  const ownerDocument = { activeElement: {} };
+  const attempts = [];
+  let queries = 0;
+  function node(id) {
+    return {
+      id: id, disabled: false, hidden: false, inert: false, tabIndex: 0, isConnected: true,
+      ownerDocument: ownerDocument, parentElement: null,
+      getAttribute: function () { return null; },
+      focus: function () { attempts.push(id); }
+    };
+  }
+  const first = node('first');
+  const second = node('second');
+  first.focus = function () {
+    attempts.push('first');
+    first.isConnected = false;
+    second.isConnected = false;
+    ownerDocument.activeElement = first;
+  };
+  const dialog = {
+    isConnected: true,
+    ownerDocument: ownerDocument,
+    querySelectorAll: function () {
+      queries += 1;
+      return { 0: first, 1: second, length: 2 };
+    },
+    focus: function () { attempts.push('dialog'); ownerDocument.activeElement = dialog; }
+  };
+  let prevented = 0;
+  assert.strictEqual(journeyView.trapTab({
+    key: 'Tab', preventDefault: function () { prevented += 1; }
+  }, dialog), true);
+  assert.deepStrictEqual(attempts, ['first', 'dialog']);
+  assert.strictEqual(ownerDocument.activeElement, dialog);
+  assert.strictEqual(queries, 1);
   assert.strictEqual(prevented, 1);
 });
 

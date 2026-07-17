@@ -560,6 +560,10 @@
         return true;
       }
     }
+    if (focusTransferred(dialog, ownerDocument)) {
+      preventTab(event);
+      return true;
+    }
     return false;
   }
 
