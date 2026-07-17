@@ -31,12 +31,45 @@ function test(name, fn) {
   }
 }
 
-function arrayWithInheritedRoute(route) {
-  const routes = new Array(1);
+function withInheritedArrayIndex(values, index, value) {
   const prototype = Object.create(Array.prototype);
-  Object.defineProperty(prototype, '0', { configurable: true, value: route });
-  Object.setPrototypeOf(routes, prototype);
-  return routes;
+  Object.defineProperty(prototype, String(index), { configurable: true, value: value });
+  Object.setPrototypeOf(values, prototype);
+  return values;
+}
+
+function arrayWithInheritedValue(value) {
+  return withInheritedArrayIndex(new Array(1), 0, value);
+}
+
+function withObjectPrototypeProperties(properties, fn) {
+  const keys = Object.keys(properties);
+  const previous = Object.create(null);
+  const defined = [];
+  try {
+    keys.forEach(function (key) {
+      previous[key] = Object.getOwnPropertyDescriptor(Object.prototype, key);
+      Object.defineProperty(Object.prototype, key, {
+        configurable: true, writable: true, value: properties[key]
+      });
+      defined.push(key);
+    });
+    return fn();
+  } finally {
+    defined.reverse().forEach(function (key) {
+      if (previous[key]) Object.defineProperty(Object.prototype, key, previous[key]);
+      else delete Object.prototype[key];
+    });
+  }
+}
+
+function nullPrototypeClone(value) {
+  if (Array.isArray(value)) return value.map(nullPrototypeClone);
+  if (!value || typeof value !== 'object') return value;
+  return Object.keys(value).reduce(function (clone, key) {
+    clone[key] = nullPrototypeClone(value[key]);
+    return clone;
+  }, Object.create(null));
 }
 
 test('directed journey resolves seven reviewed and exactly sourced stops', function () {
@@ -78,10 +111,12 @@ test('directed journey validation rejects equal non-finite event years', functio
 
 test('directed journey validation rejects sparse stop focus and record lists', function () {
   const sparseStops = JSON.parse(JSON.stringify(journeysData));
-  sparseStops.routes[0].stops = new Array(6);
+  delete sparseStops.routes[0].stops[0];
   const stopResult = journey.validateCollection(sparseStops, data);
   assert.deepStrictEqual(stopResult.routes, []);
-  assert.ok(stopResult.issues.some(function (item) { return item.code === 'invalid-journey-id'; }));
+  assert.ok(stopResult.issues.some(function (item) {
+    return item.code === 'invalid-journey-entry' && item.path === 'routes[0].stops[0]';
+  }));
 
   const sparseFocus = JSON.parse(JSON.stringify(journeysData));
   sparseFocus.routes[0].stops[0].focusTrackIds = new Array(1);
@@ -151,13 +186,225 @@ test('directed journey validation fails closed for malformed collection routes',
   });
 });
 
+test('directed journey validation requires a plain collection with own routes', function () {
+  const inheritedRoutes = Object.create({
+    routes: JSON.parse(JSON.stringify(journeysData.routes))
+  });
+  const nonPlainCollection = Object.create({ marker: true });
+  nonPlainCollection.routes = JSON.parse(JSON.stringify(journeysData.routes));
+  const objectPrototypeRoutes = withObjectPrototypeProperties({
+    routes: JSON.parse(JSON.stringify(journeysData.routes))
+  }, function () {
+    return journey.validateCollection({}, data);
+  });
+  const expected = {
+    routes: [],
+    issues: [{
+      code: 'invalid-journey-collection',
+      path: 'routes',
+      message: 'Journey collection routes must be an array'
+    }]
+  };
+
+  [{ label: 'inherited routes', result: journey.validateCollection(inheritedRoutes, data) },
+    { label: 'non-plain collection', result: journey.validateCollection(nonPlainCollection, data) },
+    { label: 'Object.prototype routes', result: objectPrototypeRoutes }].forEach(function (fixture) {
+    assert.deepStrictEqual(fixture.result, expected, fixture.label);
+  });
+});
+
+test('directed journey validation requires own route structural fields', function () {
+  ['id', 'durationSeconds', 'copy', 'stops'].forEach(function (field) {
+    const fixture = JSON.parse(JSON.stringify(journeysData));
+    delete fixture.routes[0][field];
+    const result = journey.validateCollection(fixture, data);
+    assert.deepStrictEqual(result.routes, [], field);
+    assert.ok(result.issues.some(function (item) {
+      return item.code === 'invalid-journey-entry' && item.path === 'routes[0].' + field;
+    }), field);
+  });
+
+  const route = JSON.parse(JSON.stringify(journeysData.routes[0]));
+  const inheritedResult = withObjectPrototypeProperties({
+    id: route.id,
+    durationSeconds: route.durationSeconds,
+    copy: route.copy,
+    stops: route.stops
+  }, function () {
+    return journey.validateCollection({ version: 1, routes: [{}] }, data);
+  });
+  assert.deepStrictEqual(inheritedResult.routes, []);
+  assert.deepStrictEqual(inheritedResult.issues.map(function (item) {
+    return [item.code, item.path];
+  }).sort(), [
+    ['invalid-journey-entry', 'routes[0].copy'],
+    ['invalid-journey-entry', 'routes[0].durationSeconds'],
+    ['invalid-journey-entry', 'routes[0].id'],
+    ['invalid-journey-entry', 'routes[0].stops']
+  ]);
+});
+
+test('directed journey validation rejects an inherited route copy field', function () {
+  const fixture = JSON.parse(JSON.stringify(journeysData));
+  const inheritedCopy = fixture.routes[0].copy;
+  delete fixture.routes[0].copy;
+  const result = withObjectPrototypeProperties({ copy: inheritedCopy }, function () {
+    return journey.validateCollection(fixture, data);
+  });
+  assert.deepStrictEqual(result.routes, []);
+  assert.ok(result.issues.some(function (item) {
+    return item.code === 'invalid-journey-entry' && item.path === 'routes[0].copy';
+  }));
+});
+
+test('directed journey validation rejects sparse and inherited stop entries', function () {
+  const inheritedObject = JSON.parse(JSON.stringify(journeysData));
+  inheritedObject.routes[0].stops[0] = Object.create(inheritedObject.routes[0].stops[0]);
+
+  const inheritedIndex = JSON.parse(JSON.stringify(journeysData));
+  const inheritedStop = inheritedIndex.routes[0].stops[0];
+  delete inheritedIndex.routes[0].stops[0];
+  withInheritedArrayIndex(inheritedIndex.routes[0].stops, 0, inheritedStop);
+
+  [{ label: 'inherited object', collection: inheritedObject },
+    { label: 'inherited array index', collection: inheritedIndex }].forEach(function (fixture) {
+    const result = journey.validateCollection(fixture.collection, data);
+    assert.deepStrictEqual(result.routes, [], fixture.label);
+    assert.ok(result.issues.some(function (item) {
+      return item.code === 'invalid-journey-entry' && item.path === 'routes[0].stops[0]';
+    }), fixture.label);
+  });
+});
+
+test('directed journey validation requires own stop structural fields', function () {
+  const fields = ['id', 'year', 'focusTrackIds', 'recordRefs', 'holdMs', 'copy'];
+  fields.forEach(function (field) {
+    const fixture = JSON.parse(JSON.stringify(journeysData));
+    delete fixture.routes[0].stops[0][field];
+    const result = journey.validateCollection(fixture, data);
+    assert.deepStrictEqual(result.routes, [], field);
+    assert.ok(result.issues.some(function (item) {
+      return item.code === 'invalid-journey-entry' && item.path === 'routes[0].stops[0].' + field;
+    }), field);
+  });
+
+  const stop = JSON.parse(JSON.stringify(journeysData.routes[0].stops[0]));
+  const inheritedValues = fields.reduce(function (values, field) {
+    values[field] = stop[field];
+    return values;
+  }, {});
+  const fixture = JSON.parse(JSON.stringify(journeysData));
+  fixture.routes[0].stops[0] = {};
+  const inheritedResult = withObjectPrototypeProperties(inheritedValues, function () {
+    return journey.validateCollection(fixture, data);
+  });
+  assert.deepStrictEqual(inheritedResult.routes, []);
+  fields.forEach(function (field) {
+    assert.ok(inheritedResult.issues.some(function (item) {
+      return item.code === 'invalid-journey-entry' && item.path === 'routes[0].stops[0].' + field;
+    }), field);
+  });
+});
+
+test('directed journey validation rejects inherited copy containers locales and fields', function () {
+  const inheritedContainer = JSON.parse(JSON.stringify(journeysData));
+  inheritedContainer.routes[0].copy = Object.create(inheritedContainer.routes[0].copy);
+
+  const inheritedLocaleObject = JSON.parse(JSON.stringify(journeysData));
+  inheritedLocaleObject.routes[0].copy.ru = Object.create(inheritedLocaleObject.routes[0].copy.ru);
+
+  const inheritedLocale = JSON.parse(JSON.stringify(journeysData));
+  const russianCopy = inheritedLocale.routes[0].copy.ru;
+  delete inheritedLocale.routes[0].copy.ru;
+  const inheritedLocaleResult = withObjectPrototypeProperties({ ru: russianCopy }, function () {
+    return journey.validateCollection(inheritedLocale, data);
+  });
+
+  const inheritedField = JSON.parse(JSON.stringify(journeysData));
+  const title = inheritedField.routes[0].copy.ru.title;
+  delete inheritedField.routes[0].copy.ru.title;
+  const inheritedFieldResult = withObjectPrototypeProperties({ title: title }, function () {
+    return journey.validateCollection(inheritedField, data);
+  });
+
+  [{ label: 'copy container', result: journey.validateCollection(inheritedContainer, data), path: 'routes[0].copy.ru.title' },
+    { label: 'locale object', result: journey.validateCollection(inheritedLocaleObject, data), path: 'routes[0].copy.ru.title' },
+    { label: 'inherited locale', result: inheritedLocaleResult, path: 'routes[0].copy.ru.title' },
+    { label: 'inherited field', result: inheritedFieldResult, path: 'routes[0].copy.ru.title' }].forEach(function (fixture) {
+    assert.deepStrictEqual(fixture.result.routes, [], fixture.label);
+    assert.ok(fixture.result.issues.some(function (item) {
+      return item.code === 'missing-localization' && item.path === fixture.path;
+    }), fixture.label);
+  });
+});
+
+test('directed journey validation rejects inherited and sparse focus and reference data', function () {
+  const sparseFocus = JSON.parse(JSON.stringify(journeysData));
+  sparseFocus.routes[0].stops[0].focusTrackIds = new Array(1);
+  const inheritedFocus = JSON.parse(JSON.stringify(journeysData));
+  inheritedFocus.routes[0].stops[0].focusTrackIds = arrayWithInheritedValue('xianrendong');
+
+  [sparseFocus, inheritedFocus].forEach(function (fixture) {
+    const result = journey.validateCollection(fixture, data);
+    assert.deepStrictEqual(result.routes, []);
+    assert.ok(result.issues.some(function (item) {
+      return item.code === 'invalid-focus' && item.path === 'routes[0].stops[0].focusTrackIds';
+    }));
+  });
+
+  const canonicalRef = JSON.parse(JSON.stringify(journeysData.routes[0].stops[0].recordRefs[0]));
+  const sparseRefs = JSON.parse(JSON.stringify(journeysData));
+  sparseRefs.routes[0].stops[0].recordRefs = new Array(1);
+  const inheritedRefIndex = JSON.parse(JSON.stringify(journeysData));
+  inheritedRefIndex.routes[0].stops[0].recordRefs = arrayWithInheritedValue(canonicalRef);
+  const inheritedRefObject = JSON.parse(JSON.stringify(journeysData));
+  inheritedRefObject.routes[0].stops[0].recordRefs[0] = Object.create(canonicalRef);
+
+  const inheritedTrackId = JSON.parse(JSON.stringify(journeysData));
+  const trackId = inheritedTrackId.routes[0].stops[0].recordRefs[0].trackId;
+  delete inheritedTrackId.routes[0].stops[0].recordRefs[0].trackId;
+  const inheritedTrackResult = withObjectPrototypeProperties({ trackId: trackId }, function () {
+    return journey.validateCollection(inheritedTrackId, data);
+  });
+
+  const inheritedEventId = JSON.parse(JSON.stringify(journeysData));
+  const eventId = inheritedEventId.routes[0].stops[0].recordRefs[0].eventId;
+  delete inheritedEventId.routes[0].stops[0].recordRefs[0].eventId;
+  const inheritedEventResult = withObjectPrototypeProperties({ eventId: eventId }, function () {
+    return journey.validateCollection(inheritedEventId, data);
+  });
+
+  [{ label: 'sparse refs', result: journey.validateCollection(sparseRefs, data) },
+    { label: 'inherited ref index', result: journey.validateCollection(inheritedRefIndex, data) },
+    { label: 'inherited ref object', result: journey.validateCollection(inheritedRefObject, data) },
+    { label: 'inherited trackId', result: inheritedTrackResult },
+    { label: 'inherited eventId', result: inheritedEventResult }].forEach(function (fixture) {
+    assert.deepStrictEqual(fixture.result.routes, [], fixture.label);
+    assert.ok(fixture.result.issues.some(function (item) {
+      return item.code === 'invalid-record-ref' && item.path === 'routes[0].stops[0].recordRefs[0]';
+    }), fixture.label);
+  });
+});
+
+test('directed journey validation accepts fully null-prototype manifest data', function () {
+  const fixture = nullPrototypeClone(journeysData);
+  assert.strictEqual(Object.getPrototypeOf(fixture), null);
+  assert.strictEqual(Object.getPrototypeOf(fixture.routes[0]), null);
+  assert.strictEqual(Object.getPrototypeOf(fixture.routes[0].stops[0]), null);
+  assert.strictEqual(Object.getPrototypeOf(fixture.routes[0].stops[0].recordRefs[0]), null);
+  assert.strictEqual(Object.getPrototypeOf(fixture.routes[0].copy.ru), null);
+  const result = journey.validateCollection(fixture, data);
+  assert.deepStrictEqual(result.issues, []);
+  assert.deepStrictEqual(result.routes.map(function (route) { return route.id; }), ['birth-of-cities']);
+});
+
 test('directed journey validation rejects sparse and inherited route entries', function () {
   const sparse = { version: 1, routes: new Array(1) };
   const inheritedObject = JSON.parse(JSON.stringify(journeysData));
   inheritedObject.routes[0] = Object.create(inheritedObject.routes[0]);
   const inheritedIndex = {
     version: 1,
-    routes: arrayWithInheritedRoute(JSON.parse(JSON.stringify(journeysData.routes[0])))
+    routes: arrayWithInheritedValue(JSON.parse(JSON.stringify(journeysData.routes[0])))
   };
 
   [{ label: 'sparse', collection: sparse },
@@ -929,7 +1176,7 @@ test('academic audit blocks sparse and inherited route entries without inherited
   inheritedObject.routes[0] = Object.create(inheritedObject.routes[0]);
   const inheritedIndex = {
     version: 1,
-    routes: arrayWithInheritedRoute(JSON.parse(JSON.stringify(journeysData.routes[0])))
+    routes: arrayWithInheritedValue(JSON.parse(JSON.stringify(journeysData.routes[0])))
   };
   const audit = require(path.join(root, 'academic-audit.js'));
 
@@ -966,14 +1213,19 @@ test('academic audit preserves canonical paths from journey validation', functio
   });
 });
 
-test('academic audit does not derive journey metadata through inherited manifest routes', function () {
-  const route = JSON.parse(JSON.stringify(journeysData.routes[0]));
-  route.stops[0].recordRefs[0].trackId = 'missing-track';
-  const fixture = Object.create({ routes: [route] });
+test('academic audit blocks inherited manifest routes without journey metadata', function () {
+  const fixture = Object.create({ routes: JSON.parse(JSON.stringify(journeysData.routes)) });
   const report = require(path.join(root, 'academic-audit.js')).buildAudit(data, fixture);
-  const referenceIssue = report.issues.find(function (item) { return item.code === 'unknown-track'; });
-  assert.strictEqual(referenceIssue.path, 'journeys.routes[0].stops[0].recordRefs[0].trackId');
-  assert.strictEqual(referenceIssue.journeyId, undefined);
+  assert.ok(report.summary.blockingIssues > 0);
+  assert.deepStrictEqual(report.journeys, []);
+  assert.deepStrictEqual(report.issues.find(function (item) {
+    return item.code === 'invalid-journey-collection';
+  }), {
+    severity: 'error',
+    code: 'invalid-journey-collection',
+    path: 'journeys.routes',
+    message: 'Journey collection routes must be an array'
+  });
 });
 
 test('academic audit rejects explicit falsy journey manifests', function () {

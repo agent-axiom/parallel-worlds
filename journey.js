@@ -8,6 +8,8 @@
 
   var LOCALES = ['ru', 'en', 'zh'];
   var SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+  var ROUTE_FIELDS = ['id', 'durationSeconds', 'copy', 'stops'];
+  var STOP_FIELDS = ['id', 'year', 'focusTrackIds', 'recordRefs', 'holdMs', 'copy'];
 
   function issue(code, path, message) {
     return { code: code, path: path, message: message };
@@ -31,10 +33,28 @@
     return prototype === Object.prototype || prototype === null;
   }
 
+  function hasOwnFields(value, fields) {
+    return fields.every(function (field) { return hasOwn(value, field); });
+  }
+
+  function validateOwnFields(value, fields, path, issues) {
+    var valid = true;
+    fields.forEach(function (field) {
+      if (!hasOwn(value, field)) {
+        issues.push(issue('invalid-journey-entry', path + '.' + field,
+          'Journey manifest structural fields must be own properties'));
+        valid = false;
+      }
+    });
+    return valid;
+  }
+
   function validateCopy(copy, fields, path, issues) {
+    var validCopy = isPlainDataObject(copy);
     LOCALES.forEach(function (locale) {
+      var localized = validCopy && hasOwn(copy, locale) && isPlainDataObject(copy[locale]) ? copy[locale] : null;
       fields.forEach(function (field) {
-        if (!copy || !copy[locale] || !isNonEmptyString(copy[locale][field])) {
+        if (!localized || !hasOwn(localized, field) || !isNonEmptyString(localized[field])) {
           issues.push(issue('missing-localization', path + '.copy.' + locale + '.' + field,
             'Missing ' + locale + ' journey copy for ' + field));
         }
@@ -75,9 +95,10 @@
   }
 
   function resolveRef(ref, refPath, stop, tracks, sources, issues) {
-    var hasPeriod = Boolean(ref) && Object.prototype.hasOwnProperty.call(ref, 'periodId');
-    var hasEvent = Boolean(ref) && Object.prototype.hasOwnProperty.call(ref, 'eventId');
-    if (!ref || !isNonEmptyString(ref.trackId) || hasPeriod === hasEvent ||
+    var validRef = isPlainDataObject(ref);
+    var hasPeriod = validRef && hasOwn(ref, 'periodId');
+    var hasEvent = validRef && hasOwn(ref, 'eventId');
+    if (!validRef || !hasOwn(ref, 'trackId') || !isNonEmptyString(ref.trackId) || hasPeriod === hasEvent ||
         hasPeriod && !isNonEmptyString(ref.periodId) || hasEvent && !isNonEmptyString(ref.eventId)) {
       issues.push(issue('invalid-record-ref', refPath, 'Record reference must name one track and exactly one period or event'));
       return null;
@@ -118,7 +139,11 @@
   }
 
   function validateStop(stop, stopPath, duplicateStopIds, tracks, sources, issues) {
-    stop = stop || {};
+    if (!isPlainDataObject(stop)) {
+      issues.push(issue('invalid-journey-entry', stopPath, 'Journey stop entries must be own plain objects'));
+      return null;
+    }
+    if (!validateOwnFields(stop, STOP_FIELDS, stopPath, issues)) return null;
     if (!isNonEmptyString(stop.id) || !SLUG.test(stop.id)) {
       issues.push(issue('invalid-journey-id', stopPath + '.id', 'Journey and stop IDs must be stable slugs'));
     }
@@ -134,6 +159,10 @@
     var uniqueFocusIds = Object.create(null);
     var invalidFocus = !Array.isArray(stop.focusTrackIds) || focusTrackIds.length > 2;
     for (var focusIndex = 0; focusIndex < focusTrackIds.length; focusIndex += 1) {
+      if (!hasOwn(focusTrackIds, focusIndex)) {
+        invalidFocus = true;
+        continue;
+      }
       var trackId = focusTrackIds[focusIndex];
       if (!isNonEmptyString(trackId) || hasOwn(uniqueFocusIds, trackId)) invalidFocus = true;
       if (isNonEmptyString(trackId)) uniqueFocusIds[trackId] = true;
@@ -151,7 +180,13 @@
     }
     var records = [];
     for (var refIndex = 0; refIndex < refs.length; refIndex += 1) {
-      var resolved = resolveRef(refs[refIndex], stopPath + '.recordRefs[' + refIndex + ']', stop, tracks, sources, issues);
+      var refPath = stopPath + '.recordRefs[' + refIndex + ']';
+      if (!hasOwn(refs, refIndex)) {
+        issues.push(issue('invalid-record-ref', refPath,
+          'Record reference must name one track and exactly one period or event'));
+        continue;
+      }
+      var resolved = resolveRef(refs[refIndex], refPath, stop, tracks, sources, issues);
       if (resolved) records.push(resolved);
     }
 
@@ -174,7 +209,7 @@
         issues: [issue('invalid-dataset', 'data.tracks', 'Canonical data tracks must be an array')]
       };
     }
-    if (!Array.isArray(collection.routes)) {
+    if (!isPlainDataObject(collection) || !hasOwn(collection, 'routes') || !Array.isArray(collection.routes)) {
       return {
         routes: [],
         issues: [issue('invalid-journey-collection', 'routes', 'Journey collection routes must be an array')]
@@ -185,7 +220,8 @@
     var sources = data.sources || {};
     var routeIdCounts = Object.create(null);
     for (var countIndex = 0; countIndex < manifestRoutes.length; countIndex += 1) {
-      if (!hasOwn(manifestRoutes, countIndex) || !isPlainDataObject(manifestRoutes[countIndex])) continue;
+      if (!hasOwn(manifestRoutes, countIndex) || !isPlainDataObject(manifestRoutes[countIndex]) ||
+          !hasOwnFields(manifestRoutes[countIndex], ROUTE_FIELDS)) continue;
       var countedRoute = manifestRoutes[countIndex];
       if (isNonEmptyString(countedRoute.id)) {
         routeIdCounts[countedRoute.id] = hasOwn(routeIdCounts, countedRoute.id) ? routeIdCounts[countedRoute.id] + 1 : 1;
@@ -202,6 +238,10 @@
       }
       var route = manifestRoutes[routeIndex];
       var routeIssues = [];
+      if (!validateOwnFields(route, ROUTE_FIELDS, routePath, routeIssues)) {
+        issues = issues.concat(routeIssues);
+        continue;
+      }
       if (!isNonEmptyString(route.id) || !SLUG.test(route.id)) {
         routeIssues.push(issue('invalid-journey-id', routePath + '.id', 'Journey and stop IDs must be stable slugs'));
       }
@@ -214,16 +254,24 @@
       if (stops.length < 6 || stops.length > 8) {
         routeIssues.push(issue('invalid-stop-count', routePath + '.stops', 'Journey routes need six to eight stops'));
       }
-      var stopIdCounts = stops.reduce(function (counts, stop) {
-        if (stop && isNonEmptyString(stop.id)) {
-          counts[stop.id] = hasOwn(counts, stop.id) ? counts[stop.id] + 1 : 1;
+      var stopIdCounts = Object.create(null);
+      for (var countStopIndex = 0; countStopIndex < stops.length; countStopIndex += 1) {
+        if (!hasOwn(stops, countStopIndex) || !isPlainDataObject(stops[countStopIndex]) ||
+            !hasOwnFields(stops[countStopIndex], STOP_FIELDS)) continue;
+        var countedStop = stops[countStopIndex];
+        if (isNonEmptyString(countedStop.id)) {
+          stopIdCounts[countedStop.id] = hasOwn(stopIdCounts, countedStop.id) ? stopIdCounts[countedStop.id] + 1 : 1;
         }
-        return counts;
-      }, Object.create(null));
+      }
       var resolvedStops = [];
       for (var stopIndex = 0; stopIndex < stops.length; stopIndex += 1) {
-        resolvedStops.push(validateStop(stops[stopIndex], routePath + '.stops[' + stopIndex + ']',
-          stopIdCounts, tracks, sources, routeIssues));
+        var stopPath = routePath + '.stops[' + stopIndex + ']';
+        if (!hasOwn(stops, stopIndex)) {
+          routeIssues.push(issue('invalid-journey-entry', stopPath, 'Journey stop entries must be own plain objects'));
+          continue;
+        }
+        var resolvedStop = validateStop(stops[stopIndex], stopPath, stopIdCounts, tracks, sources, routeIssues);
+        if (resolvedStop) resolvedStops.push(resolvedStop);
       }
 
       issues = issues.concat(routeIssues);
