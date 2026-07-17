@@ -3156,6 +3156,65 @@ test('390px journey controls keep five and four button variants to two rows', fu
     'four-button fallback must form a balanced two-by-two grid');
 });
 
+test('journey reduced motion preserves injected atlas positioning transforms', function () {
+  const css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
+  const reducedStart = css.indexOf('@media (prefers-reduced-motion: reduce)');
+  const reducedCss = css.substring(reducedStart);
+  const broadRule = /\.journey-dialog,\s*\.journey-dialog \*,\s*\.journey-dialog::before,\s*\.journey-dialog::after,\s*\.journey-dialog \*::before,\s*\.journey-dialog \*::after\s*\{([^}]*)\}/.exec(reducedCss);
+
+  assert.ok(reducedStart !== -1 && broadRule, 'missing broad journey reduced-motion rule');
+  assert.strictEqual(/transform\s*:/.test(broadRule[1]), false,
+    'descendant-wide transform reset destroys atlas marker and label positioning');
+  assert.ok(/\.journey-stage,\s*\.journey-map-layer\s*\{[^}]*transform:\s*none\s*!important/s.test(reducedCss),
+    'only spatially animated journey layers should reset transforms');
+});
+
+test('journey shell constrains its scroll row to the dynamic viewport', function () {
+  const css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
+  const shellRule = /\.journey-shell\s*\{([^}]*)\}/.exec(css);
+
+  assert.ok(shellRule, 'missing journey shell layout rule');
+  assert.ok(/(?:^|;)\s*height:\s*100dvh\s*;/s.test(shellRule[1]),
+    'journey shell needs a definite viewport height for its 1fr row');
+  assert.ok(/grid-template-rows:\s*auto\s+1fr/.test(shellRule[1]));
+  assert.ok(/\.journey-content\s*\{[^}]*min-height:\s*0[^}]*overflow-y:\s*auto/s.test(css));
+});
+
+test('journey primary controls meet WCAG AA text contrast', function () {
+  function luminance(hex) {
+    const channels = hex.substring(1).match(/../g).map(function (value) {
+      const channel = parseInt(value, 16) / 255;
+      return channel <= 0.04045 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+  }
+
+  function contrast(foreground, background) {
+    const foregroundLuminance = luminance(foreground);
+    const backgroundLuminance = luminance(background);
+    return (Math.max(foregroundLuminance, backgroundLuminance) + 0.05) /
+      (Math.min(foregroundLuminance, backgroundLuminance) + 0.05);
+  }
+
+  const css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
+  const launcherRule = /\.journey-open\s*\{([^}]*)\}/.exec(css);
+  const buttonRule = /\.journey-topbar button,\s*\.journey-dialog button\s*\{([^}]*)\}/.exec(css);
+  const primaryRule = /\.journey-controls button\[data-journey-action="next"\],\s*\.journey-complete-actions button:first-child\s*\{([^}]*)\}/.exec(css);
+  assert.ok(launcherRule && buttonRule && primaryRule, 'missing journey primary control rules');
+
+  const launcherForeground = /color:\s*(#[0-9a-f]{6})/i.exec(launcherRule[1])[1];
+  const launcherGradient = /background:\s*linear-gradient\(([^;]+)\)/.exec(launcherRule[1])[1];
+  const launcherColors = launcherGradient.match(/#[0-9a-f]{6}/gi);
+  const launcherEndpoint = launcherColors[launcherColors.length - 1];
+  const primaryForeground = /color:\s*(#[0-9a-f]{6})/i.exec(buttonRule[1])[1];
+  const primaryBackground = /background:\s*(#[0-9a-f]{6})/i.exec(primaryRule[1])[1];
+
+  assert.ok(contrast(launcherForeground, launcherEndpoint) >= 4.5,
+    'journey launcher gradient endpoint is below 4.5:1');
+  assert.ok(contrast(primaryForeground, primaryBackground) >= 4.5,
+    'journey primary action is below 4.5:1');
+});
+
 test('atlas view renders accessible region controls and bundled world SVG', function () {
   const html = atlasView.renderRegions([{ id: 'east-asia', count: 3, x: 76, y: 40, radius: 14 }], {
     regionNames: { 'east-asia': 'East Asia' },

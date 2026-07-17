@@ -898,7 +898,7 @@ dialog h2 { margin: 1rem 0; }
   border-radius: 99px;
   padding: .75rem 1.15rem;
   color: #fff8ec;
-  background: linear-gradient(135deg, #a73f2b, #cf664b);
+  background: linear-gradient(135deg, #a73f2b, #ad4934);
   box-shadow: 0 12px 30px rgba(150, 55, 38, .24);
   font-size: .78rem;
   font-weight: 800;
@@ -926,6 +926,7 @@ body.journey-open { overflow: hidden; }
 }
 .journey-dialog::backdrop { background: #030706; backdrop-filter: none; }
 .journey-shell {
+  height: 100dvh;
   min-height: 100dvh;
   display: grid;
   grid-template-rows: auto 1fr;
@@ -1219,7 +1220,7 @@ body.journey-open { overflow: hidden; }
 .journey-controls button,
 .journey-complete-actions button { min-height: 44px; max-inline-size: 100%; overflow-wrap: anywhere; }
 .journey-controls button[data-journey-action="next"],
-.journey-complete-actions button:first-child { border-color: #ed936d; background: #b84e34; }
+.journey-complete-actions button:first-child { border-color: #ed936d; background: #a84a34; }
 
 .journey-complete {
   min-height: calc(100dvh - 68px);
@@ -1446,6 +1447,7 @@ body.journey-open { overflow: hidden; }
   .journey-dialog *::after {
     animation: none !important;
     transition: none !important;
-    transform: none !important;
   }
+  .journey-stage,
+  .journey-map-layer { transform: none !important; }
 }
