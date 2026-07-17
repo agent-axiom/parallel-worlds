@@ -872,14 +872,33 @@ test('academic audit fails closed for malformed journey collections', function (
   });
 });
 
-test('academic audit defaults missing journeys to an explicit valid empty collection', function () {
-  const report = require(path.join(root, 'academic-audit.js')).buildAudit(data);
-  assert.deepStrictEqual(report.journeyCoverage, { routes: 0, stops: 0, reviewedStops: 0 });
-  assert.deepStrictEqual(report.journeys, []);
-  assert.deepStrictEqual(report.summary, {
-    tracks: 62, reviewedTracks: 25, legacyTracks: 37, blockingIssues: 0, warnings: 42
+test('academic audit rejects explicit falsy journey manifests', function () {
+  const audit = require(path.join(root, 'academic-audit.js'));
+  [{ label: 'null', value: null }, { label: 'false', value: false },
+    { label: 'zero', value: 0 }, { label: 'empty string', value: '' }].forEach(function (fixture) {
+    const report = audit.buildAudit(data, fixture.value);
+    assert.deepStrictEqual(report.journeys, [], fixture.label);
+    assert.deepStrictEqual(report.journeyCoverage, {
+      routes: 0, stops: 0, reviewedStops: 0
+    }, fixture.label);
+    assert.ok(report.summary.blockingIssues > 0, fixture.label);
+    assert.ok(report.issues.some(function (item) {
+      return item.severity === 'error' && item.code === 'invalid-journey-collection' &&
+        item.path === 'journeys.routes' && item.journeyId === undefined;
+    }), fixture.label);
   });
-  assert.ok(!report.issues.some(function (item) { return item.path.indexOf('journeys.') === 0; }));
+});
+
+test('academic audit defaults missing journeys to an explicit valid empty collection', function () {
+  const audit = require(path.join(root, 'academic-audit.js'));
+  [audit.buildAudit(data), audit.buildAudit(data, undefined)].forEach(function (report) {
+    assert.deepStrictEqual(report.journeyCoverage, { routes: 0, stops: 0, reviewedStops: 0 });
+    assert.deepStrictEqual(report.journeys, []);
+    assert.deepStrictEqual(report.summary, {
+      tracks: 62, reviewedTracks: 25, legacyTracks: 37, blockingIssues: 0, warnings: 42
+    });
+    assert.ok(!report.issues.some(function (item) { return item.path.indexOf('journeys.') === 0; }));
+  });
 });
 
 test('academic audit orders valid journey reports deterministically', function () {

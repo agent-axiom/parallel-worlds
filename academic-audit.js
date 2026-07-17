@@ -85,7 +85,7 @@
 
   function buildAudit(data, journeys) {
     data = data || {};
-    journeys = journeys || { version: 1, routes: [] };
+    if (journeys === undefined) journeys = { version: 1, routes: [] };
     var tracks = (data.tracks || []).slice().sort(function (left, right) { return left.id.localeCompare(right.id); });
     var sourceRegistry = data.sources || {};
     var issues = [];
