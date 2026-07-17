@@ -25,6 +25,12 @@
     return Object.prototype.hasOwnProperty.call(object, key);
   }
 
+  function isPlainDataObject(value) {
+    if (!value || typeof value !== 'object') return false;
+    var prototype = Object.getPrototypeOf(value);
+    return prototype === Object.prototype || prototype === null;
+  }
+
   function validateCopy(copy, fields, path, issues) {
     LOCALES.forEach(function (locale) {
       fields.forEach(function (field) {
@@ -177,18 +183,24 @@
     var manifestRoutes = collection.routes;
     var tracks = trackIndex(data);
     var sources = data.sources || {};
-    var routeIdCounts = manifestRoutes.reduce(function (counts, route) {
-      if (route && isNonEmptyString(route.id)) {
-        counts[route.id] = hasOwn(counts, route.id) ? counts[route.id] + 1 : 1;
+    var routeIdCounts = Object.create(null);
+    for (var countIndex = 0; countIndex < manifestRoutes.length; countIndex += 1) {
+      if (!hasOwn(manifestRoutes, countIndex) || !isPlainDataObject(manifestRoutes[countIndex])) continue;
+      var countedRoute = manifestRoutes[countIndex];
+      if (isNonEmptyString(countedRoute.id)) {
+        routeIdCounts[countedRoute.id] = hasOwn(routeIdCounts, countedRoute.id) ? routeIdCounts[countedRoute.id] + 1 : 1;
       }
-      return counts;
-    }, Object.create(null));
+    }
     var routes = [];
     var issues = [];
 
-    manifestRoutes.forEach(function (route, routeIndex) {
-      route = route || {};
+    for (var routeIndex = 0; routeIndex < manifestRoutes.length; routeIndex += 1) {
       var routePath = 'routes[' + routeIndex + ']';
+      if (!hasOwn(manifestRoutes, routeIndex) || !isPlainDataObject(manifestRoutes[routeIndex])) {
+        issues.push(issue('invalid-journey-entry', routePath, 'Journey route entries must be own plain objects'));
+        continue;
+      }
+      var route = manifestRoutes[routeIndex];
       var routeIssues = [];
       if (!isNonEmptyString(route.id) || !SLUG.test(route.id)) {
         routeIssues.push(issue('invalid-journey-id', routePath + '.id', 'Journey and stop IDs must be stable slugs'));
@@ -223,7 +235,7 @@
           stops: resolvedStops
         });
       }
-    });
+    }
 
     issues.sort(function (left, right) {
       return left.code.localeCompare(right.code) || left.path.localeCompare(right.path) || left.message.localeCompare(right.message);

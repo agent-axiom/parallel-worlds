@@ -38,6 +38,10 @@
     return Object.assign({ severity: severity, code: code, path: path, message: message }, extra || {});
   }
 
+  function hasOwn(object, key) {
+    return Object.prototype.hasOwnProperty.call(object, key);
+  }
+
   function stableIssues(issues) {
     var seen = {};
     return issues.filter(function (item) {
@@ -61,9 +65,15 @@
 
   function journeyIdForPath(path, journeys) {
     var match = /^routes\[(\d+)\](?:\.|$)/.exec(path);
-    if (!match || !journeys || !Array.isArray(journeys.routes)) return undefined;
-    var route = journeys.routes[Number(match[1])];
-    return route && typeof route.id === 'string' && route.id ? route.id : undefined;
+    if (!match || !journeys || !hasOwn(journeys, 'routes') || !Array.isArray(journeys.routes)) return undefined;
+    var routeIndex = Number(match[1]);
+    if (!hasOwn(journeys.routes, routeIndex)) return undefined;
+    var route = journeys.routes[routeIndex];
+    return route && hasOwn(route, 'id') && typeof route.id === 'string' && route.id ? route.id : undefined;
+  }
+
+  function journeyIssuePath(path) {
+    return /^routes(?:\[|\.|$)/.test(path) ? 'journeys.' + path : path;
   }
 
   function buildSourceUsage(tracks) {
@@ -138,7 +148,7 @@
     journeyValidation.issues.forEach(function (validationIssue) {
       var journeyId = journeyIdForPath(validationIssue.path, journeys);
       var extra = journeyId === undefined ? null : { journeyId: journeyId };
-      issues.push(issue('error', validationIssue.code, 'journeys.' + validationIssue.path,
+      issues.push(issue('error', validationIssue.code, journeyIssuePath(validationIssue.path),
         validationIssue.message, extra));
     });
     var journeyReports = journeyValidation.routes.map(function (route) {

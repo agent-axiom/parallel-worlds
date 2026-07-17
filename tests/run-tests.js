@@ -31,6 +31,14 @@ function test(name, fn) {
   }
 }
 
+function arrayWithInheritedRoute(route) {
+  const routes = new Array(1);
+  const prototype = Object.create(Array.prototype);
+  Object.defineProperty(prototype, '0', { configurable: true, value: route });
+  Object.setPrototypeOf(routes, prototype);
+  return routes;
+}
+
 test('directed journey resolves seven reviewed and exactly sourced stops', function () {
   const result = journey.validateCollection(journeysData, data);
   assert.deepStrictEqual(result.issues, []);
@@ -141,6 +149,49 @@ test('directed journey validation fails closed for malformed collection routes',
       }]
     });
   });
+});
+
+test('directed journey validation rejects sparse and inherited route entries', function () {
+  const sparse = { version: 1, routes: new Array(1) };
+  const inheritedObject = JSON.parse(JSON.stringify(journeysData));
+  inheritedObject.routes[0] = Object.create(inheritedObject.routes[0]);
+  const inheritedIndex = {
+    version: 1,
+    routes: arrayWithInheritedRoute(JSON.parse(JSON.stringify(journeysData.routes[0])))
+  };
+
+  [{ label: 'sparse', collection: sparse },
+    { label: 'inherited object', collection: inheritedObject },
+    { label: 'inherited array index', collection: inheritedIndex }].forEach(function (fixture) {
+    assert.deepStrictEqual(journey.validateCollection(fixture.collection, data), {
+      routes: [],
+      issues: [{
+        code: 'invalid-journey-entry',
+        path: 'routes[0]',
+        message: 'Journey route entries must be own plain objects'
+      }]
+    }, fixture.label);
+  });
+});
+
+test('directed journey validation accepts a null-prototype route object', function () {
+  const fixture = JSON.parse(JSON.stringify(journeysData));
+  fixture.routes[0] = Object.assign(Object.create(null), fixture.routes[0]);
+  const result = journey.validateCollection(fixture, data);
+  assert.deepStrictEqual(result.issues, []);
+  assert.deepStrictEqual(result.routes.map(function (route) { return route.id; }), ['birth-of-cities']);
+});
+
+test('directed journey duplicate counting ignores invalid inherited entries', function () {
+  const fixture = JSON.parse(JSON.stringify(journeysData));
+  fixture.routes.push(Object.create(fixture.routes[0]));
+  const result = journey.validateCollection(fixture, data);
+  assert.deepStrictEqual(result.routes.map(function (route) { return route.id; }), ['birth-of-cities']);
+  assert.deepStrictEqual(result.issues, [{
+    code: 'invalid-journey-entry',
+    path: 'routes[1]',
+    message: 'Journey route entries must be own plain objects'
+  }]);
 });
 
 test('directed journey validation accepts an explicit empty collection', function () {
@@ -872,6 +923,59 @@ test('academic audit fails closed for malformed journey collections', function (
   });
 });
 
+test('academic audit blocks sparse and inherited route entries without inherited metadata', function () {
+  const sparse = { version: 1, routes: new Array(1) };
+  const inheritedObject = JSON.parse(JSON.stringify(journeysData));
+  inheritedObject.routes[0] = Object.create(inheritedObject.routes[0]);
+  const inheritedIndex = {
+    version: 1,
+    routes: arrayWithInheritedRoute(JSON.parse(JSON.stringify(journeysData.routes[0])))
+  };
+  const audit = require(path.join(root, 'academic-audit.js'));
+
+  [{ label: 'sparse', collection: sparse },
+    { label: 'inherited object', collection: inheritedObject },
+    { label: 'inherited array index', collection: inheritedIndex }].forEach(function (fixture) {
+    const report = audit.buildAudit(data, fixture.collection);
+    assert.ok(report.summary.blockingIssues > 0, fixture.label);
+    assert.deepStrictEqual(report.journeys, [], fixture.label);
+    assert.deepStrictEqual(report.journeyCoverage, {
+      routes: 0, stops: 0, reviewedStops: 0
+    }, fixture.label);
+    assert.deepStrictEqual(report.issues.find(function (item) {
+      return item.code === 'invalid-journey-entry';
+    }), {
+      severity: 'error',
+      code: 'invalid-journey-entry',
+      path: 'journeys.routes[0]',
+      message: 'Journey route entries must be own plain objects'
+    }, fixture.label);
+  });
+});
+
+test('academic audit preserves canonical paths from journey validation', function () {
+  const audit = require(path.join(root, 'academic-audit.js'));
+  const report = audit.buildAudit({
+    range: { start: -20000, end: 1600 }, sources: {}, tracks: null
+  }, { version: 1, routes: [] });
+  assert.deepStrictEqual(report.issues.find(function (item) { return item.code === 'invalid-dataset'; }), {
+    severity: 'error',
+    code: 'invalid-dataset',
+    path: 'data.tracks',
+    message: 'Canonical data tracks must be an array'
+  });
+});
+
+test('academic audit does not derive journey metadata through inherited manifest routes', function () {
+  const route = JSON.parse(JSON.stringify(journeysData.routes[0]));
+  route.stops[0].recordRefs[0].trackId = 'missing-track';
+  const fixture = Object.create({ routes: [route] });
+  const report = require(path.join(root, 'academic-audit.js')).buildAudit(data, fixture);
+  const referenceIssue = report.issues.find(function (item) { return item.code === 'unknown-track'; });
+  assert.strictEqual(referenceIssue.path, 'journeys.routes[0].stops[0].recordRefs[0].trackId');
+  assert.strictEqual(referenceIssue.journeyId, undefined);
+});
+
 test('academic audit rejects explicit falsy journey manifests', function () {
   const audit = require(path.join(root, 'academic-audit.js'));
   [{ label: 'null', value: null }, { label: 'false', value: false },
@@ -947,12 +1051,16 @@ test('academic audit promotes invalid reviewed records to blocking errors', func
 });
 
 test('academic audit build script serializes the canonical deterministic report', function () {
+  const audit = require(path.join(root, 'academic-audit.js'));
   const script = path.join(root, 'scripts/build-academic-audit.mjs');
+  const artifact = path.join(root, 'academic-audit.json');
+  const expected = JSON.stringify(audit.buildAudit(data, journeysData), null, 2) + '\n';
+  const committed = fs.readFileSync(artifact, 'utf8');
+  assert.strictEqual(committed, expected);
   const output = childProcess.spawnSync(process.execPath, [script], { cwd: root, encoding: 'utf8' });
   assert.strictEqual(output.status, 0, output.stderr || output.stdout);
-  const serialized = fs.readFileSync(path.join(root, 'academic-audit.json'), 'utf8');
-  assert.ok(serialized.endsWith('\n'));
-  assert.deepStrictEqual(JSON.parse(serialized), require(path.join(root, 'academic-audit.js')).buildAudit(data, journeysData));
+  const serialized = fs.readFileSync(artifact, 'utf8');
+  assert.strictEqual(serialized, committed);
 });
 
 test('academic data shell and source URL validation are explicit', function () {
