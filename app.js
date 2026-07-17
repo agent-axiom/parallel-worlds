@@ -840,7 +840,7 @@
     focusProgrammatically(heading);
   }
 
-  function activeJourneyControlDescriptor(identity) {
+  function activeJourneyFocusDescriptor(identity) {
     var content = elements['journey-content'];
     var active = document.activeElement;
     if (!identity || identity !== journeyFocusIdentity || !content || !active ||
@@ -850,6 +850,13 @@
     } catch (_) {
       return null;
     }
+    var heading;
+    try {
+      heading = content.querySelector('h2[tabindex="-1"]');
+    } catch (_) {
+      heading = null;
+    }
+    if (active === heading) return { kind: 'heading' };
     var dataset = active.dataset;
     if (!dataset) return null;
     if (typeof dataset.journeyAction === 'string') {
@@ -867,9 +874,19 @@
     return null;
   }
 
-  function restoreJourneyControl(descriptor) {
+  function restoreJourneyFocus(descriptor) {
     var content = elements['journey-content'];
-    if (!descriptor || !content || typeof content.querySelectorAll !== 'function') return false;
+    if (!descriptor || !content) return false;
+    if (descriptor.kind === 'heading') {
+      var heading;
+      try {
+        heading = content.querySelector('h2[tabindex="-1"]');
+      } catch (_) {
+        return false;
+      }
+      return focusProgrammatically(heading);
+    }
+    if (typeof content.querySelectorAll !== 'function') return false;
     var controls;
     try {
       controls = content.querySelectorAll(
@@ -897,7 +914,7 @@
   function renderJourney() {
     var html;
     var identity = journeySceneIdentity();
-    var controlDescriptor = activeJourneyControlDescriptor(identity);
+    var focusDescriptor = activeJourneyFocusDescriptor(identity);
     if (!journeyRoute || !journeyState || journeyState.status === 'catalog') {
       html = journeyView.catalogHtml(localizedJourneyRoutes(), journeyCopy());
       html = html.replace('</h2>', '</h2><p>' + journeyView.escapeHtml(t('journeyCatalogText')) + '</p>');
@@ -919,7 +936,7 @@
       copyJourneyAnnouncement(identity);
     }
     focusJourneyHeading(identity);
-    restoreJourneyControl(controlDescriptor);
+    restoreJourneyFocus(focusDescriptor);
     return true;
   }
 

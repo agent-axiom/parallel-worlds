@@ -4281,9 +4281,12 @@ test('journey catalog and changed stops focus headings without treating programm
     'programmatic stop focus paused playback');
 
   const focusCount = harness.focusedHeadings.length;
+  const focusedHeading = harness.content.currentHeading;
   harness.api.renderJourney();
-  assert.strictEqual(harness.focusedHeadings.length, focusCount,
-    'a status-only rerender stole focus');
+  assert.strictEqual(focusedHeading.isConnected, false);
+  assert.strictEqual(harness.focusedHeadings.length, focusCount + 1,
+    'a status-only rerender did not restore the intentionally focused heading');
+  assert.strictEqual(harness.document.activeElement, harness.content.currentHeading);
 
   const playing = journey.createState(route, {
     stopIndex: 1, status: 'playing', deadline: 10000, remainingMs: route.stops[1].holdMs
@@ -4299,6 +4302,47 @@ test('journey catalog and changed stops focus headings without treating programm
   assert.strictEqual(harness.api.snapshot().playerState.status, 'exploring',
     'real user focus inside a playing stop did not pause playback');
   assert.strictEqual(harness.reducerEvents[harness.reducerEvents.length - 1], 'interact');
+});
+
+test('same-stop transition rerender retains intentional heading focus on its connected replacement', function () {
+  const harness = makeJourneyControllerHarness();
+  const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+  const transitioning = journey.reduce(journey.createState(route, { status: 'paused' }), {
+    type: 'start', stopIndex: 0
+  }, route, { now: 100, reducedMotion: false });
+  harness.api.setContext({
+    state: controllerState({ journey: route.id, stop: route.stops[0].id }),
+    elements: harness.elements, route: route, playerState: transitioning, autoplay: true
+  });
+
+  harness.api.renderJourney();
+  const heading = harness.content.currentHeading;
+  assert.strictEqual(harness.document.activeElement, heading, 'new stop heading was not focused');
+  assert.strictEqual(heading.focusCount, 1);
+
+  harness.api.dispatch('transitionEnd', 200, false);
+
+  const replacement = harness.content.currentHeading;
+  assert.notStrictEqual(replacement, heading, 'status render did not replace the heading subtree');
+  assert.strictEqual(heading.isConnected, false);
+  assert.strictEqual(replacement.isConnected, true);
+  assert.strictEqual(harness.document.activeElement, replacement,
+    'focus remained on the disconnected stop heading');
+  assert.strictEqual(replacement.focusCount, 1);
+  assert.deepStrictEqual(harness.reducerEvents, ['transitionEnd']);
+
+  const space = {
+    key: ' ', target: replacement, prevented: false,
+    preventDefault: function () { this.prevented = true; }
+  };
+  harness.api.handleKeydown(space);
+  const pausedHeading = harness.content.currentHeading;
+  assert.strictEqual(space.prevented, true);
+  assert.notStrictEqual(pausedHeading, replacement);
+  assert.strictEqual(replacement.isConnected, false);
+  assert.strictEqual(harness.document.activeElement, pausedHeading,
+    'Space pause lost intentional stop-heading focus');
+  assert.deepStrictEqual(harness.reducerEvents, ['transitionEnd', 'pause']);
 });
 
 test('status-only journey dispatch restores the active control replacement without a focus pause loop', function () {
@@ -4327,6 +4371,8 @@ test('status-only journey dispatch restores the active control replacement witho
   assert.strictEqual(harness.document.activeElement, replacement,
     'focus remained on the disconnected Pause control');
   assert.strictEqual(replacement.focusCount, 1, 'replacement Resume control was not focused exactly once');
+  assert.strictEqual(harness.content.currentHeading.focusCount, 0,
+    'control restoration incorrectly moved focus to the replacement heading');
   assert.strictEqual(harness.api.snapshot().playerState.status, 'exploring');
   assert.deepStrictEqual(harness.reducerEvents, ['interact'],
     'restoring the replacement caused a second user-interaction pause');
