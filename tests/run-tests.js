@@ -841,6 +841,80 @@ test('academic audit is deterministic and separates reviewed coverage from legac
   assert.strictEqual(first.issues.filter(function (item) { return item.code === 'generic-source'; }).length, 2);
 });
 
+test('academic audit reports reviewed directed journey coverage', function () {
+  const report = require(path.join(root, 'academic-audit.js')).buildAudit(data, journeysData);
+  assert.deepStrictEqual(report.journeyCoverage, { routes: 1, stops: 7, reviewedStops: 7 });
+  assert.deepStrictEqual(report.journeys, [{ id: 'birth-of-cities', stops: 7, reviewedStops: 7 }]);
+  assert.strictEqual(report.summary.blockingIssues, 0);
+});
+
+test('academic audit promotes invalid journey references to blockers', function () {
+  const fixture = JSON.parse(JSON.stringify(journeysData));
+  fixture.routes[0].stops[0].recordRefs[0].trackId = 'missing-track';
+  const report = require(path.join(root, 'academic-audit.js')).buildAudit(data, fixture);
+  assert.ok(report.summary.blockingIssues > 0);
+  assert.ok(report.issues.some(function (item) { return item.code === 'unknown-track'; }));
+});
+
+test('academic audit fails closed for malformed journey collections', function () {
+  const report = require(path.join(root, 'academic-audit.js')).buildAudit(data, { version: 1, routes: {} });
+  assert.deepStrictEqual(report.journeys, []);
+  assert.deepStrictEqual(report.journeyCoverage, { routes: 0, stops: 0, reviewedStops: 0 });
+  assert.ok(report.summary.blockingIssues > 0);
+  const collectionIssue = report.issues.find(function (item) {
+    return item.code === 'invalid-journey-collection';
+  });
+  assert.deepStrictEqual(collectionIssue, {
+    severity: 'error',
+    code: 'invalid-journey-collection',
+    path: 'journeys.routes',
+    message: 'Journey collection routes must be an array'
+  });
+});
+
+test('academic audit defaults missing journeys to an explicit valid empty collection', function () {
+  const report = require(path.join(root, 'academic-audit.js')).buildAudit(data);
+  assert.deepStrictEqual(report.journeyCoverage, { routes: 0, stops: 0, reviewedStops: 0 });
+  assert.deepStrictEqual(report.journeys, []);
+  assert.deepStrictEqual(report.summary, {
+    tracks: 62, reviewedTracks: 25, legacyTracks: 37, blockingIssues: 0, warnings: 42
+  });
+  assert.ok(!report.issues.some(function (item) { return item.path.indexOf('journeys.') === 0; }));
+});
+
+test('academic audit orders valid journey reports deterministically', function () {
+  const fixture = JSON.parse(JSON.stringify(journeysData));
+  const later = fixture.routes[0];
+  later.id = 'z-route';
+  const earlier = JSON.parse(JSON.stringify(later));
+  earlier.id = 'a-route';
+  fixture.routes = [later, earlier];
+  const audit = require(path.join(root, 'academic-audit.js'));
+  const first = audit.buildAudit(data, fixture);
+  const second = audit.buildAudit(data, fixture);
+  assert.deepStrictEqual(first, second);
+  assert.deepStrictEqual(first.journeys, [
+    { id: 'a-route', stops: 7, reviewedStops: 7 },
+    { id: 'z-route', stops: 7, reviewedStops: 7 }
+  ]);
+  assert.deepStrictEqual(first.journeyCoverage, { routes: 2, stops: 14, reviewedStops: 14 });
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(first.journeys)), first.journeys);
+});
+
+test('academic audit prefixes journey issue paths and identifies their route', function () {
+  const fixture = JSON.parse(JSON.stringify(journeysData));
+  fixture.routes[0].stops[0].recordRefs[0].trackId = 'missing-track';
+  const report = require(path.join(root, 'academic-audit.js')).buildAudit(data, fixture);
+  assert.deepStrictEqual(report.issues.find(function (item) { return item.code === 'unknown-track'; }), {
+    severity: 'error',
+    code: 'unknown-track',
+    path: 'journeys.routes[0].stops[0].recordRefs[0].trackId',
+    message: 'Journey references an unknown track',
+    journeyId: 'birth-of-cities'
+  });
+  assert.deepStrictEqual(report.journeys, []);
+});
+
 test('academic audit promotes invalid reviewed records to blocking errors', function () {
   const audit = require(path.join(root, 'academic-audit.js'));
   const report = audit.buildAudit({
@@ -859,7 +933,7 @@ test('academic audit build script serializes the canonical deterministic report'
   assert.strictEqual(output.status, 0, output.stderr || output.stdout);
   const serialized = fs.readFileSync(path.join(root, 'academic-audit.json'), 'utf8');
   assert.ok(serialized.endsWith('\n'));
-  assert.deepStrictEqual(JSON.parse(serialized), require(path.join(root, 'academic-audit.js')).buildAudit(data));
+  assert.deepStrictEqual(JSON.parse(serialized), require(path.join(root, 'academic-audit.js')).buildAudit(data, journeysData));
 });
 
 test('academic data shell and source URL validation are explicit', function () {

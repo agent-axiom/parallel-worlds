@@ -1,9 +1,10 @@
 (function (root, factory) {
   var quality = typeof module === 'object' && module.exports ? require('./data-quality.js') : root.ParallelWorldsDataQuality;
-  var api = factory(quality);
+  var journey = typeof module === 'object' && module.exports ? require('./journey.js') : root.ParallelWorldsJourney;
+  var api = factory(quality, journey);
   if (typeof module === 'object' && module.exports) module.exports = api;
   root.ParallelWorldsAcademicAudit = api;
-}(typeof self !== 'undefined' ? self : this, function (quality) {
+}(typeof self !== 'undefined' ? self : this, function (quality, journey) {
   'use strict';
 
   var SEVERITY_ORDER = { error: 0, warning: 1, info: 2 };
@@ -58,6 +59,13 @@
     });
   }
 
+  function journeyIdForPath(path, journeys) {
+    var match = /^routes\[(\d+)\](?:\.|$)/.exec(path);
+    if (!match || !journeys || !Array.isArray(journeys.routes)) return undefined;
+    var route = journeys.routes[Number(match[1])];
+    return route && typeof route.id === 'string' && route.id ? route.id : undefined;
+  }
+
   function buildSourceUsage(tracks) {
     var usage = {};
     tracks.forEach(function (track) {
@@ -75,8 +83,9 @@
     return usage;
   }
 
-  function buildAudit(data) {
+  function buildAudit(data, journeys) {
     data = data || {};
+    journeys = journeys || { version: 1, routes: [] };
     var tracks = (data.tracks || []).slice().sort(function (left, right) { return left.id.localeCompare(right.id); });
     var sourceRegistry = data.sources || {};
     var issues = [];
@@ -125,6 +134,33 @@
       };
     });
 
+    var journeyValidation = journey.validateCollection(journeys, data);
+    journeyValidation.issues.forEach(function (validationIssue) {
+      var journeyId = journeyIdForPath(validationIssue.path, journeys);
+      var extra = journeyId === undefined ? null : { journeyId: journeyId };
+      issues.push(issue('error', validationIssue.code, 'journeys.' + validationIssue.path,
+        validationIssue.message, extra));
+    });
+    var journeyReports = journeyValidation.routes.map(function (route) {
+      return {
+        id: route.id,
+        stops: route.stops.length,
+        reviewedStops: route.stops.filter(function (stop) {
+          return stop.records.every(function (record) {
+            return record.track.reviewStatus === 'reviewed';
+          });
+        }).length
+      };
+    }).sort(function (left, right) {
+      return left.id.localeCompare(right.id);
+    });
+    var journeyCoverage = journeyReports.reduce(function (coverage, route) {
+      coverage.routes += 1;
+      coverage.stops += route.stops;
+      coverage.reviewedStops += route.reviewedStops;
+      return coverage;
+    }, { routes: 0, stops: 0, reviewedStops: 0 });
+
     issues = stableIssues(issues);
     return {
       generatedFrom: 'parallel-worlds-data-v1',
@@ -136,6 +172,8 @@
         warnings: issues.filter(function (item) { return item.severity === 'warning'; }).length
       },
       coverage: coverage,
+      journeyCoverage: journeyCoverage,
+      journeys: journeyReports,
       tracks: trackReports,
       sources: sourceReports,
       issues: issues

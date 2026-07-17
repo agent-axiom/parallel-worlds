@@ -19,6 +19,18 @@
       "dated": 50
     }
   },
+  "journeyCoverage": {
+    "routes": 1,
+    "stops": 7,
+    "reviewedStops": 7
+  },
+  "journeys": [
+    {
+      "id": "birth-of-cities",
+      "stops": 7,
+      "reviewedStops": 7
+    }
+  ],
   "tracks": [
     {
       "id": "akkadia",
