@@ -1951,6 +1951,213 @@ test('explorer state round-trips the reviewed evidence filter', function () {
   assert.strictEqual(explorerState.serialize(parsed, defaults).get('type'), 'reviewed');
 });
 
+test('explorer state round-trips a paused directed journey stop', function () {
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'ru',
+    journey: '', stop: '', journeyMode: 'paused', journeyNotice: ''
+  };
+  const parsed = explorerState.parse(
+    new URLSearchParams('journey=birth-of-cities&stop=uruk-urban-center&journeyMode=paused'),
+    defaults, data, journeysData
+  );
+  assert.deepStrictEqual([parsed.journey, parsed.stop, parsed.journeyMode],
+    ['birth-of-cities', 'uruk-urban-center', 'paused']);
+  assert.strictEqual(explorerState.serialize(parsed, defaults).toString(),
+    'lang=ru&journey=birth-of-cities&stop=uruk-urban-center&journeyMode=paused');
+});
+
+test('explorer state rejects unknown journeys and normalizes unknown stops', function () {
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'ru',
+    journey: '', stop: '', journeyMode: 'paused', journeyNotice: ''
+  };
+  const unknownRoute = explorerState.parse(new URLSearchParams('journey=nope'), defaults, data, journeysData);
+  assert.deepStrictEqual([unknownRoute.journey, unknownRoute.journeyNotice], ['', 'unknown-route']);
+  const unknownStop = explorerState.parse(new URLSearchParams('journey=birth-of-cities&stop=nope&journeyMode=playing'), defaults, data, journeysData);
+  assert.deepStrictEqual([unknownStop.stop, unknownStop.journeyMode, unknownStop.journeyNotice],
+    ['xianrendong-pottery', 'paused', 'unknown-stop']);
+});
+
+test('explorer state round-trips a playing directed journey stop', function () {
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'ru'
+  };
+  const parsed = explorerState.parse(
+    new URLSearchParams('journey=birth-of-cities&stop=gobekli-monuments&journeyMode=playing'),
+    defaults, data, journeysData
+  );
+  assert.deepStrictEqual([parsed.journey, parsed.stop, parsed.journeyMode, parsed.journeyNotice],
+    ['birth-of-cities', 'gobekli-monuments', 'playing', '']);
+  assert.strictEqual(explorerState.serialize(parsed, defaults).toString(),
+    'lang=ru&journey=birth-of-cities&stop=gobekli-monuments&journeyMode=playing');
+});
+
+test('explorer state selects the first journey stop when the URL omits it', function () {
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'ru'
+  };
+  const parsed = explorerState.parse(
+    new URLSearchParams('journey=birth-of-cities&journeyMode=playing'),
+    defaults, data, journeysData
+  );
+  assert.deepStrictEqual([parsed.stop, parsed.journeyMode, parsed.journeyNotice],
+    ['xianrendong-pottery', 'playing', '']);
+});
+
+test('explorer state normalizes empty and invalid journey modes to paused', function () {
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'ru'
+  };
+  const empty = explorerState.parse(
+    new URLSearchParams('journey=birth-of-cities&stop=uruk-urban-center&journeyMode='),
+    defaults, data, journeysData
+  );
+  const invalid = explorerState.parse(
+    new URLSearchParams('journey=birth-of-cities&stop=uruk-urban-center&journeyMode=auto'),
+    defaults, data, journeysData
+  );
+  assert.strictEqual(empty.journeyMode, 'paused');
+  assert.strictEqual(invalid.journeyMode, 'paused');
+});
+
+test('explorer state clears journey defaults when the URL has no journey', function () {
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'ru',
+    journey: 'birth-of-cities', stop: 'uruk-urban-center', journeyMode: 'playing', journeyNotice: 'stale'
+  };
+  [new URLSearchParams(''), new URLSearchParams('journey=')].forEach(function (params) {
+    const parsed = explorerState.parse(params, defaults, data, journeysData);
+    assert.deepStrictEqual([parsed.journey, parsed.stop, parsed.journeyMode, parsed.journeyNotice],
+      ['', '', 'paused', '']);
+    const serialized = explorerState.serialize(parsed, defaults);
+    assert.strictEqual(serialized.has('journey'), false);
+    assert.strictEqual(serialized.has('stop'), false);
+    assert.strictEqual(serialized.has('journeyMode'), false);
+  });
+});
+
+test('explorer state never serializes a journey notice', function () {
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'ru'
+  };
+  const state = Object.assign({}, defaults, {
+    journey: 'birth-of-cities', stop: 'uruk-urban-center', journeyMode: 'paused', journeyNotice: 'unknown-stop'
+  });
+  const params = explorerState.serialize(state, defaults);
+  assert.strictEqual(params.has('journeyNotice'), false);
+  assert.strictEqual(params.get('stop'), 'uruk-urban-center');
+});
+
+test('explorer state rejects malformed and inherited journey manifest entries without throwing', function () {
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'ru'
+  };
+  const canonicalStop = { id: 'xianrendong-pottery' };
+  const inheritedRoutes = Object.create({ routes: [{ id: 'birth-of-cities', stops: [canonicalStop] }] });
+  const inheritedRouteIndex = { routes: arrayWithInheritedValue({ id: 'birth-of-cities', stops: [canonicalStop] }) };
+  const inheritedRouteId = { routes: [Object.assign(Object.create({ id: 'birth-of-cities' }), { stops: [canonicalStop] })] };
+  const inheritedStops = { routes: [Object.assign(Object.create({ stops: [canonicalStop] }), { id: 'birth-of-cities' })] };
+  const inheritedStopIndex = { routes: [{ id: 'birth-of-cities', stops: arrayWithInheritedValue(canonicalStop) }] };
+  const inheritedStopId = {
+    routes: [{ id: 'birth-of-cities', stops: [Object.create({ id: 'xianrendong-pottery' })] }]
+  };
+  const throwingRoutes = {};
+  Object.defineProperty(throwingRoutes, 'routes', {
+    get: function () { throw new Error('routes getter called'); }
+  });
+  const throwingRouteId = { stops: [canonicalStop] };
+  Object.defineProperty(throwingRouteId, 'id', {
+    get: function () { throw new Error('route id getter called'); }
+  });
+  const throwingRouteStops = { id: 'birth-of-cities' };
+  Object.defineProperty(throwingRouteStops, 'stops', {
+    get: function () { throw new Error('route stops getter called'); }
+  });
+  const throwingStopId = {};
+  Object.defineProperty(throwingStopId, 'id', {
+    get: function () { throw new Error('stop id getter called'); }
+  });
+  const malformed = [
+    undefined, null, {}, { routes: null }, { routes: {} }, { routes: new Array(1) },
+    inheritedRoutes, inheritedRouteIndex, inheritedRouteId, inheritedStops, inheritedStopIndex, inheritedStopId,
+    throwingRoutes, { routes: [throwingRouteId] }, { routes: [throwingRouteStops] },
+    { routes: [{ id: 'birth-of-cities', stops: [throwingStopId] }] },
+    { routes: [null, 1, 'birth-of-cities'] },
+    { routes: [{ id: 'birth-of-cities', stops: {} }] },
+    { routes: [{ id: 'birth-of-cities', stops: [{ id: 7 }] }] },
+    { routes: [{ id: 'birth-of-cities', stops: [] }] }
+  ];
+  malformed.forEach(function (manifest) {
+    const parsed = explorerState.parse(new URLSearchParams('journey=birth-of-cities'), defaults, data, manifest);
+    assert.deepStrictEqual([parsed.journey, parsed.stop, parsed.journeyMode, parsed.journeyNotice],
+      ['', '', 'paused', 'unknown-route']);
+  });
+
+  const stops = new Array(3);
+  stops[0] = null;
+  withInheritedArrayIndex(stops, 1, canonicalStop);
+  stops[2] = { id: 'uruk-urban-center' };
+  const parsed = explorerState.parse(
+    new URLSearchParams('journey=birth-of-cities'), defaults, data,
+    { routes: [{ id: 'birth-of-cities', stops: stops }] }
+  );
+  assert.strictEqual(parsed.stop, 'uruk-urban-center');
+});
+
+test('explorer state does not invoke journey manifest controlled array methods', function () {
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'ru'
+  };
+  const stops = [{ id: 'xianrendong-pottery' }];
+  const routes = [{ id: 'birth-of-cities', stops: stops }];
+  ['find', 'findIndex', 'forEach', 'map', 'reduce', 'some'].forEach(function (method) {
+    routes[method] = stops[method] = function () { throw new Error('manifest method called: ' + method); };
+  });
+  const parsed = explorerState.parse(
+    new URLSearchParams('journey=birth-of-cities&journeyMode=playing'), defaults, data, { routes: routes }
+  );
+  assert.deepStrictEqual([parsed.journey, parsed.stop, parsed.journeyMode],
+    ['birth-of-cities', 'xianrendong-pottery', 'playing']);
+});
+
+test('explorer state preserves existing fields and does not mutate parse inputs', function () {
+  const defaults = {
+    view: 'map', scaleMode: 'overview', year: -500, focus: [], query: '', region: 'all', selectedRegion: '', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'ru',
+    journey: '', stop: '', journeyMode: 'paused', journeyNotice: ''
+  };
+  const defaultsBefore = JSON.parse(JSON.stringify(defaults));
+  const dataBefore = JSON.stringify(data);
+  const journeysBefore = JSON.stringify(journeysData);
+  const parsed = explorerState.parse(
+    new URLSearchParams('view=chronology&scale=deep&year=-3200&focus=china,byzantium&q=city&region=east-asia&type=reviewed&start=-10000&end=1000&zoom=125&lang=zh&panel=east-asia&journey=birth-of-cities&stop=uruk-urban-center&journeyMode=playing'),
+    defaults, data, journeysData
+  );
+  assert.deepStrictEqual({
+    view: parsed.view, scaleMode: parsed.scaleMode, year: parsed.year, focus: parsed.focus,
+    query: parsed.query, region: parsed.region, selectedRegion: parsed.selectedRegion, type: parsed.type,
+    start: parsed.start, end: parsed.end, zoom: parsed.zoom, lang: parsed.lang,
+    journey: parsed.journey, stop: parsed.stop, journeyMode: parsed.journeyMode, journeyNotice: parsed.journeyNotice
+  }, {
+    view: 'chronology', scaleMode: 'deep', year: -3200, focus: ['china', 'byzantium'],
+    query: 'city', region: 'east-asia', selectedRegion: 'east-asia', type: 'reviewed',
+    start: -10000, end: 1000, zoom: 125, lang: 'zh',
+    journey: 'birth-of-cities', stop: 'uruk-urban-center', journeyMode: 'playing', journeyNotice: ''
+  });
+  assert.deepStrictEqual(defaults, defaultsBefore);
+  assert.strictEqual(JSON.stringify(data), dataBefore);
+  assert.strictEqual(JSON.stringify(journeysData), journeysBefore);
+});
+
 test('explorer state rejects invalid values and bounds shared focus', function () {
   const defaults = {
     view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',

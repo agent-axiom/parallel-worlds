@@ -42,8 +42,90 @@
     return { start: data.range.start, end: data.range.end };
   }
 
-  function parse(params, defaults, data) {
+  function ownValue(object, key) {
+    if (!object || typeof object !== 'object' && typeof object !== 'function') return undefined;
+    try {
+      var descriptor = Object.getOwnPropertyDescriptor(object, key);
+      return descriptor ? descriptor.value : undefined;
+    } catch (error) {
+      return undefined;
+    }
+  }
+
+  function ownArray(object, key) {
+    var value = ownValue(object, key);
+    try {
+      return Array.isArray(value) ? value : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function arrayLength(value) {
+    var length = ownValue(value, 'length');
+    return Number.isFinite(length) && Math.floor(length) === length && length >= 0 ? length : 0;
+  }
+
+  function routeStopIds(journeys, routeId) {
+    var routes = ownArray(journeys, 'routes');
+    if (!routes) return null;
+    var routeCount = arrayLength(routes);
+    for (var routeIndex = 0; routeIndex < routeCount; routeIndex += 1) {
+      var route = ownValue(routes, String(routeIndex));
+      if (ownValue(route, 'id') !== routeId) continue;
+      var stops = ownArray(route, 'stops');
+      if (!stops) return null;
+      var stopIds = [];
+      var stopCount = arrayLength(stops);
+      for (var stopIndex = 0; stopIndex < stopCount; stopIndex += 1) {
+        var stopId = ownValue(ownValue(stops, String(stopIndex)), 'id');
+        if (typeof stopId === 'string' && stopId) stopIds.push(stopId);
+      }
+      return stopIds.length ? stopIds : null;
+    }
+    return null;
+  }
+
+  function restoreJourney(params, state, journeys) {
+    var journeyId = params.get('journey');
+    state.journey = '';
+    state.stop = '';
+    state.journeyMode = 'paused';
+    state.journeyNotice = '';
+    if (!journeyId) return;
+
+    var stopIds = routeStopIds(journeys, journeyId);
+    if (!stopIds) {
+      state.journeyNotice = 'unknown-route';
+      return;
+    }
+
+    state.journey = journeyId;
+    state.stop = stopIds[0];
+    var requestedStop = params.get('stop');
+    if (requestedStop) {
+      var knownStop = false;
+      for (var stopIndex = 0; stopIndex < stopIds.length; stopIndex += 1) {
+        if (stopIds[stopIndex] === requestedStop) {
+          knownStop = true;
+          break;
+        }
+      }
+      if (!knownStop) {
+        state.journeyNotice = 'unknown-stop';
+        return;
+      }
+      state.stop = requestedStop;
+    }
+    state.journeyMode = params.get('journeyMode') === 'playing' ? 'playing' : 'paused';
+  }
+
+  function parse(params, defaults, data, journeys) {
     var state = Object.assign({}, defaults, { focus: (defaults.focus || []).slice() });
+    state.journey = defaults.journey || '';
+    state.stop = defaults.stop || '';
+    state.journeyMode = defaults.journeyMode === 'playing' ? 'playing' : 'paused';
+    state.journeyNotice = '';
     var view = params.get('view');
     if (view === 'map' || view === 'chronology') state.view = view;
     var scaleMode = params.get('scale');
@@ -71,6 +153,7 @@
     if (zoom !== undefined) state.zoom = clamp(zoom, 75, 240);
     if (params.has('focus')) state.focus = normalizeFocus(params.get('focus'), data.tracks);
     if (params.has('lang')) state.lang = normalizeLocale(params.get('lang'), defaults.lang);
+    restoreJourney(params, state, journeys);
     return state;
   }
 
@@ -88,6 +171,11 @@
     if (state.year !== defaults.year) params.set('year', state.year);
     if (state.zoom !== defaults.zoom) params.set('zoom', state.zoom);
     if (state.focus && state.focus.length) params.set('focus', state.focus.join(','));
+    if (typeof state.journey === 'string' && state.journey) {
+      params.set('journey', state.journey);
+      params.set('stop', typeof state.stop === 'string' ? state.stop : '');
+      params.set('journeyMode', state.journeyMode === 'playing' ? 'playing' : 'paused');
+    }
     return params;
   }
 
