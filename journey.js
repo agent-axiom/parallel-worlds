@@ -257,19 +257,278 @@
     });
   }
 
-  function createState(route, initial) {
-    return Object.assign({ status: 'catalog', stopIndex: 0, deadline: null, remainingMs: null }, initial || {});
+  var PLAYER_STATUSES = {
+    catalog: true,
+    transitioning: true,
+    playing: true,
+    paused: true,
+    exploring: true,
+    complete: true
+  };
+  var PLAYER_EVENTS = {
+    start: true,
+    transitionEnd: true,
+    pause: true,
+    interact: true,
+    resume: true,
+    next: true,
+    previous: true,
+    finish: true,
+    visibilityHidden: true,
+    visibilityVisible: true
+  };
+
+  function safeCatalogState() {
+    return Object.assign({}, {
+      routeId: '',
+      stopIndex: 0,
+      status: 'catalog',
+      deadline: 0,
+      remainingMs: 0,
+      pausedByVisibility: false
+    });
   }
 
-  function reduce(state) {
-    return Object.assign({}, state || createState());
+  function hasUsableRoute(route) {
+    return Boolean(route) && typeof route === 'object' && isNonEmptyString(route.id) &&
+      Array.isArray(route.stops) && route.stops.length > 0;
   }
 
-  function clock(state) {
-    state = state || createState();
+  function boundedStopIndex(value, stopCount, fallback) {
+    var candidate = Number.isFinite(value) && Math.floor(value) === value ? value : fallback;
+    candidate = Number.isFinite(candidate) && Math.floor(candidate) === candidate ? candidate : 0;
+    return Math.max(0, Math.min(stopCount - 1, candidate));
+  }
+
+  function stopHold(route, stopIndex) {
+    var stop = hasUsableRoute(route) ? route.stops[stopIndex] : null;
+    return stop && Number.isFinite(stop.holdMs) && stop.holdMs > 0 ? stop.holdMs : 0;
+  }
+
+  function isAllowedStatus(status) {
+    return typeof status === 'string' && hasOwn(PLAYER_STATUSES, status);
+  }
+
+  function createState(route, options) {
+    if (!hasUsableRoute(route)) return safeCatalogState();
+
+    options = options && typeof options === 'object' ? options : {};
+    var stopIndex = boundedStopIndex(options.stopIndex, route.stops.length, 0);
+    var status = isAllowedStatus(options.status) ? options.status : 'paused';
+    var deadline = Number.isFinite(options.deadline) && options.deadline > 0 ? options.deadline : 0;
+    var remainingMs = Number.isFinite(options.remainingMs) && options.remainingMs >= 0
+      ? options.remainingMs
+      : 0;
+
+    if (status === 'playing' && deadline === 0) status = 'paused';
+    if ((status === 'paused' || status === 'transitioning') && remainingMs <= 0) {
+      remainingMs = stopHold(route, stopIndex);
+    }
+    if (status !== 'playing') deadline = 0;
+    if (status === 'catalog' || status === 'complete') remainingMs = 0;
+
+    return Object.assign({}, {
+      routeId: route.id,
+      stopIndex: stopIndex,
+      status: status,
+      deadline: deadline,
+      remainingMs: remainingMs,
+      pausedByVisibility: (status === 'paused' || status === 'exploring') &&
+        Boolean(options.pausedByVisibility)
+    });
+  }
+
+  function normalizedStateOrOriginal(state, route) {
+    var normalized = createState(route, state && typeof state === 'object' ? state : {});
+    if (!state || typeof state !== 'object' || Object.keys(state).length !== 6) return normalized;
+    var keys = ['routeId', 'stopIndex', 'status', 'deadline', 'remainingMs', 'pausedByVisibility'];
+    var unchanged = keys.every(function (key) { return state[key] === normalized[key]; });
+    return unchanged ? state : normalized;
+  }
+
+  function activeState(state) {
+    return state.status === 'transitioning' || state.status === 'playing' ||
+      state.status === 'paused' || state.status === 'exploring';
+  }
+
+  function transitionToStop(state, route, stopIndex) {
+    return Object.assign({}, state, {
+      stopIndex: stopIndex,
+      status: 'transitioning',
+      deadline: 0,
+      remainingMs: stopHold(route, stopIndex),
+      pausedByVisibility: false
+    });
+  }
+
+  function completeState(state) {
+    return Object.assign({}, state, {
+      status: 'complete',
+      deadline: 0,
+      remainingMs: 0,
+      pausedByVisibility: false
+    });
+  }
+
+  function timeRemaining(state, now) {
+    return Math.max(0, state.deadline - now);
+  }
+
+  function reduce(state, event, route, options) {
+    if (!event || typeof event !== 'object' || typeof event.type !== 'string' ||
+        !hasOwn(PLAYER_EVENTS, event.type)) {
+      return state;
+    }
+    if (!hasUsableRoute(route)) return safeCatalogState();
+
+    var current = normalizedStateOrOriginal(state, route);
+    options = options && typeof options === 'object' ? options : {};
+    var now = Number.isFinite(options.now) && options.now >= 0 ? options.now : 0;
+    var reducedMotion = Boolean(options.reducedMotion);
+    var hold;
+    var remainingMs;
+    var targetIndex;
+
+    if (event.type === 'start') {
+      targetIndex = hasOwn(event, 'stopIndex')
+        ? boundedStopIndex(event.stopIndex, route.stops.length, current.stopIndex)
+        : current.stopIndex;
+      return transitionToStop(current, route, targetIndex);
+    }
+
+    if (event.type === 'transitionEnd') {
+      if (current.status !== 'transitioning') return current;
+      hold = stopHold(route, current.stopIndex);
+      if (reducedMotion || hold === 0) {
+        return Object.assign({}, current, {
+          status: 'paused',
+          deadline: 0,
+          remainingMs: hold,
+          pausedByVisibility: false
+        });
+      }
+      return Object.assign({}, current, {
+        status: 'playing',
+        deadline: now + hold,
+        remainingMs: 0,
+        pausedByVisibility: false
+      });
+    }
+
+    if (event.type === 'pause') {
+      if (current.status !== 'playing') return current;
+      return Object.assign({}, current, {
+        status: 'paused',
+        deadline: 0,
+        remainingMs: timeRemaining(current, now),
+        pausedByVisibility: false
+      });
+    }
+
+    if (event.type === 'interact') {
+      if (current.status === 'playing') {
+        return Object.assign({}, current, {
+          status: 'exploring',
+          deadline: 0,
+          remainingMs: timeRemaining(current, now),
+          pausedByVisibility: false
+        });
+      }
+      if (current.status === 'paused') {
+        return Object.assign({}, current, { status: 'exploring', deadline: 0 });
+      }
+      return current;
+    }
+
+    if (event.type === 'resume') {
+      if (current.status !== 'paused' && current.status !== 'exploring') return current;
+      hold = stopHold(route, current.stopIndex);
+      remainingMs = Number.isFinite(current.remainingMs) && current.remainingMs > 0
+        ? current.remainingMs
+        : hold;
+      if (reducedMotion || hold === 0) {
+        return Object.assign({}, current, {
+          status: 'paused',
+          deadline: 0,
+          remainingMs: remainingMs,
+          pausedByVisibility: false
+        });
+      }
+      return Object.assign({}, current, {
+        status: 'playing',
+        deadline: now + remainingMs,
+        remainingMs: 0,
+        pausedByVisibility: false
+      });
+    }
+
+    if (event.type === 'next') {
+      if (!activeState(current)) return current;
+      if (current.stopIndex >= route.stops.length - 1) return completeState(current);
+      return transitionToStop(current, route, current.stopIndex + 1);
+    }
+
+    if (event.type === 'previous') {
+      if (!activeState(current) || current.stopIndex === 0) return current;
+      return transitionToStop(current, route, current.stopIndex - 1);
+    }
+
+    if (event.type === 'finish') {
+      return activeState(current) ? completeState(current) : current;
+    }
+
+    if (event.type === 'visibilityHidden') {
+      if (current.status !== 'playing') return current;
+      return Object.assign({}, current, {
+        status: 'paused',
+        deadline: 0,
+        remainingMs: timeRemaining(current, now),
+        pausedByVisibility: true
+      });
+    }
+
+    if ((current.status === 'paused' || current.status === 'exploring') && current.pausedByVisibility) {
+      return Object.assign({}, current, { pausedByVisibility: false });
+    }
+    return current;
+  }
+
+  function safeClock(complete) {
     return {
-      running: state.status === 'playing' && Number.isFinite(state.deadline),
-      remainingMs: Number.isFinite(state.remainingMs) ? Math.max(0, state.remainingMs) : 0
+      remainingMs: 0,
+      countdownSeconds: null,
+      shouldAdvance: false,
+      stopProgress: complete ? 1 : 0
+    };
+  }
+
+  function clock(state, now, route) {
+    var complete = Boolean(state) && state.status === 'complete';
+    if (complete) return safeClock(true);
+    if (!state || typeof state !== 'object' || !isAllowedStatus(state.status) ||
+        !Number.isFinite(now) || now < 0 || !hasUsableRoute(route) ||
+        !Number.isFinite(state.stopIndex) || Math.floor(state.stopIndex) !== state.stopIndex ||
+        state.stopIndex < 0 || state.stopIndex >= route.stops.length) {
+      return safeClock(false);
+    }
+
+    var hold = stopHold(route, state.stopIndex);
+    if (hold === 0 || state.status === 'playing' &&
+        (!Number.isFinite(state.deadline) || state.deadline <= 0) ||
+        state.status !== 'playing' && !Number.isFinite(state.remainingMs)) {
+      return safeClock(false);
+    }
+
+    var remainingMs = state.status === 'playing'
+      ? Math.max(0, state.deadline - now)
+      : Math.max(0, state.remainingMs);
+    return {
+      remainingMs: remainingMs,
+      countdownSeconds: remainingMs > 0 && remainingMs <= 5000
+        ? Math.ceil(remainingMs / 1000)
+        : null,
+      shouldAdvance: state.status === 'playing' && remainingMs === 0,
+      stopProgress: Math.max(0, Math.min(1, (hold - remainingMs) / hold))
     };
   }
 
