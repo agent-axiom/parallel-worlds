@@ -2,12 +2,14 @@ const assert = require('assert');
 const childProcess = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
 const data = require(path.join(root, 'data.js'));
 const academicData = require(path.join(root, 'academic-data.js'));
 const quality = require(path.join(root, 'data-quality.js'));
 const journey = require(path.join(root, 'journey.js'));
+const journeyView = require(path.join(root, 'journey-view.js'));
 const journeysData = require(path.join(root, 'journeys-data.js'));
 const chronology = require(path.join(root, 'chronology.js'));
 const timeline = require(path.join(root, 'timeline.js'));
@@ -991,6 +993,379 @@ test('journey clock reserves inactive terminal progress for a valid complete sta
   });
   assert.deepStrictEqual(journey.clock(complete, 1000, route), {
     remainingMs: 0, countdownSeconds: null, shouldAdvance: false, stopProgress: 1
+  });
+});
+
+test('journey view escapes editorial copy and exposes accessible controls', function () {
+  const html = journeyView.catalogHtml([{ id: 'x', title: '<b>X</b>', summary: 'A & B', durationSeconds: 120, stops: new Array(7) }], {
+    catalogTitle: 'Routes', startJourney: 'Start', minutesTemplate: '{minutes} min', stopsTemplate: '{count} stops'
+  });
+  assert.ok(html.indexOf('&lt;b&gt;X&lt;/b&gt;') !== -1);
+  assert.ok(html.indexOf('data-journey-start="x"') !== -1);
+  assert.strictEqual(html.indexOf('<b>X</b>'), -1);
+});
+
+test('journey view escapes HTML and substitutes only owned word placeholders', function () {
+  assert.strictEqual(journeyView.escapeHtml(null), '');
+  assert.strictEqual(journeyView.escapeHtml(undefined), '');
+  assert.strictEqual(journeyView.escapeHtml('&<>"\''), '&amp;&lt;&gt;&quot;&#39;');
+  assert.strictEqual(journeyView.template('{known} {missing} {not-valid!}', { known: 7 }),
+    '7 {missing} {not-valid!}');
+  assert.strictEqual(journeyView.template('{polluted}', Object.create({ polluted: 'unsafe' })), '{polluted}');
+  assert.strictEqual(journeyView.template(null, { known: 7 }), '');
+});
+
+test('journey catalog skips malformed entries and bounds controlled collections', function () {
+  const controlledStops = new Array(99);
+  const malformedRoutes = [
+    null,
+    { id: '', title: 'Empty id', summary: '', durationSeconds: 60, stops: [] },
+    { id: 'no-title', summary: '', durationSeconds: 60, stops: [] },
+    { id: 'bad-stops', title: 'Bad stops', summary: '', durationSeconds: 60, stops: {} },
+    Object.create({ id: 'inherited', title: 'Inherited', stops: [] })
+  ];
+  const routes = [{ id: 'first', title: 'First', summary: 'Safe', durationSeconds: Infinity, stops: controlledStops }];
+  for (let index = 1; index < 101; index += 1) {
+    routes.push({ id: 'route-' + index, title: 'Route ' + index, summary: '', durationSeconds: 30, stops: [] });
+  }
+  ['find', 'findIndex', 'forEach', 'map', 'reduce', 'some'].forEach(function (method) {
+    routes[method] = controlledStops[method] = function () { throw new Error('controlled method called: ' + method); };
+  });
+  const html = journeyView.catalogHtml(routes, {
+    catalogTitle: '<Catalog & routes>', startJourney: 'Start "now"',
+    minutesTemplate: '<i>{minutes}</i>', stopsTemplate: '<b>{count}</b>'
+  });
+  const malformedHtml = journeyView.catalogHtml(malformedRoutes, {
+    catalogTitle: 'Routes', startJourney: 'Start', minutesTemplate: '{minutes}', stopsTemplate: '{count}'
+  });
+  assert.strictEqual((html.match(/<article class="journey-card">/g) || []).length, 100);
+  assert.strictEqual(malformedHtml.indexOf('Empty id'), -1);
+  assert.strictEqual(malformedHtml.indexOf('no-title'), -1);
+  assert.strictEqual(malformedHtml.indexOf('Bad stops'), -1);
+  assert.strictEqual(malformedHtml.indexOf('Inherited'), -1);
+  assert.ok(html.indexOf('&lt;Catalog &amp; routes&gt;') !== -1);
+  assert.ok(html.indexOf('&lt;i&gt;0&lt;/i&gt;') !== -1);
+  assert.ok(html.indexOf('&lt;b&gt;8&lt;/b&gt;') !== -1);
+  assert.ok(html.indexOf('Start &quot;now&quot;') !== -1);
+  assert.strictEqual(html.indexOf('route-100'), -1);
+  assert.doesNotThrow(function () { journeyView.catalogHtml(null, null); });
+  assert.doesNotThrow(function () { journeyView.catalogHtml({}, Object.create(null)); });
+});
+
+test('journey catalog escapes route identifiers and rejects accessor-controlled entries', function () {
+  const route = { id: 'route" onfocus="bad', title: '<Title>', summary: '<Summary>', durationSeconds: 91, stops: [] };
+  const accessorRoute = {};
+  Object.defineProperty(accessorRoute, 'id', { enumerable: true, get: function () { throw new Error('id read'); } });
+  Object.defineProperty(accessorRoute, 'title', { enumerable: true, value: 'Accessor title' });
+  Object.defineProperty(accessorRoute, 'stops', { enumerable: true, value: [] });
+  const html = journeyView.catalogHtml([accessorRoute, route], {
+    catalogTitle: 'Routes', startJourney: '<Start>', minutesTemplate: '{minutes} min', stopsTemplate: '{count} stops'
+  });
+  assert.strictEqual(html.indexOf('Accessor title'), -1);
+  assert.ok(html.indexOf('data-journey-start="route&quot; onfocus=&quot;bad"') !== -1);
+  assert.strictEqual(html.indexOf('<Title>'), -1);
+  assert.strictEqual(html.indexOf('<Summary>'), -1);
+  assert.ok(html.indexOf('2 min') !== -1);
+});
+
+test('journey stage includes live announcement but never announces countdown', function () {
+  const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+  const html = journeyView.stageHtml(route, journey.createState(route, { status: 'paused' }), {
+    previousStop: 'Previous', nextStop: 'Next', pauseJourney: 'Pause', resumeJourney: 'Resume',
+    shareJourney: 'Share', exitJourney: 'Exit', openEvidence: 'Open evidence', stopTemplate: 'Stop {current} of {total}'
+  }, function (year) { return String(year); });
+  assert.ok(/aria-live="polite"/.test(html));
+  assert.ok(/data-journey-countdown[^>]*aria-hidden="true"/.test(html));
+  assert.ok(/data-journey-evidence="xianrendong"/.test(html));
+});
+
+test('journey stage escapes route stop copy templates years and attribute values', function () {
+  const route = {
+    id: 'route',
+    title: '<Route & title>',
+    stops: [{
+      id: 'stop" onclick="bad', year: -100, headline: '<Headline>', body: 'Body & <em>detail</em>',
+      records: [{
+        track: { id: 'track" onmouseover="bad' },
+        record: { id: 'record" autofocus="bad' },
+        ref: { eventId: 'record" autofocus="bad' }
+      }]
+    }, {
+      id: 'second', year: -50, headline: 'Second & final', body: 'Second body', records: []
+    }]
+  };
+  const html = journeyView.stageHtml(route, { stopIndex: 0, status: 'paused' }, {
+    previousStop: '<Previous>', nextStop: '<Next>', pauseJourney: '<Pause>', resumeJourney: '<Resume>',
+    shareJourney: '<Share>', openEvidence: '<Evidence>',
+    stopTemplate: '<Stop {current} of {total}>'
+  }, function () { return '<Year & "unsafe">'; });
+  assert.ok(html.indexOf('data-journey-stop="stop&quot; onclick=&quot;bad"') !== -1);
+  assert.ok(html.indexOf('&lt;Route &amp; title&gt;') !== -1);
+  assert.ok(html.indexOf('&lt;Headline&gt;') !== -1);
+  assert.ok(html.indexOf('Body &amp; &lt;em&gt;detail&lt;/em&gt;') !== -1);
+  assert.ok(html.indexOf('&lt;Year &amp; &quot;unsafe&quot;&gt;') !== -1);
+  assert.ok(html.indexOf('&lt;Stop 1 of 2&gt;') !== -1);
+  assert.ok(html.indexOf('data-journey-evidence="track&quot; onmouseover=&quot;bad"') !== -1);
+  assert.ok(html.indexOf('data-record-id="record&quot; autofocus=&quot;bad"') !== -1);
+  ['Previous', 'Next', 'Resume', 'Share', 'Evidence'].forEach(function (label) {
+    assert.ok(html.indexOf('&lt;' + label + '&gt;') !== -1, label);
+  });
+  ['<Route', '<Headline>', '<em>', '<Year', '<Stop', '<Previous>'].forEach(function (raw) {
+    assert.strictEqual(html.indexOf(raw), -1, raw);
+  });
+});
+
+test('journey stage renders exact progress and control states', function () {
+  const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+  const copy = {
+    previousStop: 'Previous', nextStop: 'Next', pauseJourney: 'Pause', resumeJourney: 'Resume',
+    shareJourney: 'Share', openEvidence: 'Open evidence', stopTemplate: 'Stop {current} of {total}'
+  };
+  const first = journeyView.stageHtml(route, { stopIndex: 0, status: 'playing' }, copy, String);
+  assert.strictEqual((first.match(/data-journey-go="/g) || []).length, 7);
+  assert.strictEqual((first.match(/aria-current="step"/g) || []).length, 1);
+  assert.ok(/data-journey-go="0"[^>]*aria-current="step"/.test(first));
+  assert.ok(/data-journey-action="previous"[^>]*disabled/.test(first));
+  assert.ok(/data-journey-action="toggle"[^>]*>Pause<\/button>/.test(first));
+  assert.ok(/data-journey-action="next"[^>]*>Next<\/button>/.test(first));
+  assert.ok(/data-journey-action="share"[^>]*>Share<\/button>/.test(first));
+  assert.ok(first.indexOf('data-journey-world') !== -1);
+  assert.ok(first.indexOf('data-journey-regions') !== -1);
+  assert.ok(first.indexOf('data-journey-clock') !== -1);
+  assert.strictEqual(first.indexOf('data-journey-action="exit"'), -1);
+  assert.strictEqual(first.indexOf('>Exit<'), -1);
+
+  const middle = journeyView.stageHtml(route, { stopIndex: 3, status: 'exploring' }, copy, String);
+  assert.ok(/data-journey-go="3"[^>]*aria-current="step"/.test(middle));
+  assert.ok(!/data-journey-action="previous"[^>]*disabled/.test(middle));
+  assert.ok(/data-journey-action="toggle"[^>]*>Resume<\/button>/.test(middle));
+});
+
+test('journey stage keeps the live region limited to headline and year', function () {
+  const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+  const html = journeyView.stageHtml(route, { stopIndex: 1, status: 'paused' }, {
+    previousStop: 'Previous', nextStop: 'Next', pauseJourney: 'Pause', resumeJourney: 'Resume',
+    shareJourney: 'Share', openEvidence: 'Evidence', stopTemplate: 'Stop {current} of {total}'
+  }, String);
+  const live = html.match(/<div class="journey-announcement"[^>]*>([\s\S]*?)<\/div>/);
+  assert.ok(live);
+  assert.ok(live[1].indexOf('Monuments without a city') !== -1);
+  assert.ok(live[1].indexOf('-9500') !== -1);
+  assert.strictEqual(live[1].indexOf('data-journey-countdown'), -1);
+  assert.strictEqual(live[1].indexOf(route.stops[1].body), -1);
+});
+
+test('journey stage omits evidence and fails closed for malformed current stops', function () {
+  const safeRoute = {
+    id: 'safe', title: 'Safe route',
+    stops: [{ id: 'safe-stop', year: 1, headline: 'Safe stop', body: 'Safe body', records: [] }]
+  };
+  const copy = {
+    previousStop: 'Previous', nextStop: 'Next', pauseJourney: 'Pause', resumeJourney: 'Resume',
+    shareJourney: 'Share', openEvidence: 'Evidence', stopTemplate: 'Stop {current} of {total}'
+  };
+  const html = journeyView.stageHtml(safeRoute, { stopIndex: 0, status: 'paused' }, copy, String);
+  assert.strictEqual(html.indexOf('data-journey-evidence'), -1);
+  [null, {}, { stops: {} }, safeRoute].forEach(function (route, index) {
+    const state = index === 3 ? { stopIndex: 4, status: 'paused' } : { stopIndex: 0, status: 'paused' };
+    assert.doesNotThrow(function () { journeyView.stageHtml(route, state, null, function () { throw new Error('year'); }); });
+    assert.strictEqual(journeyView.stageHtml(route, state, null, function () { throw new Error('year'); }), '');
+  });
+  const throwingState = {};
+  Object.defineProperty(throwingState, 'stopIndex', { get: function () { throw new Error('state read'); } });
+  assert.strictEqual(journeyView.stageHtml(safeRoute, throwingState, copy, String), '');
+});
+
+test('journey completion escapes editorial copy and renders exact actions', function () {
+  const html = journeyView.completeHtml({ title: '<Finished>', conclusion: 'Safe & <strong>done</strong>' }, {
+    completeKicker: '<Complete>', exploreMoment: '<Explore>', replayJourney: '<Replay>',
+    backCatalog: '<Catalog>', shareJourney: '<Share>'
+  });
+  assert.ok(html.indexOf('&lt;Finished&gt;') !== -1);
+  assert.ok(html.indexOf('Safe &amp; &lt;strong&gt;done&lt;/strong&gt;') !== -1);
+  ['explore', 'replay', 'catalog', 'share'].forEach(function (action) {
+    assert.strictEqual((html.match(new RegExp('data-journey-action="' + action + '"', 'g')) || []).length, 1, action);
+  });
+  ['Complete', 'Explore', 'Replay', 'Catalog', 'Share'].forEach(function (label) {
+    assert.ok(html.indexOf('&lt;' + label + '&gt;') !== -1, label);
+  });
+  [null, {}, { title: 'Only title' }, Object.create({ title: 'Inherited', conclusion: 'Inherited' })]
+    .forEach(function (route) { assert.strictEqual(journeyView.completeHtml(route, null), ''); });
+});
+
+test('journey clock view clamps progress and reveals only deliberate countdown values', function () {
+  const countdown = { textContent: 'old', hidden: false };
+  const calls = [];
+  const clock = { style: { setProperty: function (name, value) { calls.push([name, value]); } } };
+  const rootNode = { querySelector: function (selector) {
+    return selector === '[data-journey-countdown]' ? countdown : clock;
+  } };
+  journeyView.updateClock(rootNode, { stopProgress: 1.5, countdownSeconds: 5 });
+  assert.deepStrictEqual(calls.pop(), ['--journey-progress', '1']);
+  assert.strictEqual(countdown.textContent, '5');
+  assert.strictEqual(countdown.hidden, false);
+
+  journeyView.updateClock(rootNode, { stopProgress: -2, countdownSeconds: 0 });
+  assert.deepStrictEqual(calls.pop(), ['--journey-progress', '0']);
+  assert.strictEqual(countdown.textContent, '');
+  assert.strictEqual(countdown.hidden, true);
+
+  journeyView.updateClock(rootNode, { stopProgress: 0.25, countdownSeconds: 2.5 });
+  assert.deepStrictEqual(calls.pop(), ['--journey-progress', '0.25']);
+  assert.strictEqual(countdown.textContent, '');
+  assert.strictEqual(countdown.hidden, true);
+});
+
+test('journey clock view never throws for hostile roots values or fake DOM nodes', function () {
+  [null, {}, { querySelector: 1 }, {
+    querySelector: function () { throw new Error('selector failure'); }
+  }].forEach(function (rootNode) {
+    assert.doesNotThrow(function () { journeyView.updateClock(rootNode, null); });
+  });
+  const hostileValue = {};
+  Object.defineProperty(hostileValue, 'stopProgress', { get: function () { throw new Error('progress read'); } });
+  Object.defineProperty(hostileValue, 'countdownSeconds', { get: function () { throw new Error('countdown read'); } });
+  const hostileNode = {};
+  Object.defineProperty(hostileNode, 'style', { get: function () { throw new Error('style read'); } });
+  const rootNode = { querySelector: function (selector) {
+    return selector === '[data-journey-countdown]' ? Object.freeze({}) : hostileNode;
+  } };
+  assert.doesNotThrow(function () { journeyView.updateClock(rootNode, hostileValue); });
+});
+
+test('journey focus trap wraps forward reverse and outside focus', function () {
+  const focused = [];
+  function node(id) {
+    return {
+      id: id, disabled: false, hidden: false, tabIndex: 0,
+      getAttribute: function () { return null; },
+      focus: function () { focused.push(id); }
+    };
+  }
+  const first = node('first');
+  const middle = node('middle');
+  const last = node('last');
+  const ownerDocument = { activeElement: last };
+  const dialog = {
+    ownerDocument: ownerDocument,
+    querySelectorAll: function (selector) {
+      assert.strictEqual(selector, 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
+      return { 0: first, 1: middle, 2: last, length: 3, forEach: function () { throw new Error('NodeList method called'); } };
+    }
+  };
+  let prevented = 0;
+  const forward = { key: 'Tab', shiftKey: false, preventDefault: function () { prevented += 1; } };
+  assert.strictEqual(journeyView.trapTab(forward, dialog), true);
+  ownerDocument.activeElement = first;
+  assert.strictEqual(journeyView.trapTab({ key: 'Tab', shiftKey: true, preventDefault: forward.preventDefault }, dialog), true);
+  ownerDocument.activeElement = middle;
+  assert.strictEqual(journeyView.trapTab(forward, dialog), false);
+  ownerDocument.activeElement = { id: 'outside' };
+  assert.strictEqual(journeyView.trapTab(forward, dialog), true);
+  ownerDocument.activeElement = { id: 'outside' };
+  assert.strictEqual(journeyView.trapTab({ key: 'Tab', shiftKey: true, preventDefault: forward.preventDefault }, dialog), true);
+  assert.deepStrictEqual(focused, ['first', 'last', 'first', 'last']);
+  assert.strictEqual(prevented, 4);
+});
+
+test('journey focus trap filters unavailable controls and handles empty or hostile dialogs', function () {
+  function unavailable(properties) {
+    return Object.assign({
+      disabled: false, hidden: false, tabIndex: 0, getAttribute: function () { return null; }, focus: function () {}
+    }, properties);
+  }
+  const good = unavailable({ id: 'good' });
+  const nodes = [
+    unavailable({ disabled: true }), unavailable({ hidden: true }),
+    unavailable({ getAttribute: function () { return 'true'; } }), unavailable({ tabIndex: -1 }), good
+  ];
+  let focused = 0;
+  good.focus = function () { focused += 1; };
+  const dialog = {
+    ownerDocument: { activeElement: {} },
+    querySelectorAll: function () { return { 0: nodes[0], 1: nodes[1], 2: nodes[2], 3: nodes[3], 4: nodes[4], length: 5 }; }
+  };
+  assert.strictEqual(journeyView.trapTab({ key: 'Tab', preventDefault: function () {} }, dialog), true);
+  assert.strictEqual(focused, 1);
+
+  let dialogFocused = 0;
+  let prevented = 0;
+  const empty = {
+    ownerDocument: { activeElement: null },
+    querySelectorAll: function () { return { length: 0 }; },
+    focus: function () { dialogFocused += 1; }
+  };
+  assert.strictEqual(journeyView.trapTab({ key: 'Tab', preventDefault: function () { prevented += 1; } }, empty), true);
+  assert.deepStrictEqual([dialogFocused, prevented], [1, 1]);
+  assert.strictEqual(journeyView.trapTab({ key: 'Enter' }, empty), false);
+  [null, {}, { querySelectorAll: function () { throw new Error('query failure'); } }].forEach(function (hostile) {
+    assert.doesNotThrow(function () { journeyView.trapTab({ key: 'Tab' }, hostile); });
+    assert.strictEqual(journeyView.trapTab({ key: 'Tab' }, hostile), false);
+  });
+  const hostileEvent = {};
+  Object.defineProperty(hostileEvent, 'key', { get: function () { throw new Error('key read'); } });
+  assert.strictEqual(journeyView.trapTab(hostileEvent, empty), false);
+});
+
+test('journey view maps swipes only beyond the deliberate threshold', function () {
+  assert.strictEqual(journeyView.swipeDirection(300, 210, 56), 'next');
+  assert.strictEqual(journeyView.swipeDirection(210, 300, 56), 'previous');
+  assert.strictEqual(journeyView.swipeDirection(200, 170, 56), 'none');
+});
+
+test('journey view swipe direction validates inputs and includes the threshold boundary', function () {
+  assert.strictEqual(journeyView.swipeDirection(100, 44), 'next');
+  assert.strictEqual(journeyView.swipeDirection(44, 100), 'previous');
+  assert.strictEqual(journeyView.swipeDirection(100, 100, 56), 'none');
+  assert.strictEqual(journeyView.swipeDirection(100, 45, 56), 'none');
+  [NaN, Infinity, '100', null, {}].forEach(function (value) {
+    assert.strictEqual(journeyView.swipeDirection(value, 0, 56), 'none');
+    assert.strictEqual(journeyView.swipeDirection(0, value, 56), 'none');
+  });
+  [0, -1, NaN, Infinity, '56', null].forEach(function (threshold) {
+    assert.strictEqual(journeyView.swipeDirection(100, 0, threshold), 'none');
+  });
+});
+
+test('journey view exposes the exact UMD API without touching the DOM at initialization', function () {
+  const expected = [
+    'catalogHtml', 'completeHtml', 'escapeHtml', 'stageHtml', 'swipeDirection', 'template', 'trapTab', 'updateClock'
+  ];
+  assert.deepStrictEqual(Object.keys(journeyView).sort(), expected);
+  const source = fs.readFileSync(path.join(root, 'journey-view.js'), 'utf8');
+  const browserRoot = {};
+  Object.defineProperty(browserRoot, 'document', { get: function () { throw new Error('DOM accessed during initialization'); } });
+  const browserContext = { self: browserRoot };
+  vm.runInNewContext(source, browserContext, { filename: 'journey-view.js' });
+  assert.deepStrictEqual(Object.keys(browserRoot.ParallelWorldsJourneyView).sort(), expected);
+
+  const commonRoot = {};
+  const commonContext = { self: commonRoot, module: { exports: {} } };
+  vm.runInNewContext(source, commonContext, { filename: 'journey-view.js' });
+  assert.strictEqual(commonRoot.ParallelWorldsJourneyView, commonContext.module.exports);
+  assert.deepStrictEqual(Object.keys(commonContext.module.exports).sort(), expected);
+});
+
+test('journey view contains no inline handlers or network calls', function () {
+  const source = fs.readFileSync(path.join(root, 'journey-view.js'), 'utf8');
+  ['fetch(', 'XMLHttpRequest', '<script src="http', 'http://', 'https://'].forEach(function (marker) {
+    assert.strictEqual(source.indexOf(marker), -1, marker);
+  });
+  const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+  const copy = {
+    catalogTitle: 'Routes', startJourney: 'Start', minutesTemplate: '{minutes} min', stopsTemplate: '{count} stops',
+    previousStop: 'Previous', nextStop: 'Next', pauseJourney: 'Pause', resumeJourney: 'Resume',
+    shareJourney: 'Share', openEvidence: 'Evidence', stopTemplate: 'Stop {current} of {total}',
+    completeKicker: 'Complete', exploreMoment: 'Explore', replayJourney: 'Replay', backCatalog: 'Catalog'
+  };
+  const outputs = [
+    journeyView.catalogHtml([route], copy), journeyView.stageHtml(route, { stopIndex: 0, status: 'paused' }, copy, String),
+    journeyView.completeHtml(route, copy)
+  ];
+  outputs.forEach(function (html) {
+    assert.strictEqual(/\son[a-z]+\s*=/.test(html), false);
+    assert.strictEqual(/\sstyle\s*=/.test(html), false);
+    assert.strictEqual(/<(?:script|iframe|object|embed)\b/i.test(html), false);
   });
 });
 
