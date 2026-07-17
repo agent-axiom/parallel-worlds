@@ -324,13 +324,13 @@
     var stopIndex = boundedStopIndex(options.stopIndex, route.stops.length, 0);
     var status = isAllowedStatus(options.status) ? options.status : 'paused';
     var deadline = Number.isFinite(options.deadline) && options.deadline > 0 ? options.deadline : 0;
-    var remainingMs = Number.isFinite(options.remainingMs) && options.remainingMs >= 0
-      ? options.remainingMs
-      : 0;
+    var hold = stopHold(route, stopIndex);
+    var hasRemainingMs = Number.isFinite(options.remainingMs) && options.remainingMs >= 0;
+    var remainingMs = hasRemainingMs ? Math.min(options.remainingMs, hold) : 0;
 
     if (status === 'playing' && deadline === 0) status = 'paused';
-    if ((status === 'paused' || status === 'transitioning') && remainingMs <= 0) {
-      remainingMs = stopHold(route, stopIndex);
+    if ((status === 'paused' || status === 'transitioning') && !hasRemainingMs) {
+      remainingMs = hold;
     }
     if (status !== 'playing') deadline = 0;
     if (status === 'catalog' || status === 'complete') remainingMs = 0;
@@ -382,6 +382,28 @@
     return Math.max(0, state.deadline - now);
   }
 
+  function playingState(state, route, now, duration) {
+    var hold = stopHold(route, state.stopIndex);
+    var boundedDuration = Number.isFinite(duration) && duration > 0
+      ? Math.min(duration, hold)
+      : hold;
+    var deadline = now + boundedDuration;
+    if (boundedDuration <= 0 || !Number.isFinite(deadline) || deadline <= now) {
+      return Object.assign({}, state, {
+        status: 'paused',
+        deadline: 0,
+        remainingMs: boundedDuration,
+        pausedByVisibility: false
+      });
+    }
+    return Object.assign({}, state, {
+      status: 'playing',
+      deadline: deadline,
+      remainingMs: 0,
+      pausedByVisibility: false
+    });
+  }
+
   function reduce(state, event, route, options) {
     if (!event || typeof event !== 'object' || typeof event.type !== 'string' ||
         !hasOwn(PLAYER_EVENTS, event.type)) {
@@ -389,7 +411,12 @@
     }
     if (!hasUsableRoute(route)) return safeCatalogState();
 
-    var current = normalizedStateOrOriginal(state, route);
+    var routeMismatch = state && typeof state === 'object' &&
+      typeof state.routeId === 'string' && state.routeId.length > 0 && state.routeId !== route.id;
+    if (routeMismatch && event.type !== 'start') return state;
+    var current = routeMismatch
+      ? createState(route, { status: 'catalog' })
+      : normalizedStateOrOriginal(state, route);
     options = options && typeof options === 'object' ? options : {};
     var now = Number.isFinite(options.now) && options.now >= 0 ? options.now : 0;
     var reducedMotion = Boolean(options.reducedMotion);
@@ -415,12 +442,7 @@
           pausedByVisibility: false
         });
       }
-      return Object.assign({}, current, {
-        status: 'playing',
-        deadline: now + hold,
-        remainingMs: 0,
-        pausedByVisibility: false
-      });
+      return playingState(current, route, now, hold);
     }
 
     if (event.type === 'pause') {
@@ -452,7 +474,7 @@
       if (current.status !== 'paused' && current.status !== 'exploring') return current;
       hold = stopHold(route, current.stopIndex);
       remainingMs = Number.isFinite(current.remainingMs) && current.remainingMs > 0
-        ? current.remainingMs
+        ? Math.min(current.remainingMs, hold)
         : hold;
       if (reducedMotion || hold === 0) {
         return Object.assign({}, current, {
@@ -462,12 +484,7 @@
           pausedByVisibility: false
         });
       }
-      return Object.assign({}, current, {
-        status: 'playing',
-        deadline: now + remainingMs,
-        remainingMs: 0,
-        pausedByVisibility: false
-      });
+      return playingState(current, route, now, remainingMs);
     }
 
     if (event.type === 'next') {
@@ -530,7 +547,8 @@
           (state.remainingMs !== 0 || state.pausedByVisibility)) {
       return false;
     }
-    return stopHold(route, state.stopIndex) > 0;
+    var hold = stopHold(route, state.stopIndex);
+    return hold > 0 && state.remainingMs <= hold;
   }
 
   function clock(state, now, route) {

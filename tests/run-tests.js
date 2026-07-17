@@ -272,6 +272,41 @@ test('journey player pauses exactly and resumes from remaining time', function (
   assert.deepStrictEqual({ status: state.status, deadline: state.deadline }, { status: 'playing', deadline: 19000 });
 });
 
+test('journey player preserves an explicit zero remainder at the deadline', function () {
+  const route = journey.validateCollection(journeysData, data).routes[0];
+  const hold = route.stops[0].holdMs;
+  assert.strictEqual(journey.createState(route, {
+    status: 'paused', stopIndex: 0, remainingMs: 0
+  }).remainingMs, 0);
+
+  const playing = journey.createState(route, { status: 'playing', stopIndex: 0, deadline: 6000 });
+  const paused = journey.reduce(playing, { type: 'pause' }, route, { now: 6000 });
+  assert.deepStrictEqual({ status: paused.status, deadline: paused.deadline, remainingMs: paused.remainingMs }, {
+    status: 'paused', deadline: 0, remainingMs: 0
+  });
+  assert.strictEqual(journey.reduce(paused, { type: 'pause' }, route, { now: 6000 }), paused);
+  assert.strictEqual(journey.reduce(paused, { type: 'visibilityHidden' }, route, { now: 6000 }), paused);
+  assert.strictEqual(journey.reduce(paused, { type: 'visibilityVisible' }, route, { now: 6000 }), paused);
+  assert.deepStrictEqual(journey.clock(paused, 6000, route), {
+    remainingMs: 0, countdownSeconds: null, shouldAdvance: false, stopProgress: 1
+  });
+
+  const hidden = journey.reduce(playing, { type: 'visibilityHidden' }, route, { now: 6000 });
+  assert.deepStrictEqual({ remainingMs: hidden.remainingMs, pausedByVisibility: hidden.pausedByVisibility }, {
+    remainingMs: 0, pausedByVisibility: true
+  });
+  const visible = journey.reduce(hidden, { type: 'visibilityVisible' }, route, { now: 7000 });
+  assert.deepStrictEqual({ status: visible.status, remainingMs: visible.remainingMs,
+    pausedByVisibility: visible.pausedByVisibility }, {
+    status: 'paused', remainingMs: 0, pausedByVisibility: false
+  });
+
+  const resumed = journey.reduce(paused, { type: 'resume' }, route, { now: 7000 });
+  assert.deepStrictEqual({ status: resumed.status, deadline: resumed.deadline, remainingMs: resumed.remainingMs }, {
+    status: 'playing', deadline: 7000 + hold, remainingMs: 0
+  });
+});
+
 test('journey interaction and hidden tab stop autoplay until explicit resume', function () {
   const route = journey.validateCollection(journeysData, data).routes[0];
   let state = journey.createState(route, { status: 'playing', stopIndex: 1, deadline: 20000 });
@@ -288,6 +323,50 @@ test('journey reduced motion never starts autoplay', function () {
   assert.strictEqual(state.status, 'paused');
   state = journey.reduce(state, { type: 'resume' }, route, { now: 2000, reducedMotion: true });
   assert.strictEqual(state.status, 'paused');
+});
+
+test('journey player bounds durations and fails safely when deadlines are not representable', function () {
+  const route = journey.validateCollection(journeysData, data).routes[0];
+  const hold = route.stops[0].holdMs;
+  [Number.MAX_VALUE, Infinity, NaN, -1].forEach(function (remainingMs) {
+    assert.strictEqual(journey.createState(route, {
+      status: 'paused', stopIndex: 0, remainingMs: remainingMs
+    }).remainingMs, hold);
+  });
+  const hugeExploring = journey.createState(route, {
+    status: 'exploring', stopIndex: 0, remainingMs: Number.MAX_VALUE
+  });
+  assert.strictEqual(hugeExploring.remainingMs, hold);
+  const boundedResume = journey.reduce(hugeExploring, { type: 'resume' }, route, { now: 1000 });
+  assert.deepStrictEqual({
+    status: boundedResume.status,
+    deadline: boundedResume.deadline
+  }, { status: 'playing', deadline: 1000 + hold });
+
+  const transitioning = journey.createState(route, { status: 'transitioning', stopIndex: 0 });
+  const extremeTransition = journey.reduce(transitioning, { type: 'transitionEnd' }, route, {
+    now: Number.MAX_VALUE
+  });
+  assert.deepStrictEqual({
+    status: extremeTransition.status, deadline: extremeTransition.deadline,
+    remainingMs: extremeTransition.remainingMs
+  }, { status: 'paused', deadline: 0, remainingMs: hold });
+
+  const extremeResume = journey.reduce(journey.createState(route, {
+    status: 'paused', stopIndex: 0, remainingMs: hold
+  }), { type: 'resume' }, route, { now: Number.MAX_VALUE });
+  assert.deepStrictEqual({
+    status: extremeResume.status, deadline: extremeResume.deadline,
+    remainingMs: extremeResume.remainingMs
+  }, { status: 'paused', deadline: 0, remainingMs: hold });
+  assert.strictEqual(journey.clock(extremeResume, Number.MAX_VALUE, route).shouldAdvance, false);
+
+  [NaN, Infinity].forEach(function (now) {
+    const safelyTimed = journey.reduce(transitioning, { type: 'transitionEnd' }, route, { now: now });
+    assert.deepStrictEqual({ status: safelyTimed.status, deadline: safelyTimed.deadline }, {
+      status: 'playing', deadline: hold
+    });
+  });
 });
 
 test('journey clock exposes countdown and advances only at deadline', function () {
@@ -417,6 +496,45 @@ test('journey reducer is immutable and normalizes malformed route and time input
   assert.deepStrictEqual(journey.reduce(null, { type: 'start' }, null, null), {
     routeId: '', stopIndex: 0, status: 'catalog', deadline: 0, remainingMs: 0,
     pausedByVisibility: false
+  });
+});
+
+test('journey reducer isolates mismatched routes except for an explicit fresh start', function () {
+  const route = journey.validateCollection(journeysData, data).routes[0];
+  const otherRoute = Object.assign({}, route, {
+    id: 'other-route',
+    stops: route.stops.map(function (stop, index) {
+      return Object.assign({}, stop, { holdMs: index === 0 ? 12000 : stop.holdMs });
+    })
+  });
+  const playing = journey.createState(route, { status: 'playing', stopIndex: 1, deadline: 20000 });
+  const paused = journey.createState(route, { status: 'paused', stopIndex: 1, remainingMs: 7000 });
+  [
+    { state: playing, event: { type: 'pause' } },
+    { state: playing, event: { type: 'interact' } },
+    { state: paused, event: { type: 'resume' } },
+    { state: playing, event: { type: 'next' } },
+    { state: playing, event: { type: 'previous' } }
+  ].forEach(function (fixture) {
+    assert.strictEqual(journey.reduce(fixture.state, fixture.event, otherRoute, { now: 1000 }),
+      fixture.state, fixture.event.type);
+  });
+
+  const rebound = journey.reduce(playing, { type: 'start' }, otherRoute, { now: 1000 });
+  assert.deepStrictEqual(rebound, {
+    routeId: otherRoute.id,
+    stopIndex: 0,
+    status: 'transitioning',
+    deadline: 0,
+    remainingMs: otherRoute.stops[0].holdMs,
+    pausedByVisibility: false
+  });
+  const selected = journey.reduce(playing, { type: 'start', stopIndex: 2 }, otherRoute, { now: 1000 });
+  assert.deepStrictEqual({
+    routeId: selected.routeId, stopIndex: selected.stopIndex, deadline: selected.deadline,
+    remainingMs: selected.remainingMs
+  }, {
+    routeId: otherRoute.id, stopIndex: 2, deadline: 0, remainingMs: otherRoute.stops[2].holdMs
   });
 });
 
