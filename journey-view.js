@@ -490,6 +490,8 @@
     var node;
     var ownerDocument;
     var activeElement;
+    var activeConnected;
+    var dialogContains;
     var shiftKey;
     var activeIndex = -1;
     var direction;
@@ -521,12 +523,6 @@
     ownerDocument = read(dialog, 'ownerDocument');
     ownerDocument = ownerDocument.ok ? ownerDocument.value : null;
 
-    if (!controls.length) {
-      if (!focusTransferred(dialog, ownerDocument)) return false;
-      preventTab(event);
-      return true;
-    }
-
     if (ownerDocument) {
       activeElement = read(ownerDocument, 'activeElement');
       activeElement = activeElement.ok ? activeElement.value : undefined;
@@ -537,6 +533,22 @@
         break;
       }
     }
+    if (activeIndex < 0 && activeElement) {
+      activeConnected = read(activeElement, 'isConnected');
+      dialogContains = callable(dialog, 'contains');
+      if ((!activeConnected.ok || activeConnected.value !== false) && dialogContains) {
+        try {
+          if (dialogContains.call(dialog, activeElement)) return false;
+        } catch (_) {}
+      }
+    }
+
+    if (!controls.length) {
+      if (!focusTransferred(dialog, ownerDocument)) return false;
+      preventTab(event);
+      return true;
+    }
+
     shiftKey = read(event, 'shiftKey');
     shiftKey = shiftKey.ok && Boolean(shiftKey.value);
     direction = shiftKey ? -1 : 1;

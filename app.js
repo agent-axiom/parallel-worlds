@@ -775,6 +775,7 @@
   function clearJourneyTransition() {
     if (journeyTransitionStage && journeyTransitionHandler &&
         typeof journeyTransitionStage.removeEventListener === 'function') {
+      journeyTransitionStage.removeEventListener('animationend', journeyTransitionHandler);
       journeyTransitionStage.removeEventListener('transitionend', journeyTransitionHandler);
     }
     journeyTransitionStage = null;
@@ -914,6 +915,7 @@
   function renderJourney() {
     var html;
     var identity = journeySceneIdentity();
+    var sceneChanged = identity !== journeyFocusIdentity;
     var focusDescriptor = activeJourneyFocusDescriptor(identity);
     if (!journeyRoute || !journeyState || journeyState.status === 'catalog') {
       html = journeyView.catalogHtml(localizedJourneyRoutes(), journeyCopy());
@@ -929,11 +931,11 @@
       html = journeyView.stageHtml(journeyRoute, journeyState, journeyCopy(), formatYear);
     }
     if (!html) throw new Error('Journey view returned no content');
-    cancelJourneyAnnouncement();
+    if (sceneChanged) cancelJourneyAnnouncement();
     elements['journey-content'].innerHTML = html;
     if (journeyRoute && journeyState && journeyState.status !== 'complete') {
       renderJourneyMap();
-      copyJourneyAnnouncement(identity);
+      if (sceneChanged) copyJourneyAnnouncement(identity);
     }
     focusJourneyHeading(identity);
     restoreJourneyFocus(focusDescriptor);
@@ -995,6 +997,7 @@
     if (stage) {
       journeyTransitionStage = stage;
       journeyTransitionHandler = completeTransition;
+      stage.addEventListener('animationend', completeTransition);
       stage.addEventListener('transitionend', completeTransition);
     }
     journeyTransitionTimer = setTimeout(completeTransition, 1400);
@@ -1003,12 +1006,15 @@
   function dispatchJourney(type, now, forceReducedMotion) {
     try {
       if (!journeyRoute || !journeyState) return;
-      stopJourneyClock();
       var event = typeof type === 'string' ? { type: type } : type;
-      journeyState = journey.reduce(journeyState, event, journeyRoute, {
+      var previousJourneyState = journeyState;
+      var nextJourneyState = journey.reduce(previousJourneyState, event, journeyRoute, {
         now: Number.isFinite(now) ? now : journeyNow(),
         reducedMotion: Boolean(forceReducedMotion) || prefersReducedMotion()
       });
+      if (nextJourneyState === previousJourneyState) return;
+      stopJourneyClock();
+      journeyState = nextJourneyState;
       if (journeyState.status !== 'transitioning') clearJourneyTransition();
       applyJourneyStop();
       writeUrlState();
@@ -1207,7 +1213,7 @@
   function journeyKeyboardIgnored(target) {
     if (!target) return false;
     var tagName = String(target.tagName || '').toLowerCase();
-    return ['input', 'textarea', 'select', 'button'].indexOf(tagName) !== -1 || target.isContentEditable;
+    return ['input', 'textarea', 'select', 'button', 'a'].indexOf(tagName) !== -1 || target.isContentEditable;
   }
 
   function currentJourneyEvidenceTrigger(trackId, recordId) {
@@ -1307,6 +1313,32 @@
         !event.target || !event.target.closest ||
         !event.target.closest('[data-journey-stop]')) return;
     pauseJourneyForInteraction();
+  }
+
+  function handleJourneyTouchStart(event) {
+    var touch = event && event.touches && event.touches.length === 1 ? event.touches[0] : null;
+    journeyTouchStart = touch && Number.isFinite(touch.clientX) && Number.isFinite(touch.clientY)
+      ? { x: touch.clientX, y: touch.clientY }
+      : null;
+  }
+
+  function handleJourneyTouchEnd(event) {
+    var start = journeyTouchStart;
+    journeyTouchStart = null;
+    var touch = event && event.changedTouches && event.changedTouches.length === 1
+      ? event.changedTouches[0]
+      : null;
+    if (!start || !touch || !Number.isFinite(touch.clientX) || !Number.isFinite(touch.clientY)) return;
+    if (Math.abs(touch.clientX - start.x) <= Math.abs(touch.clientY - start.y)) return;
+    var direction = journeyView.swipeDirection(start.x, touch.clientX, 56);
+    if (direction === 'next' || direction === 'previous') {
+      journeyAutoplay = journeyState && journeyState.status === 'playing';
+      dispatchJourney(direction, journeyNow());
+    }
+  }
+
+  function handleJourneyTouchCancel() {
+    journeyTouchStart = null;
   }
 
   function handleDocumentKeydown(event) {
@@ -1456,18 +1488,9 @@
       if (target.closest('.journey-body')) pauseJourneyForInteraction();
     });
     elements['journey-content'].addEventListener('focusin', handleJourneyFocusIn);
-    elements['journey-content'].addEventListener('touchstart', function (event) {
-      journeyTouchStart = event.touches && event.touches.length === 1 ? event.touches[0].clientX : null;
-    }, { passive: true });
-    elements['journey-content'].addEventListener('touchend', function (event) {
-      if (!Number.isFinite(journeyTouchStart) || !event.changedTouches || event.changedTouches.length !== 1) return;
-      var direction = journeyView.swipeDirection(journeyTouchStart, event.changedTouches[0].clientX, 56);
-      journeyTouchStart = null;
-      if (direction === 'next' || direction === 'previous') {
-        journeyAutoplay = journeyState && journeyState.status === 'playing';
-        dispatchJourney(direction, journeyNow());
-      }
-    }, { passive: true });
+    elements['journey-content'].addEventListener('touchstart', handleJourneyTouchStart, { passive: true });
+    elements['journey-content'].addEventListener('touchend', handleJourneyTouchEnd, { passive: true });
+    elements['journey-content'].addEventListener('touchcancel', handleJourneyTouchCancel, { passive: true });
     document.addEventListener('selectionchange', function () {
       if (!isJourneyOpen() || !journeyState || journeyState.status !== 'playing') return;
       var selection = typeof window.getSelection === 'function' ? window.getSelection() : null;
@@ -1525,6 +1548,9 @@
       dispatch: dispatchJourney,
       handleFocusIn: handleJourneyFocusIn,
       handleKeydown: handleDocumentKeydown,
+      handleTouchStart: handleJourneyTouchStart,
+      handleTouchEnd: handleJourneyTouchEnd,
+      handleTouchCancel: handleJourneyTouchCancel,
       handleVisibilityChange: handleVisibilityChange,
       handleContentClick: handleJourneyContentClick,
       openCatalog: openJourneyCatalog,

@@ -146,10 +146,12 @@ function makeJourneyControllerHarness() {
   }
   let contentHtml = '';
   const content = {
+    renderCount: 0,
     currentHeading: null,
     currentEvidenceTrigger: null,
     currentControls: [],
     set innerHTML(value) {
+      this.renderCount += 1;
       if (this.currentHeading) this.currentHeading.isConnected = false;
       this.currentControls.forEach(function (control) { control.isConnected = false; });
       contentHtml = String(value || '');
@@ -1656,6 +1658,45 @@ test('journey focus trap wraps forward reverse and outside focus', function () {
   assert.strictEqual(journeyView.trapTab({ key: 'Tab', shiftKey: true, preventDefault: forward.preventDefault }, dialog), true);
   assert.deepStrictEqual(focused, ['first', 'last', 'first', 'last']);
   assert.strictEqual(prevented, 4);
+});
+
+test('journey focus trap leaves native tab order when a focused heading remains inside the dialog', function () {
+  const ownerDocument = { activeElement: null };
+  let controls = [];
+  const heading = { tabIndex: -1, isConnected: true };
+  const first = {
+    tabIndex: 0, disabled: false, hidden: false, isConnected: true,
+    ownerDocument: ownerDocument,
+    getAttribute: function () { return null; },
+    focus: function () { ownerDocument.activeElement = this; }
+  };
+  const dialog = {
+    isConnected: true,
+    ownerDocument: ownerDocument,
+    contains: function (node) { return node === heading || node === first; },
+    querySelectorAll: function () {
+      return controls.length ? { 0: first, length: 1 } : { length: 0 };
+    },
+    focus: function () { ownerDocument.activeElement = this; }
+  };
+  let prevented = 0;
+  ownerDocument.activeElement = heading;
+  assert.strictEqual(journeyView.trapTab({
+    key: 'Tab', preventDefault: function () { prevented += 1; }
+  }, dialog), false);
+  assert.strictEqual(journeyView.trapTab({
+    key: 'Tab', shiftKey: true, preventDefault: function () { prevented += 1; }
+  }, dialog), false);
+  assert.strictEqual(ownerDocument.activeElement, heading);
+  assert.strictEqual(prevented, 0);
+
+  heading.isConnected = false;
+  controls = [first];
+  assert.strictEqual(journeyView.trapTab({
+    key: 'Tab', preventDefault: function () { prevented += 1; }
+  }, dialog), true);
+  assert.strictEqual(ownerDocument.activeElement, first);
+  assert.strictEqual(prevented, 1);
 });
 
 test('journey focus trap filters unavailable controls and handles empty or hostile dialogs', function () {
@@ -3975,23 +4016,152 @@ test('journey controller transition ignores descendants then completes and clean
   });
 
   harness.api.armTransition();
-  const listener = harness.stage.listeners.transitionend;
+  const animationListener = harness.stage.listeners.animationend;
+  const transitionListener = harness.stage.listeners.transitionend;
   const fallback = harness.timers.timeouts.filter(function (timer) { return timer.ms === 1400; })[0];
-  assert.strictEqual(typeof listener, 'function');
+  assert.strictEqual(typeof animationListener, 'function');
+  assert.strictEqual(typeof transitionListener, 'function');
+  assert.strictEqual(animationListener, transitionListener,
+    'animation and transition completion must share one exactly-once guard');
   assert.ok(!harness.stage.listenerOptions.transitionend || !harness.stage.listenerOptions.transitionend.once,
     'descendant events must not consume a once listener');
+  assert.ok(!harness.stage.listenerOptions.animationend || !harness.stage.listenerOptions.animationend.once,
+    'descendant animation events must not consume a once listener');
 
-  listener({ target: {} });
+  animationListener({ target: {} });
   assert.deepStrictEqual(harness.reducerEvents, []);
-  assert.strictEqual(harness.stage.listeners.transitionend, listener);
+  assert.strictEqual(harness.stage.listeners.animationend, animationListener);
+  assert.strictEqual(harness.stage.listeners.transitionend, transitionListener);
   assert.strictEqual(fallback.active, true);
 
-  listener({ target: harness.stage });
+  animationListener({ target: harness.stage });
   assert.deepStrictEqual(harness.reducerEvents, ['transitionEnd']);
+  assert.strictEqual(harness.stage.listeners.animationend, undefined);
   assert.strictEqual(harness.stage.listeners.transitionend, undefined);
   assert.strictEqual(fallback.active, false);
+  transitionListener({ target: harness.stage });
   fallback.fn();
   assert.deepStrictEqual(harness.reducerEvents, ['transitionEnd']);
+});
+
+test('journey controller preserves clock render URL and announcement on exact reducer no-op', function () {
+  const harness = makeJourneyControllerHarness();
+  const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+  const playing = journey.createState(route, {
+    stopIndex: 0, status: 'playing', deadline: 10000, remainingMs: 0
+  });
+  harness.api.setContext({
+    state: controllerState({ journey: route.id, stop: route.stops[0].id, journeyMode: 'playing' }),
+    elements: harness.elements, route: route, playerState: playing, autoplay: true
+  });
+  harness.api.renderJourney();
+  const announcement = harness.timers.timeouts.filter(function (timer) { return timer.ms === 0; }).slice(-1)[0];
+  announcement.fn();
+  harness.api.startClock();
+  const interval = harness.timers.intervals.slice(-1)[0];
+  const before = {
+    renderCount: harness.content.renderCount,
+    historyCount: harness.historyUrls.length,
+    timeoutCount: harness.timers.timeouts.length,
+    announcement: harness.elements['journey-announcement'].textContent
+  };
+
+  harness.api.dispatch('visibilityVisible', 200);
+
+  assert.strictEqual(harness.api.snapshot().playerState, playing);
+  assert.strictEqual(interval.active, true, 'exact no-op stopped the owned journey clock');
+  assert.strictEqual(harness.content.renderCount, before.renderCount, 'exact no-op rerendered the scene');
+  assert.strictEqual(harness.historyUrls.length, before.historyCount, 'exact no-op rewrote URL state');
+  assert.strictEqual(harness.timers.timeouts.length, before.timeoutCount, 'exact no-op rescheduled announcement');
+  assert.strictEqual(harness.elements['journey-announcement'].textContent, before.announcement,
+    'exact no-op cleared the live announcement');
+});
+
+test('journey live region survives same-scene status renders and announces the next stop once', function () {
+  const harness = makeJourneyControllerHarness();
+  const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+  const paused = journey.createState(route, { stopIndex: 0, status: 'paused' });
+  harness.api.setContext({
+    state: controllerState({ journey: route.id, stop: route.stops[0].id }),
+    elements: harness.elements, route: route, playerState: paused, autoplay: false
+  });
+  harness.api.renderJourney();
+  const firstAnnouncements = harness.timers.timeouts.filter(function (timer) { return timer.ms === 0; });
+  assert.strictEqual(firstAnnouncements.length, 1);
+  firstAnnouncements[0].fn();
+  const firstMessage = harness.elements['journey-announcement'].textContent;
+  const firstRenderCount = harness.content.renderCount;
+
+  harness.api.dispatch('interact', 200);
+  assert.strictEqual(harness.content.renderCount, firstRenderCount + 1, 'status change did not render controls');
+  assert.strictEqual(harness.elements['journey-announcement'].textContent, firstMessage,
+    'same-scene status render cleared the live region');
+  assert.strictEqual(harness.timers.timeouts.filter(function (timer) { return timer.ms === 0; }).length, 1,
+    'same-scene status render reannounced the current stop');
+
+  harness.api.dispatch('next', 250);
+  const nextAnnouncements = harness.timers.timeouts.filter(function (timer) { return timer.ms === 0; });
+  assert.strictEqual(nextAnnouncements.length, 2, 'next stop must schedule exactly one announcement');
+  assert.strictEqual(harness.elements['journey-announcement'].textContent, '',
+    'the previous stop message must clear when the scene changes');
+  nextAnnouncements[1].fn();
+  assert.ok(harness.elements['journey-announcement'].textContent.indexOf(route.stops[1].headline) !== -1);
+});
+
+test('journey keyboard routing leaves anchors to their native keyboard behavior', function () {
+  [' ', 'ArrowLeft', 'ArrowRight'].forEach(function (key) {
+    const harness = makeJourneyControllerHarness();
+    const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+    const paused = journey.createState(route, { stopIndex: 0, status: 'paused' });
+    harness.api.setContext({
+      state: controllerState({ journey: route.id, stop: route.stops[0].id }),
+      elements: harness.elements, route: route, playerState: paused, autoplay: false
+    });
+    const event = {
+      key: key,
+      target: { tagName: 'A', isContentEditable: false },
+      prevented: false,
+      preventDefault: function () { this.prevented = true; }
+    };
+    harness.api.handleKeydown(event);
+    assert.strictEqual(event.prevented, false, key + ' was intercepted on an anchor');
+    assert.deepStrictEqual(harness.reducerEvents, [], key + ' dispatched a journey action from an anchor');
+    assert.strictEqual(harness.api.snapshot().playerState, paused);
+  });
+});
+
+test('journey touch handlers require a dominant horizontal swipe and reset on cancellation', function () {
+  const harness = makeJourneyControllerHarness();
+  const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+  const paused = journey.createState(route, { stopIndex: 0, status: 'paused' });
+  harness.api.setContext({
+    state: controllerState({ journey: route.id, stop: route.stops[0].id }),
+    elements: harness.elements, route: route, playerState: paused, autoplay: false
+  });
+  assert.strictEqual(typeof harness.api.handleTouchStart, 'function');
+  assert.strictEqual(typeof harness.api.handleTouchEnd, 'function');
+  assert.strictEqual(typeof harness.api.handleTouchCancel, 'function');
+  function start(x, y) {
+    harness.api.handleTouchStart({ touches: [{ clientX: x, clientY: y }] });
+  }
+  function end(x, y) {
+    harness.api.handleTouchEnd({ changedTouches: [{ clientX: x, clientY: y }] });
+  }
+
+  start(100, 100);
+  end(20, 190);
+  start(100, 100);
+  end(90, 20);
+  assert.deepStrictEqual(harness.reducerEvents, [], 'vertical or diagonal movement changed stops');
+
+  start(100, 100);
+  end(20, 110);
+  assert.deepStrictEqual(harness.reducerEvents, ['next']);
+
+  start(100, 100);
+  harness.api.handleTouchCancel();
+  end(20, 100);
+  assert.deepStrictEqual(harness.reducerEvents, ['next'], 'touchcancel left stale swipe coordinates');
 });
 
 test('journey evidence deterministically converts a transition into exploring state', function () {
@@ -4539,6 +4709,23 @@ test('journey CSS exposes focus targets and compact content without overflow mas
   const fixedWidths = Array.from(journeyCss.matchAll(/(?:min-|max-)?width:\s*(\d+)px/g))
     .map(function (match) { return Number(match[1]); });
   assert.ok(fixedWidths.every(function (width) { return width <= 390; }), 'journey CSS fixes a width beyond 390px');
+});
+
+test('journey launcher styles cannot leak onto the body scroll-lock class', function () {
+  const css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
+  const bodyRule = /body\.journey-open\s*\{([^}]*)\}/.exec(css);
+  assert.ok(bodyRule, 'missing journey body scroll lock');
+  assert.deepStrictEqual(bodyRule[1].split(';').map(function (declaration) {
+    return declaration.trim().replace(/\s+/g, ' ');
+  }).filter(Boolean), ['overflow: hidden']);
+  assert.strictEqual(/(^|})\s*\.journey-open(?=[\s:{])/m.test(css), false,
+    'an unscoped launcher selector can style body.journey-open');
+  ['.journey-launch .journey-open {', '.journey-launch .journey-open:hover',
+    '.journey-launch .journey-open:focus-visible'].forEach(function (selector) {
+    assert.ok(css.indexOf(selector) !== -1, 'missing scoped launcher selector ' + selector);
+  });
+  assert.ok(/@media \(max-width: 620px\)[\s\S]*\.journey-launch \.journey-open\s*\{[^}]*width:\s*100%/s.test(css),
+    'mobile launcher width is not scoped to the launcher');
 });
 
 test('app controller validates directed journeys and restores their URL state through the manifest', function () {
