@@ -369,6 +369,52 @@ test('journey player bounds durations and fails safely when deadlines are not re
   });
 });
 
+test('journey player clamps every deadline-derived remainder to the current hold', function () {
+  const route = journey.validateCollection(journeysData, data).routes[0];
+  const hold = route.stops[0].holdMs;
+  const distant = journey.createState(route, {
+    status: 'playing', stopIndex: 0, deadline: Number.MAX_VALUE
+  });
+  [
+    { type: 'pause', status: 'paused' },
+    { type: 'interact', status: 'exploring' },
+    { type: 'visibilityHidden', status: 'paused' }
+  ].forEach(function (fixture) {
+    const result = journey.reduce(distant, { type: fixture.type }, route, { now: 0 });
+    assert.strictEqual(result.status, fixture.status, fixture.type);
+    assert.strictEqual(result.remainingMs, hold, fixture.type);
+    assert.strictEqual(journey.clock(result, 0, route).remainingMs, hold, fixture.type);
+  });
+  assert.deepStrictEqual(journey.clock(distant, 0, route), {
+    remainingMs: hold, countdownSeconds: null, shouldAdvance: false, stopProgress: 0
+  });
+
+  const largeNow = 1e20;
+  assert.ok(largeNow + hold - largeNow > hold, 'fixture must exercise upward deadline rounding');
+  const transitioning = journey.createState(route, { status: 'transitioning', stopIndex: 0 });
+  const roundedTransition = journey.reduce(transitioning, { type: 'transitionEnd' }, route, {
+    now: largeNow
+  });
+  assert.deepStrictEqual({
+    status: roundedTransition.status, deadline: roundedTransition.deadline,
+    remainingMs: roundedTransition.remainingMs
+  }, { status: 'paused', deadline: 0, remainingMs: hold });
+
+  const paused = journey.createState(route, { status: 'paused', stopIndex: 0, remainingMs: hold });
+  const roundedResume = journey.reduce(paused, { type: 'resume' }, route, { now: largeNow });
+  assert.deepStrictEqual({
+    status: roundedResume.status, deadline: roundedResume.deadline,
+    remainingMs: roundedResume.remainingMs
+  }, { status: 'paused', deadline: 0, remainingMs: hold });
+
+  const roundedPlaying = journey.createState(route, {
+    status: 'playing', stopIndex: 0, deadline: largeNow + hold
+  });
+  assert.deepStrictEqual(journey.clock(roundedPlaying, largeNow, route), {
+    remainingMs: hold, countdownSeconds: null, shouldAdvance: false, stopProgress: 0
+  });
+});
+
 test('journey clock exposes countdown and advances only at deadline', function () {
   const route = journey.validateCollection(journeysData, data).routes[0];
   const state = journey.createState(route, { status: 'playing', stopIndex: 0, deadline: 15000 });
@@ -487,7 +533,7 @@ test('journey reducer is immutable and normalizes malformed route and time input
   const result = journey.reduce(state, event, route, options);
   assert.deepStrictEqual(result, {
     routeId: route.id, stopIndex: 0, status: 'paused', deadline: 0,
-    remainingMs: 20000, pausedByVisibility: false
+    remainingMs: route.stops[0].holdMs, pausedByVisibility: false
   });
   assert.deepStrictEqual(state, stateBefore);
   assert.deepStrictEqual(event, eventBefore);

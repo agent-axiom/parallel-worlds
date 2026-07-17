@@ -378,8 +378,14 @@
     });
   }
 
-  function timeRemaining(state, now) {
-    return Math.max(0, state.deadline - now);
+  function boundedRemaining(route, stopIndex, remainingMs) {
+    var hold = stopHold(route, stopIndex);
+    if (Number.isNaN(remainingMs)) return 0;
+    return Math.max(0, Math.min(hold, remainingMs));
+  }
+
+  function timeRemaining(state, now, route) {
+    return boundedRemaining(route, state.stopIndex, state.deadline - now);
   }
 
   function playingState(state, route, now, duration) {
@@ -388,7 +394,10 @@
       ? Math.min(duration, hold)
       : hold;
     var deadline = now + boundedDuration;
-    if (boundedDuration <= 0 || !Number.isFinite(deadline) || deadline <= now) {
+    var representedDuration = deadline - now;
+    if (boundedDuration <= 0 || !Number.isFinite(deadline) ||
+        !Number.isFinite(representedDuration) || representedDuration <= 0 ||
+        representedDuration > boundedDuration || representedDuration > hold) {
       return Object.assign({}, state, {
         status: 'paused',
         deadline: 0,
@@ -450,7 +459,7 @@
       return Object.assign({}, current, {
         status: 'paused',
         deadline: 0,
-        remainingMs: timeRemaining(current, now),
+        remainingMs: timeRemaining(current, now, route),
         pausedByVisibility: false
       });
     }
@@ -460,7 +469,7 @@
         return Object.assign({}, current, {
           status: 'exploring',
           deadline: 0,
-          remainingMs: timeRemaining(current, now),
+          remainingMs: timeRemaining(current, now, route),
           pausedByVisibility: false
         });
       }
@@ -507,7 +516,7 @@
       return Object.assign({}, current, {
         status: 'paused',
         deadline: 0,
-        remainingMs: timeRemaining(current, now),
+        remainingMs: timeRemaining(current, now, route),
         pausedByVisibility: true
       });
     }
@@ -561,8 +570,8 @@
 
     var hold = stopHold(route, state.stopIndex);
     var remainingMs = state.status === 'playing'
-      ? Math.max(0, state.deadline - now)
-      : Math.max(0, state.remainingMs);
+      ? timeRemaining(state, now, route)
+      : boundedRemaining(route, state.stopIndex, state.remainingMs);
     return {
       remainingMs: remainingMs,
       countdownSeconds: remainingMs > 0 && remainingMs <= 5000
