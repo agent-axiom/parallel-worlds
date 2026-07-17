@@ -156,6 +156,7 @@
     validateCopy(stop.copy, ['headline', 'body'], stopPath, issues);
 
     var focusTrackIds = Array.isArray(stop.focusTrackIds) ? stop.focusTrackIds : [];
+    var resolvedFocusTrackIds = [];
     var uniqueFocusIds = Object.create(null);
     var invalidFocus = !Array.isArray(stop.focusTrackIds) || focusTrackIds.length > 2;
     for (var focusIndex = 0; focusIndex < focusTrackIds.length; focusIndex += 1) {
@@ -164,6 +165,7 @@
         continue;
       }
       var trackId = focusTrackIds[focusIndex];
+      resolvedFocusTrackIds.push(trackId);
       if (!isNonEmptyString(trackId) || hasOwn(uniqueFocusIds, trackId)) invalidFocus = true;
       if (isNonEmptyString(trackId)) uniqueFocusIds[trackId] = true;
       if (isNonEmptyString(trackId)) {
@@ -194,7 +196,7 @@
       id: stop.id,
       year: stop.year,
       holdMs: stop.holdMs,
-      focusTrackIds: focusTrackIds.slice(),
+      focusTrackIds: resolvedFocusTrackIds,
       copy: stop.copy,
       records: records
     };

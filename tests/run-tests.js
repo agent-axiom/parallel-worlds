@@ -386,6 +386,54 @@ test('directed journey validation rejects inherited and sparse focus and referen
   });
 });
 
+test('directed journey validation copies focus without invoking manifest slice', function () {
+  [{
+    label: 'own substitute',
+    install: function (focus, calls) {
+      focus.slice = function () {
+        calls.count += 1;
+        return ['indus'];
+      };
+    }
+  }, {
+    label: 'inherited substitute',
+    install: function (focus, calls) {
+      const prototype = Object.create(Array.prototype);
+      Object.defineProperty(prototype, 'slice', {
+        configurable: true,
+        value: function () {
+          calls.count += 1;
+          return ['indus'];
+        }
+      });
+      Object.setPrototypeOf(focus, prototype);
+    }
+  }, {
+    label: 'null slice',
+    install: function (focus) { focus.slice = null; }
+  }, {
+    label: 'non-callable slice',
+    install: function (focus) { focus.slice = { substitute: ['indus'] }; }
+  }, {
+    label: 'throwing slice',
+    install: function (focus, calls) {
+      focus.slice = function () {
+        calls.count += 1;
+        throw new Error('manifest slice must not execute');
+      };
+    }
+  }].forEach(function (variant) {
+    const fixture = JSON.parse(JSON.stringify(journeysData));
+    const focus = fixture.routes[0].stops[0].focusTrackIds;
+    const calls = { count: 0 };
+    variant.install(focus, calls);
+    const result = journey.validateCollection(fixture, data);
+    assert.strictEqual(calls.count, 0, variant.label);
+    assert.deepStrictEqual(result.issues, [], variant.label);
+    assert.deepStrictEqual(result.routes[0].stops[0].focusTrackIds, ['xianrendong'], variant.label);
+  });
+});
+
 test('directed journey validation accepts fully null-prototype manifest data', function () {
   const fixture = nullPrototypeClone(journeysData);
   assert.strictEqual(Object.getPrototypeOf(fixture), null);
