@@ -804,6 +804,17 @@
     neutralizeJourneyMap();
   }
 
+  function renderJourneyCatalogMaps() {
+    var content = elements['journey-content'];
+    if (!content || typeof content.querySelectorAll !== 'function') return;
+    var targets = content.querySelectorAll('.journey-card-map');
+    var routes = validatedJourneys && Array.isArray(validatedJourneys.routes) ? validatedJourneys.routes : [];
+    var limit = Math.min(targets.length, routes.length, 100);
+    for (var index = 0; index < limit; index += 1) {
+      targets[index].innerHTML = atlasView.worldSvg(worldMapData, t('atlasAria'), null, atlasCopy());
+    }
+  }
+
   function neutralizeJourneyMap() {
     var layer = elements['journey-content'].querySelector('.journey-map-layer');
     if (!layer || typeof layer.querySelectorAll !== 'function') return;
@@ -933,7 +944,9 @@
     if (!html) throw new Error('Journey view returned no content');
     if (sceneChanged) cancelJourneyAnnouncement();
     elements['journey-content'].innerHTML = html;
-    if (journeyRoute && journeyState && journeyState.status !== 'complete') {
+    if (!journeyRoute || !journeyState || journeyState.status === 'catalog') {
+      renderJourneyCatalogMaps();
+    } else if (journeyState.status !== 'complete') {
       renderJourneyMap();
       if (sceneChanged) copyJourneyAnnouncement(identity);
     }

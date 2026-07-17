@@ -1058,6 +1058,19 @@ body.journey-open { overflow: hidden; }
   transform: rotate(-12deg);
 }
 .journey-card-map::after { inset: 34% 8%; border-color: rgba(241, 149, 98, .23); transform: rotate(18deg); }
+.journey-card-map .atlas-world {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.journey-card-map .atlas-ocean { fill: rgba(4, 23, 21, .42); }
+.journey-card-map .atlas-graticule { stroke: rgba(112, 211, 194, .13); }
+.journey-card-map .atlas-land { fill: #24504a; }
+.journey-card-map .atlas-coast-glow { stroke: rgba(89, 219, 205, .38); }
+.journey-card-map .atlas-coast-line { stroke: rgba(150, 236, 221, .72); }
 .journey-card h3 {
   margin-bottom: .7rem;
   font: 500 clamp(1.55rem, 2.6vw, 2.1rem)/1.06 Georgia, "Times New Roman", serif;

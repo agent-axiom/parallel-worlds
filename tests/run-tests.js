@@ -16,6 +16,7 @@ const timeline = require(path.join(root, 'timeline.js'));
 const i18n = require(path.join(root, 'i18n.js'));
 const atlas = require(path.join(root, 'atlas.js'));
 const atlasData = require(path.join(root, 'atlas-data.js'));
+const worldMapData = require(path.join(root, 'world-map-data.js'));
 const insights = require(path.join(root, 'insights.js'));
 const explorerState = require(path.join(root, 'explorer-state.js'));
 const atlasView = require(path.join(root, 'atlas-view.js'));
@@ -150,11 +151,15 @@ function makeJourneyControllerHarness() {
     currentHeading: null,
     currentEvidenceTrigger: null,
     currentControls: [],
+    currentCatalogMaps: [],
     set innerHTML(value) {
       this.renderCount += 1;
       if (this.currentHeading) this.currentHeading.isConnected = false;
       this.currentControls.forEach(function (control) { control.isConnected = false; });
       contentHtml = String(value || '');
+      this.currentCatalogMaps = Array.from(contentHtml.matchAll(/class="journey-card-map"/g)).map(function () {
+        return { innerHTML: '' };
+      });
       const sourceMatch = /data-journey-announcement-source hidden>([\s\S]*?)<\/span>/.exec(contentHtml);
       announcementSource.textContent = sourceMatch ? decodeHtml(sourceMatch[1]) : '';
       const stopMatch = /data-journey-stop="([^"]+)"/.exec(contentHtml);
@@ -216,6 +221,7 @@ function makeJourneyControllerHarness() {
       if (selector === '[data-journey-action], [data-journey-go], [data-journey-evidence], [data-journey-start]') {
         return this.currentControls.slice();
       }
+      if (selector === '.journey-card-map') return this.currentCatalogMaps.slice();
       return [];
     }
   };
@@ -302,7 +308,7 @@ function makeJourneyControllerHarness() {
     ParallelTimeline: timeline,
     ParallelWorldsI18n: i18n,
     PARALLEL_WORLDS_ATLAS_DATA: atlasData,
-    PARALLEL_WORLDS_MAP_DATA: {},
+    PARALLEL_WORLDS_MAP_DATA: worldMapData,
     PARALLEL_WORLDS_INSIGHTS: insights,
     ParallelWorldsAtlas: atlas,
     ParallelWorldsExplorerState: explorerModule,
@@ -576,6 +582,32 @@ test('directed journey validation requires own route structural fields', functio
     ['invalid-journey-entry', 'routes[0].id'],
     ['invalid-journey-entry', 'routes[0].stops']
   ]);
+});
+
+test('directed journey validation accepts only finite integer durations from two to three minutes', function () {
+  const canonical = journey.validateCollection(JSON.parse(JSON.stringify(journeysData)), data);
+  assert.strictEqual(journeysData.routes[0].durationSeconds, 120);
+  assert.strictEqual(canonical.routes.length, 1);
+  assert.strictEqual(canonical.issues.some(function (item) {
+    return item.code === 'invalid-journey-duration';
+  }), false);
+
+  [
+    { label: 'string', value: '120' },
+    { label: 'NaN', value: NaN },
+    { label: 'fractional', value: 120.5 },
+    { label: 'below range', value: 119 },
+    { label: 'above range', value: 181 }
+  ].forEach(function (fixture) {
+    const collection = JSON.parse(JSON.stringify(journeysData));
+    collection.routes[0].durationSeconds = fixture.value;
+    const result = journey.validateCollection(collection, data);
+    assert.deepStrictEqual(result.routes, [], fixture.label);
+    assert.ok(result.issues.some(function (item) {
+      return item.code === 'invalid-journey-duration' &&
+        item.path === 'routes[0].durationSeconds';
+    }), fixture.label);
+  });
 });
 
 test('directed journey validation rejects an inherited route copy field', function () {
@@ -2191,6 +2223,17 @@ test('academic audit promotes invalid journey references to blockers', function 
   assert.ok(report.issues.some(function (item) { return item.code === 'unknown-track'; }));
 });
 
+test('academic audit promotes invalid journey duration to a blocker', function () {
+  const fixture = JSON.parse(JSON.stringify(journeysData));
+  fixture.routes[0].durationSeconds = 181;
+  const report = require(path.join(root, 'academic-audit.js')).buildAudit(data, fixture);
+  assert.ok(report.summary.blockingIssues > 0);
+  assert.ok(report.issues.some(function (item) {
+    return item.severity === 'error' && item.code === 'invalid-journey-duration' &&
+      item.path === 'journeys.routes[0].durationSeconds';
+  }));
+});
+
 test('academic audit fails closed for malformed journey collections', function () {
   const report = require(path.join(root, 'academic-audit.js')).buildAudit(data, { version: 1, routes: {} });
   assert.deepStrictEqual(report.journeys, []);
@@ -2359,6 +2402,17 @@ test('academic data shell and source URL validation are explicit', function () {
   assert.strictEqual(academicData.scale.breakpoint, -3500);
   assert.strictEqual(quality.isGenericHomepage('https://www.metmuseum.org/'), true);
   assert.strictEqual(quality.isGenericHomepage('https://www.metmuseum.org/essays/uruk-the-first-city'), false);
+});
+
+test('Mehrgarh journey evidence identifies Kenoyer publication metadata exactly', function () {
+  const source = academicData.sources['kenoyer-indus-2011'];
+  assert.strictEqual(source.title, 'Changing Perspectives of the Indus Civilization: New Discoveries and Challenges');
+  assert.strictEqual(source.publisher, 'Indian Archaeological Society (Puratattva 41)');
+  assert.strictEqual(source.year, 2011);
+  const mehrgarh = academicData.tracks.find(function (track) { return track.id === 'mehrgarh'; });
+  const event = mehrgarh.events.find(function (item) { return item.id === 'mehrgarh-food-production'; });
+  assert.strictEqual(event.year, -7000);
+  assert.deepStrictEqual(event.sourceIds, ['kenoyer-indus-2011']);
 });
 
 test('reviewed source registry covers every first-release region with exact records', function () {
@@ -4867,6 +4921,34 @@ test('app controller syncs journey stops through the existing atlas and persiste
   assert.ok(/journeyCatalogText/.test(app), 'catalog omits the localized introduction');
 });
 
+test('journey catalog cards render the bundled world contour through the atlas renderer', function () {
+  const harness = makeJourneyControllerHarness();
+  harness.dialog.open = false;
+  harness.api.setContext({ state: controllerState(), elements: harness.elements });
+
+  harness.api.openCatalog('');
+
+  assert.strictEqual(harness.content.currentCatalogMaps.length, 1,
+    'validated journey catalog did not emit exactly one map target');
+  const mapHtml = harness.content.currentCatalogMaps[0].innerHTML;
+  assert.ok(mapHtml.indexOf('class="atlas-world"') !== -1,
+    'catalog card omitted the shared atlas SVG');
+  assert.ok(mapHtml.indexOf('class="atlas-land"') !== -1,
+    'catalog card omitted the bundled land contour');
+  assert.ok(mapHtml.indexOf(worldMapData.landPath.slice(0, 80)) !== -1,
+    'catalog card did not use the bundled Natural Earth land path');
+});
+
+test('journey catalog scopes its world contour to the card viewport', function () {
+  const css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
+  assert.ok(/\.journey-card-map \.atlas-world\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0[^}]*width:\s*100%[^}]*height:\s*100%/s.test(css),
+    'catalog atlas SVG does not fill the journey card map');
+  assert.ok(/\.journey-card-map \.atlas-land\s*\{[^}]*fill:\s*#[0-9a-f]{3,8}/is.test(css),
+    'catalog land contour has no scoped visible fill');
+  assert.ok(/\.journey-card-map \.atlas-coast-line\s*\{[^}]*stroke:\s*rgba?\(/s.test(css),
+    'catalog coast contour has no scoped visible stroke');
+});
+
 test('journey sharing serializes a paused clone without mutating active playback', function () {
   const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
   const shareFunction = /function shareJourney\([^)]*\)\s*\{([\s\S]*?)\n\s*\}/.exec(app);
@@ -4911,13 +4993,37 @@ test('mobile filters use an accessible collapsed disclosure', function () {
   assert.ok(app.indexOf("setAttribute('aria-expanded'") !== -1, 'filter disclosure state is not synchronized');
 });
 
-test('concise Russian and English launch posts include public links', function () {
+test('concise Russian and English launch posts derive current corpus counts and language coverage', function () {
+  const counts = {
+    tracks: data.tracks.length,
+    periods: data.tracks.reduce(function (total, track) { return total + (track.periods || []).length; }, 0),
+    events: data.tracks.reduce(function (total, track) { return total + (track.events || []).length; }, 0)
+  };
+  const expected = {
+    'launch-ru.md': [
+      counts.tracks + ' исторические линии',
+      counts.periods + ' периодов',
+      counts.events + ' хронологический ориентир',
+      'упрощённом китайском'
+    ],
+    'launch-en.md': [
+      counts.tracks + ' historical tracks',
+      counts.periods + ' periods',
+      counts.events + ' milestones',
+      'Simplified Chinese'
+    ]
+  };
   ['launch-ru.md', 'launch-en.md'].forEach(function (filename) {
     const postPath = path.join(root, 'docs/posts', filename);
     assert.ok(fs.existsSync(postPath), 'missing ' + filename);
     const post = fs.readFileSync(postPath, 'utf8');
     assert.ok(post.indexOf('https://agent-axiom.github.io/parallel-worlds/') !== -1, 'missing site link in ' + filename);
     assert.ok(post.indexOf('https://github.com/agent-axiom/parallel-worlds') !== -1, 'missing repository link in ' + filename);
+    expected[filename].forEach(function (marker) {
+      assert.ok(post.indexOf(marker) !== -1, filename + ' is stale or omits language coverage: ' + marker);
+    });
+    assert.strictEqual(new RegExp(counts.tracks + '\\s+(?:цивилизац|civilizations)', 'i').test(post), false,
+      filename + ' incorrectly calls every historical track a civilization');
     assert.ok(post.split(/\s+/).length <= 130, filename + ' is not concise');
   });
 });

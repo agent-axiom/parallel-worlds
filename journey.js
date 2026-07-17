@@ -250,6 +250,11 @@
       if (isNonEmptyString(route.id) && hasOwn(routeIdCounts, route.id) && routeIdCounts[route.id] > 1) {
         routeIssues.push(issue('duplicate-journey-id', routePath + '.id', 'Journey IDs must be unique'));
       }
+      if (!Number.isFinite(route.durationSeconds) || Math.floor(route.durationSeconds) !== route.durationSeconds ||
+          route.durationSeconds < 120 || route.durationSeconds > 180) {
+        routeIssues.push(issue('invalid-journey-duration', routePath + '.durationSeconds',
+          'Journey duration must be a finite integer from 120 to 180 seconds'));
+      }
       validateCopy(route.copy, ['title', 'summary', 'conclusion'], routePath, routeIssues);
 
       var stops = Array.isArray(route.stops) ? route.stops : [];

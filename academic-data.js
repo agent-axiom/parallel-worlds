@@ -56,7 +56,7 @@
     },
     'kenoyer-indus-2011': {
       tier: 'A', kind: 'peer-reviewed-article', title: 'Changing Perspectives of the Indus Civilization: New Discoveries and Challenges',
-      authors: ['J. Mark Kenoyer'], publisher: 'Journal of the Indian Ocean Archaeology', year: 2011,
+      authors: ['J. Mark Kenoyer'], publisher: 'Indian Archaeological Society (Puratattva 41)', year: 2011,
       url: 'https://www.harappa.com/sites/default/files/pdf/Kenoyer_Changing%20Perspectives%20of%20the%20Indus%20Civilization.pdf', accessed: accessed
     },
     'cambridge-mesolithic-europe-2008': {
