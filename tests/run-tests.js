@@ -148,9 +148,10 @@ function makeJourneyControllerHarness() {
   const content = {
     currentHeading: null,
     currentEvidenceTrigger: null,
+    currentControls: [],
     set innerHTML(value) {
       if (this.currentHeading) this.currentHeading.isConnected = false;
-      if (this.currentEvidenceTrigger) this.currentEvidenceTrigger.isConnected = false;
+      this.currentControls.forEach(function (control) { control.isConnected = false; });
       contentHtml = String(value || '');
       const sourceMatch = /data-journey-announcement-source hidden>([\s\S]*?)<\/span>/.exec(contentHtml);
       announcementSource.textContent = sourceMatch ? decodeHtml(sourceMatch[1]) : '';
@@ -164,22 +165,35 @@ function makeJourneyControllerHarness() {
       } else {
         this.currentHeading = null;
       }
-      const evidenceMatch = /data-journey-evidence="([^"]+)"\s+data-record-id="([^"]+)"/.exec(contentHtml);
-      if (evidenceMatch) {
-        const evidence = focusNode('evidence');
-        evidence.dataset = {
-          journeyEvidence: decodeHtml(evidenceMatch[1]),
-          recordId: decodeHtml(evidenceMatch[2])
+      this.currentControls = Array.from(contentHtml.matchAll(/<button([^>]*)>/g)).map(function (match) {
+        const attributes = match[1];
+        function attribute(name) {
+          const result = new RegExp('\\s' + name + '="([^"]*)"').exec(attributes);
+          return result ? decodeHtml(result[1]) : undefined;
+        }
+        const control = focusNode('control');
+        control.dataset = {
+          journeyAction: attribute('data-journey-action'),
+          journeyGo: attribute('data-journey-go'),
+          journeyEvidence: attribute('data-journey-evidence'),
+          recordId: attribute('data-record-id'),
+          journeyStart: attribute('data-journey-start')
         };
-        evidence.closest = function (selector) {
-          return selector === '[data-journey-stop]' ? stage : null;
+        control.closest = function (selector) {
+          return selector === '[data-journey-stop]' && stopMatch ? stage : null;
         };
-        this.currentEvidenceTrigger = evidence;
-      } else {
-        this.currentEvidenceTrigger = null;
-      }
+        return control;
+      }).filter(function (control) {
+        return Object.keys(control.dataset).some(function (key) { return control.dataset[key] !== undefined; });
+      });
+      this.currentEvidenceTrigger = this.currentControls.filter(function (control) {
+        return control.dataset.journeyEvidence !== undefined;
+      })[0] || null;
     },
     get innerHTML() { return contentHtml; },
+    contains: function (node) {
+      return node === this.currentHeading || this.currentControls.indexOf(node) !== -1;
+    },
     querySelector: function (selector) {
       return {
         '[data-journey-stop]': stage,
@@ -192,9 +206,15 @@ function makeJourneyControllerHarness() {
       }[selector] || null;
     },
     querySelectorAll: function (selector) {
-      return selector === '[data-journey-evidence]' && this.currentEvidenceTrigger
-        ? [this.currentEvidenceTrigger]
-        : [];
+      if (selector === '[data-journey-evidence]') {
+        return this.currentControls.filter(function (control) {
+          return control.dataset.journeyEvidence !== undefined;
+        });
+      }
+      if (selector === '[data-journey-action], [data-journey-go], [data-journey-evidence], [data-journey-start]') {
+        return this.currentControls.slice();
+      }
+      return [];
     }
   };
   const dialog = {
@@ -4281,6 +4301,37 @@ test('journey catalog and changed stops focus headings without treating programm
   assert.strictEqual(harness.reducerEvents[harness.reducerEvents.length - 1], 'interact');
 });
 
+test('status-only journey dispatch restores the active control replacement without a focus pause loop', function () {
+  const harness = makeJourneyControllerHarness();
+  const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
+  const playing = journey.createState(route, {
+    stopIndex: 0, status: 'playing', deadline: 10000, remainingMs: route.stops[0].holdMs
+  });
+  harness.api.setContext({
+    state: controllerState({ journey: route.id, stop: route.stops[0].id, journeyMode: 'playing' }),
+    elements: harness.elements, route: route, playerState: playing, autoplay: true
+  });
+  harness.api.renderJourney();
+  const toggle = harness.content.currentControls.filter(function (control) {
+    return control.dataset.journeyAction === 'toggle';
+  })[0];
+  assert.ok(toggle && toggle.isConnected, 'test stage did not render its Pause control');
+
+  toggle.focus();
+
+  const replacement = harness.content.currentControls.filter(function (control) {
+    return control.dataset.journeyAction === 'toggle';
+  })[0];
+  assert.notStrictEqual(replacement, toggle, 'status render did not replace the control subtree');
+  assert.strictEqual(toggle.isConnected, false);
+  assert.strictEqual(harness.document.activeElement, replacement,
+    'focus remained on the disconnected Pause control');
+  assert.strictEqual(replacement.focusCount, 1, 'replacement Resume control was not focused exactly once');
+  assert.strictEqual(harness.api.snapshot().playerState.status, 'exploring');
+  assert.deepStrictEqual(harness.reducerEvents, ['interact'],
+    'restoring the replacement caused a second user-interaction pause');
+});
+
 test('journey close restores only a connected meaningful trigger and repeated close is harmless', function () {
   function opener(connected) {
     const harness = makeJourneyControllerHarness();
@@ -4340,6 +4391,30 @@ test('nested evidence detail restores its connected trigger without pausing the 
   assert.strictEqual(harness.dialog.open, true, 'closing nested details also closed the journey');
 });
 
+test('ordinary detail click helper restores the actual connected launcher', function () {
+  const harness = makeJourneyControllerHarness();
+  const launcher = {
+    isConnected: true,
+    focusCount: 0,
+    dataset: { track: 'xianrendong', period: 'xianrendong-pottery-evidence' },
+    focus: function () { this.focusCount += 1; harness.document.activeElement = this; }
+  };
+  harness.api.setContext({ state: controllerState(), elements: harness.elements });
+  harness.document.activeElement = harness.document.body;
+
+  harness.api.openDetailsFromTrigger(launcher);
+  assert.strictEqual(harness.detailDialog.open, true);
+  harness.api.closeDetails();
+
+  assert.strictEqual(launcher.focusCount, 1,
+    'ordinary pointer launcher was not restored when activeElement never became the button');
+  assert.strictEqual(harness.document.activeElement, launcher);
+
+  const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+  assert.ok((app.match(/openDetailsFromTrigger\(button\)/g) || []).length >= 4,
+    'atlas, track, period, and contemporary click handlers must pass their concrete button');
+});
+
 test('journey live announcements reject stale stop and closed-dialog callbacks', function () {
   const harness = makeJourneyControllerHarness();
   const route = journey.localizeRoute(journey.validateCollection(journeysData, data).routes[0], 'en');
@@ -4397,6 +4472,10 @@ test('journey CSS exposes focus targets and compact content without overflow mas
   const css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
   const journeyCss = css.slice(css.indexOf('/* Directed journeys'), css.indexOf('@keyframes journey-stage-in'));
   assert.strictEqual(/overflow-x:\s*hidden/.test(css), false, 'horizontal overflow is hidden instead of fixed');
+  const stageRule = /\.journey-stage\s*\{([^}]*)\}/.exec(journeyCss);
+  assert.ok(stageRule, 'missing journey stage rule');
+  assert.strictEqual(/overflow(?:-x)?:\s*(?:hidden|clip)/.test(stageRule[1]), false,
+    'journey stage masks horizontal content overflow');
   assert.ok(/\.journey-dialog[\s\S]*:focus-visible[\s\S]*outline:\s*3px/.test(journeyCss));
   assert.ok(/\.journey-(?:catalog\s*>\s*h2|stage\s*>\s*h2):focus-visible/.test(css),
     'programmatically focused headings lack a strong visible focus style');

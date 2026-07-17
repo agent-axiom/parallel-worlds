@@ -1093,7 +1093,6 @@ body.journey-open { overflow: hidden; }
   align-content: end;
   gap: .75rem clamp(1rem, 4vw, 3.5rem);
   padding: clamp(1.2rem, 4vw, 3.5rem);
-  overflow: hidden;
   background: #071514;
   animation: journey-stage-in .62s cubic-bezier(.2, .7, .2, 1) both;
 }

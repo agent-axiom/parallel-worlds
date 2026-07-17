@@ -341,7 +341,7 @@
       setView('chronology');
     });
     Array.prototype.forEach.call(elements['atlas-panel'].querySelectorAll('[data-track]'), function (button) {
-      button.addEventListener('click', function () { openDetails(button.dataset.track); });
+      button.addEventListener('click', function () { openDetailsFromTrigger(button); });
     });
   }
 
@@ -445,7 +445,7 @@
     elements.timeline.hidden = tracks.length === 0;
     elements['empty-state'].hidden = tracks.length !== 0;
     Array.prototype.forEach.call(elements.timeline.querySelectorAll('.track-label[data-track]'), function (button) {
-      button.addEventListener('click', function () { openDetails(button.dataset.track); });
+      button.addEventListener('click', function () { openDetailsFromTrigger(button); });
       button.addEventListener('keydown', function (event) {
         if (event.key !== 'ArrowRight') return;
         var first = button.closest('.track-row').querySelector('.period[data-period]');
@@ -458,7 +458,7 @@
     Array.prototype.forEach.call(elements.timeline.querySelectorAll('.period[data-period]'), function (button) {
       button.addEventListener('click', function (event) {
         event.stopPropagation();
-        openDetails(button.dataset.track, button.dataset.period);
+        openDetailsFromTrigger(button);
       });
       button.addEventListener('pointerenter', function () { showPeriodTooltip(button); });
       button.addEventListener('pointerleave', hidePeriodTooltip);
@@ -481,7 +481,7 @@
       return '<button class="contemporary-chip" type="button" data-track="' + track.id + '">' + escapeHtml(track.name) + '</button>';
     }).join('');
     Array.prototype.forEach.call(elements['contemporary-list'].querySelectorAll('[data-track]'), function (button) {
-      button.addEventListener('click', function () { openDetails(button.dataset.track); });
+      button.addEventListener('click', function () { openDetailsFromTrigger(button); });
     });
   }
 
@@ -544,6 +544,11 @@
       if (typeof emphasized.scrollIntoView === 'function') emphasized.scrollIntoView({ block: 'nearest' });
       emphasized.focus();
     }
+  }
+
+  function openDetailsFromTrigger(trigger) {
+    if (!trigger || !trigger.dataset || !trigger.dataset.track) return;
+    openDetails(trigger.dataset.track, trigger.dataset.period || '', trigger);
   }
 
   function closeDetails() {
@@ -835,9 +840,64 @@
     focusProgrammatically(heading);
   }
 
+  function activeJourneyControlDescriptor(identity) {
+    var content = elements['journey-content'];
+    var active = document.activeElement;
+    if (!identity || identity !== journeyFocusIdentity || !content || !active ||
+        typeof content.contains !== 'function') return null;
+    try {
+      if (!content.contains(active)) return null;
+    } catch (_) {
+      return null;
+    }
+    var dataset = active.dataset;
+    if (!dataset) return null;
+    if (typeof dataset.journeyAction === 'string') {
+      return { kind: 'action', value: dataset.journeyAction };
+    }
+    if (typeof dataset.journeyGo === 'string') {
+      return { kind: 'go', value: dataset.journeyGo };
+    }
+    if (typeof dataset.journeyEvidence === 'string') {
+      return { kind: 'evidence', value: dataset.journeyEvidence, recordId: dataset.recordId || '' };
+    }
+    if (typeof dataset.journeyStart === 'string') {
+      return { kind: 'start', value: dataset.journeyStart };
+    }
+    return null;
+  }
+
+  function restoreJourneyControl(descriptor) {
+    var content = elements['journey-content'];
+    if (!descriptor || !content || typeof content.querySelectorAll !== 'function') return false;
+    var controls;
+    try {
+      controls = content.querySelectorAll(
+        '[data-journey-action], [data-journey-go], [data-journey-evidence], [data-journey-start]'
+      );
+    } catch (_) {
+      return false;
+    }
+    var length = Number.isFinite(controls.length) ? Math.min(controls.length, 100) : 0;
+    for (var index = 0; index < length; index += 1) {
+      var control = controls[index];
+      var dataset = control && control.dataset;
+      var matches = false;
+      if (dataset && descriptor.kind === 'action') matches = dataset.journeyAction === descriptor.value;
+      else if (dataset && descriptor.kind === 'go') matches = dataset.journeyGo === descriptor.value;
+      else if (dataset && descriptor.kind === 'evidence') {
+        matches = dataset.journeyEvidence === descriptor.value &&
+          (dataset.recordId || '') === descriptor.recordId;
+      } else if (dataset && descriptor.kind === 'start') matches = dataset.journeyStart === descriptor.value;
+      if (matches && focusProgrammatically(control)) return true;
+    }
+    return false;
+  }
+
   function renderJourney() {
     var html;
     var identity = journeySceneIdentity();
+    var controlDescriptor = activeJourneyControlDescriptor(identity);
     if (!journeyRoute || !journeyState || journeyState.status === 'catalog') {
       html = journeyView.catalogHtml(localizedJourneyRoutes(), journeyCopy());
       html = html.replace('</h2>', '</h2><p>' + journeyView.escapeHtml(t('journeyCatalogText')) + '</p>');
@@ -859,6 +919,7 @@
       copyJourneyAnnouncement(identity);
     }
     focusJourneyHeading(identity);
+    restoreJourneyControl(controlDescriptor);
     return true;
   }
 
@@ -1451,6 +1512,7 @@
       handleContentClick: handleJourneyContentClick,
       openCatalog: openJourneyCatalog,
       openDetails: openDetails,
+      openDetailsFromTrigger: openDetailsFromTrigger,
       renderJourney: renderJourney,
       renderMap: renderJourneyMap,
       share: shareJourney,
