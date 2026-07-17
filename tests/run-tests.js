@@ -437,7 +437,49 @@ test('journey clock handles paused progress, countdown boundaries, and malformed
   assert.deepStrictEqual(journey.clock({ status: 'invalid' }, 1000, route), {
     remainingMs: 0, countdownSeconds: null, shouldAdvance: false, stopProgress: 0
   });
-  assert.deepStrictEqual(journey.clock({ status: 'complete' }, NaN, null), {
+});
+
+test('journey clock rejects malformed stable state, mismatched routes, and invalid clock inputs', function () {
+  const route = journey.validateCollection(journeysData, data).routes[0];
+  const playing = journey.createState(route, { status: 'playing', stopIndex: 0, deadline: 5000 });
+  const incomplete = Object.assign({}, playing);
+  delete incomplete.routeId;
+  const invalidHoldRoute = { id: 'invalid-hold', stops: [{ holdMs: NaN }] };
+  const invalidHoldState = {
+    routeId: invalidHoldRoute.id, stopIndex: 0, status: 'playing', deadline: 5000,
+    remainingMs: 0, pausedByVisibility: false
+  };
+  const safe = {
+    remainingMs: 0, countdownSeconds: null, shouldAdvance: false, stopProgress: 0
+  };
+  const cases = [
+    { name: 'partial state', state: { status: 'playing', deadline: 5000 }, now: 1000, route: route },
+    { name: 'missing stable key', state: incomplete, now: 1000, route: route },
+    { name: 'extra stable key', state: Object.assign({}, playing, { extra: true }), now: 1000, route: route },
+    { name: 'invalid status', state: Object.assign({}, playing, { status: 'invalid' }), now: 1000, route: route },
+    { name: 'route id mismatch', state: Object.assign({}, playing, { routeId: 'other-route' }), now: 1000, route: route },
+    { name: 'non-finite time', state: playing, now: Infinity, route: route },
+    { name: 'missing current stop', state: Object.assign({}, playing, { stopIndex: route.stops.length }), now: 1000, route: route },
+    { name: 'invalid current hold', state: invalidHoldState, now: 1000, route: invalidHoldRoute },
+    { name: 'negative paused remainder', state: Object.assign({}, playing, {
+      status: 'paused', deadline: 0, remainingMs: -1
+    }), now: 1000, route: route },
+    { name: 'malformed complete state', state: { status: 'complete' }, now: NaN, route: null }
+  ];
+
+  cases.forEach(function (fixture) {
+    assert.deepStrictEqual(journey.clock(fixture.state, fixture.now, fixture.route), safe, fixture.name);
+  });
+});
+
+test('journey clock reserves inactive terminal progress for a valid complete state', function () {
+  const route = journey.validateCollection(journeysData, data).routes[0];
+  const catalog = journey.createState(route, { status: 'catalog', stopIndex: 0 });
+  const complete = journey.createState(route, { status: 'complete', stopIndex: 0 });
+  assert.deepStrictEqual(journey.clock(catalog, 1000, route), {
+    remainingMs: 0, countdownSeconds: null, shouldAdvance: false, stopProgress: 0
+  });
+  assert.deepStrictEqual(journey.clock(complete, 1000, route), {
     remainingMs: 0, countdownSeconds: null, shouldAdvance: false, stopProgress: 1
   });
 });

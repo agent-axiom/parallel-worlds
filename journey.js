@@ -277,6 +277,14 @@
     visibilityHidden: true,
     visibilityVisible: true
   };
+  var PLAYER_STATE_KEYS = [
+    'routeId',
+    'stopIndex',
+    'status',
+    'deadline',
+    'remainingMs',
+    'pausedByVisibility'
+  ];
 
   function safeCatalogState() {
     return Object.assign({}, {
@@ -340,9 +348,9 @@
 
   function normalizedStateOrOriginal(state, route) {
     var normalized = createState(route, state && typeof state === 'object' ? state : {});
-    if (!state || typeof state !== 'object' || Object.keys(state).length !== 6) return normalized;
-    var keys = ['routeId', 'stopIndex', 'status', 'deadline', 'remainingMs', 'pausedByVisibility'];
-    var unchanged = keys.every(function (key) { return state[key] === normalized[key]; });
+    if (!state || typeof state !== 'object' ||
+        Object.keys(state).length !== PLAYER_STATE_KEYS.length) return normalized;
+    var unchanged = PLAYER_STATE_KEYS.every(function (key) { return state[key] === normalized[key]; });
     return unchanged ? state : normalized;
   }
 
@@ -502,23 +510,38 @@
     };
   }
 
-  function clock(state, now, route) {
-    var complete = Boolean(state) && state.status === 'complete';
-    if (complete) return safeClock(true);
-    if (!state || typeof state !== 'object' || !isAllowedStatus(state.status) ||
-        !Number.isFinite(now) || now < 0 || !hasUsableRoute(route) ||
+  function hasStableStateShape(state) {
+    return Boolean(state) && typeof state === 'object' && !Array.isArray(state) &&
+      Object.keys(state).length === PLAYER_STATE_KEYS.length &&
+      PLAYER_STATE_KEYS.every(function (key) { return hasOwn(state, key); });
+  }
+
+  function hasValidClockState(state, route) {
+    if (!hasStableStateShape(state) || state.routeId !== route.id ||
+        !isAllowedStatus(state.status) ||
         !Number.isFinite(state.stopIndex) || Math.floor(state.stopIndex) !== state.stopIndex ||
-        state.stopIndex < 0 || state.stopIndex >= route.stops.length) {
+        state.stopIndex < 0 || state.stopIndex >= route.stops.length ||
+        !Number.isFinite(state.deadline) || state.deadline < 0 ||
+        !Number.isFinite(state.remainingMs) || state.remainingMs < 0 ||
+        typeof state.pausedByVisibility !== 'boolean' ||
+        state.status === 'playing' && state.deadline === 0 ||
+        state.status !== 'playing' && state.deadline !== 0 ||
+        (state.status === 'catalog' || state.status === 'complete') &&
+          (state.remainingMs !== 0 || state.pausedByVisibility)) {
+      return false;
+    }
+    return stopHold(route, state.stopIndex) > 0;
+  }
+
+  function clock(state, now, route) {
+    if (!Number.isFinite(now) || now < 0 || !hasUsableRoute(route) ||
+        !hasValidClockState(state, route)) {
       return safeClock(false);
     }
+    if (state.status === 'catalog') return safeClock(false);
+    if (state.status === 'complete') return safeClock(true);
 
     var hold = stopHold(route, state.stopIndex);
-    if (hold === 0 || state.status === 'playing' &&
-        (!Number.isFinite(state.deadline) || state.deadline <= 0) ||
-        state.status !== 'playing' && !Number.isFinite(state.remainingMs)) {
-      return safeClock(false);
-    }
-
     var remainingMs = state.status === 'playing'
       ? Math.max(0, state.deadline - now)
       : Math.max(0, state.remainingMs);
