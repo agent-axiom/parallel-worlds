@@ -2208,6 +2208,50 @@ test('edition validation ignores inherited and accessor-controlled collections w
   assert.doesNotThrow(function () { edition.validateManifest(accessor); });
 });
 
+test('edition readiness reports reviewed active tracks, regions and exact-source coverage', function () {
+  const fixtureData = {
+    sources: {
+      exact: {
+        tier: 'A', kind: 'peer-reviewed-article', title: 'Exact chronology',
+        url: 'https://doi.org/10.1000/edition-fixture'
+      }
+    },
+    tracks: [
+      {
+        id: 'a', region: 'africa', reviewStatus: 'reviewed',
+        periods: [{
+          id: 'a-period', start: -600, end: -400, sourceIds: ['exact'],
+          dating: { basis: 'radiocarbon', precision: 'range', original: '600–400 BCE' }
+        }], events: []
+      },
+      {
+        id: 'b', region: 'east-asia', reviewStatus: 'legacy',
+        periods: [{ id: 'b-period', start: -600, end: -400, sourceIds: ['exact'] }], events: []
+      }
+    ]
+  };
+  const fixtureManifest = {
+    windows: [{ id: 'window-07', anchorYear: -500, requirements: { reviewedTracks: 1, regions: 1 } }]
+  };
+  const report = edition.buildReadiness(fixtureManifest, fixtureData);
+  assert.deepStrictEqual(report.windows[0].reviewedTrackIds, ['a']);
+  assert.deepStrictEqual(report.windows[0].legacyTrackIds, ['b']);
+  assert.deepStrictEqual(report.windows[0].regions, ['africa']);
+  assert.strictEqual(report.windows[0].status, 'ready');
+});
+
+test('edition readiness exposes deterministic gaps instead of treating legacy data as ready', function () {
+  const report = edition.buildReadiness(editionData, data);
+  assert.strictEqual(report.windows.length, 12);
+  report.windows.forEach(function (window) {
+    assert.ok(['ready', 'needs-review'].includes(window.status));
+    assert.deepStrictEqual(window.reviewedTrackIds, window.reviewedTrackIds.slice().sort());
+    assert.deepStrictEqual(window.regions, window.regions.slice().sort());
+    assert.ok(Array.isArray(window.gaps));
+  });
+  assert.deepStrictEqual(report, edition.buildReadiness(editionData, data));
+});
+
 test('academic audit is deterministic and separates reviewed coverage from legacy warnings', function () {
   const audit = require(path.join(root, 'academic-audit.js'));
   const source = {

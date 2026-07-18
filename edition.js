@@ -164,7 +164,96 @@
     return { issues: issues, windows: issues.length ? [] : windows.slice() };
   }
 
+  function activeAt(record, year) {
+    if (!record || !chronology || !chronology.isValidHistoricalYear(year)) return false;
+    var start = ownValue(record, 'start');
+    var end = ownValue(record, 'end');
+    if (!chronology.isValidHistoricalYear(start) || !chronology.isValidHistoricalYear(end)) return false;
+    var target = chronology.toOrdinal(year);
+    return chronology.toOrdinal(start) <= target && target <= chronology.toOrdinal(end);
+  }
+
+  function exactRecord(record, sources) {
+    var sourceIds = ownArrayValues(ownValue(record, 'sourceIds'));
+    var dating = ownValue(record, 'dating');
+    var basis = ownValue(dating, 'basis');
+    var precision = ownValue(dating, 'precision');
+    var original = ownValue(dating, 'original');
+    if (!sourceIds.length || typeof basis !== 'string' || !basis.trim() ||
+        typeof precision !== 'string' || !precision.trim() ||
+        typeof original !== 'string' || !original.trim()) return false;
+    return sourceIds.every(function (sourceId) {
+      var source = ownValue(sources, sourceId);
+      var url = ownValue(source, 'url');
+      var title = ownValue(source, 'title');
+      var tier = ownValue(source, 'tier');
+      return source && typeof url === 'string' && /^https:\/\//.test(url) &&
+        typeof title === 'string' && title.trim() && (tier === 'A' || tier === 'B');
+    });
+  }
+
+  function uniqueSorted(values) {
+    return values.filter(function (value, index) {
+      return typeof value === 'string' && value && values.indexOf(value) === index;
+    }).sort();
+  }
+
+  function buildReadiness(manifest, dataset) {
+    var windows = ownArrayValues(ownValue(manifest, 'windows'));
+    var tracks = ownArrayValues(ownValue(dataset, 'tracks'));
+    var sources = ownValue(dataset, 'sources') || {};
+    return {
+      windows: windows.map(function (window) {
+        var anchorYear = ownValue(window, 'anchorYear');
+        var activeTracks = tracks.filter(function (track) {
+          return ownArrayValues(ownValue(track, 'periods')).some(function (period) {
+            return activeAt(period, anchorYear);
+          });
+        });
+        var reviewedTracks = activeTracks.filter(function (track) {
+          if (ownValue(track, 'reviewStatus') !== 'reviewed') return false;
+          return ownArrayValues(ownValue(track, 'periods')).some(function (period) {
+            return activeAt(period, anchorYear) && exactRecord(period, sources);
+          });
+        });
+        var unqualifiedReviewedTracks = activeTracks.filter(function (track) {
+          return ownValue(track, 'reviewStatus') === 'reviewed' && reviewedTracks.indexOf(track) === -1;
+        });
+        var requirements = ownValue(window, 'requirements') || {};
+        var neededTracks = ownValue(requirements, 'reviewedTracks');
+        var neededRegions = ownValue(requirements, 'regions');
+        if (!Number.isInteger(neededTracks) || neededTracks < 1) neededTracks = 6;
+        if (!Number.isInteger(neededRegions) || neededRegions < 1) neededRegions = 3;
+        var reviewedTrackIds = uniqueSorted(reviewedTracks.map(function (track) { return ownValue(track, 'id'); }));
+        var legacyTrackIds = uniqueSorted(activeTracks.filter(function (track) {
+          return ownValue(track, 'reviewStatus') !== 'reviewed';
+        }).map(function (track) { return ownValue(track, 'id'); }));
+        var regions = uniqueSorted(reviewedTracks.map(function (track) { return ownValue(track, 'region'); }));
+        var gaps = [];
+        if (reviewedTrackIds.length < neededTracks) {
+          gaps.push('reviewed-tracks:' + reviewedTrackIds.length + '/' + neededTracks);
+        }
+        if (regions.length < neededRegions) {
+          gaps.push('regions:' + regions.length + '/' + neededRegions);
+        }
+        return {
+          id: ownValue(window, 'id'),
+          anchorYear: anchorYear,
+          status: gaps.length ? 'needs-review' : 'ready',
+          reviewedTrackIds: reviewedTrackIds,
+          unqualifiedReviewedTrackIds: uniqueSorted(unqualifiedReviewedTracks.map(function (track) {
+            return ownValue(track, 'id');
+          })),
+          legacyTrackIds: legacyTrackIds,
+          regions: regions,
+          gaps: gaps
+        };
+      })
+    };
+  }
+
   return {
+    buildReadiness: buildReadiness,
     validateManifest: validateManifest
   };
 }));
