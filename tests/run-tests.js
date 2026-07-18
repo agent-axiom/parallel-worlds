@@ -25,6 +25,7 @@ const editionData = require(path.join(root, 'edition-data.js'));
 const mediaData = require(path.join(root, 'media-data.js'));
 const mediaRegistry = require(path.join(root, 'media-registry.js'));
 const editionAudit = require(path.join(root, 'edition-audit.js'));
+const companion = require(path.join(root, 'companion.js'));
 
 let passed = 0;
 
@@ -2381,6 +2382,36 @@ test('edition audit build script serializes the canonical deterministic report',
   const expected = JSON.stringify(editionAudit.buildAudit(data, editionData, mediaData), null, 2) + '\n';
   assert.strictEqual(fs.readFileSync(artifact, 'utf8'), expected);
   if (committed) fs.writeFileSync(artifact, committed);
+});
+
+test('companion route manifest has one safe stable route per edition window', function () {
+  const routes = companion.buildRoutes(editionData, mediaData);
+  assert.strictEqual(routes.length, 12);
+  assert.deepStrictEqual(routes.map(function (route) { return route.path; }),
+    editionData.windows.map(function (window) { return 'go/' + window.companionPath + '/'; }));
+  routes.forEach(function (route) {
+    assert.ok(/^go\/window-[0-9]{2}\/$/.test(route.path));
+    assert.ok(/^\?lang=ru&editionWindow=window-[0-9]{2}$/.test(route.target));
+  });
+});
+
+test('companion redirect HTML is internal escaped and usable without JavaScript', function () {
+  const html = companion.renderRedirect({
+    path: 'go/window-04/', target: '?lang=ru&editionWindow=window-04'
+  });
+  assert.ok(html.indexOf('http-equiv="refresh"') !== -1);
+  assert.ok(html.indexOf('<a href="../../?lang=ru&amp;editionWindow=window-04">') !== -1);
+  assert.strictEqual(html.indexOf('https://'), -1);
+  assert.strictEqual(html.indexOf('<script'), -1);
+});
+
+test('companion route builder rejects unsafe paths external targets and duplicates', function () {
+  assert.throws(function () {
+    companion.renderRedirect({ path: '../bad/', target: 'https://evil.example/' });
+  }, /Unsafe companion route/);
+  const duplicate = JSON.parse(JSON.stringify(editionData));
+  duplicate.windows[1].companionPath = duplicate.windows[0].companionPath;
+  assert.throws(function () { companion.buildRoutes(duplicate, mediaData); }, /Duplicate companion route/);
 });
 
 test('academic audit is deterministic and separates reviewed coverage from legacy warnings', function () {

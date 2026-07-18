@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "routes": [
+    {
+      "id": "window-01",
+      "kind": "window",
+      "path": "go/window-01/",
+      "target": "?lang=ru&editionWindow=window-01"
+    },
+    {
+      "id": "window-02",
+      "kind": "window",
+      "path": "go/window-02/",
+      "target": "?lang=ru&editionWindow=window-02"
+    },
+    {
+      "id": "window-03",
+      "kind": "window",
+      "path": "go/window-03/",
+      "target": "?lang=ru&editionWindow=window-03"
+    },
+    {
+      "id": "window-04",
+      "kind": "window",
+      "path": "go/window-04/",
+      "target": "?lang=ru&editionWindow=window-04"
+    },
+    {
+      "id": "window-05",
+      "kind": "window",
+      "path": "go/window-05/",
+      "target": "?lang=ru&editionWindow=window-05"
+    },
+    {
+      "id": "window-06",
+      "kind": "window",
+      "path": "go/window-06/",
+      "target": "?lang=ru&editionWindow=window-06"
+    },
+    {
+      "id": "window-07",
+      "kind": "window",
+      "path": "go/window-07/",
+      "target": "?lang=ru&editionWindow=window-07"
+    },
+    {
+      "id": "window-08",
+      "kind": "window",
+      "path": "go/window-08/",
+      "target": "?lang=ru&editionWindow=window-08"
+    },
+    {
+      "id": "window-09",
+      "kind": "window",
+      "path": "go/window-09/",
+      "target": "?lang=ru&editionWindow=window-09"
+    },
+    {
+      "id": "window-10",
+      "kind": "window",
+      "path": "go/window-10/",
+      "target": "?lang=ru&editionWindow=window-10"
+    },
+    {
+      "id": "window-11",
+      "kind": "window",
+      "path": "go/window-11/",
+      "target": "?lang=ru&editionWindow=window-11"
+    },
+    {
+      "id": "window-12",
+      "kind": "window",
+      "path": "go/window-12/",
+      "target": "?lang=ru&editionWindow=window-12"
+    }
+  ]
+}
