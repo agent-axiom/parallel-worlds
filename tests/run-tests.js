@@ -24,6 +24,7 @@ const edition = require(path.join(root, 'edition.js'));
 const editionData = require(path.join(root, 'edition-data.js'));
 const mediaData = require(path.join(root, 'media-data.js'));
 const mediaRegistry = require(path.join(root, 'media-registry.js'));
+const editionAudit = require(path.join(root, 'edition-audit.js'));
 
 let passed = 0;
 
@@ -2347,6 +2348,39 @@ test('media registry never coerces hostile license dates or link ids to strings'
     links: [{ windowId: hostile, role: 'object' }]
   }] };
   assert.doesNotThrow(function () { mediaRegistry.validateRegistry(fixture); });
+});
+
+test('edition audit is deterministic and distinguishes blockers from readiness gaps', function () {
+  const first = editionAudit.buildAudit(data, editionData, mediaData);
+  const second = editionAudit.buildAudit(data, editionData, mediaData);
+  assert.deepStrictEqual(first, second);
+  assert.strictEqual(first.summary.windows, 12);
+  assert.strictEqual(first.summary.readyWindows, 5);
+  assert.strictEqual(first.summary.mediaEntries, 0);
+  assert.strictEqual(first.summary.blockingIssues, 0);
+  assert.strictEqual(first.summary.releaseReady, false);
+  assert.ok(first.summary.readinessGaps > 0);
+  assert.strictEqual(first.generatedAt, undefined);
+});
+
+test('edition audit promotes malformed manifests and registries to deterministic blockers', function () {
+  const report = editionAudit.buildAudit(data, { version: 1 }, { version: 1 });
+  assert.ok(report.summary.blockingIssues > 0);
+  assert.strictEqual(report.summary.releaseReady, false);
+  assert.deepStrictEqual(report.issues, report.issues.slice().sort(function (left, right) {
+    return [left.severity, left.code, left.path].join('|').localeCompare(
+      [right.severity, right.code, right.path].join('|')
+    );
+  }));
+});
+
+test('edition audit build script serializes the canonical deterministic report', function () {
+  const artifact = path.join(root, 'edition-audit.json');
+  const committed = fs.existsSync(artifact) ? fs.readFileSync(artifact, 'utf8') : '';
+  childProcess.execFileSync(process.execPath, [path.join(root, 'scripts/build-edition-audit.mjs')], { cwd: root });
+  const expected = JSON.stringify(editionAudit.buildAudit(data, editionData, mediaData), null, 2) + '\n';
+  assert.strictEqual(fs.readFileSync(artifact, 'utf8'), expected);
+  if (committed) fs.writeFileSync(artifact, committed);
 });
 
 test('academic audit is deterministic and separates reviewed coverage from legacy warnings', function () {

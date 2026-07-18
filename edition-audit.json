@@ -1,0 +1,701 @@
+{
+  "generatedFrom": "parallel-worlds-hardcover-v1",
+  "edition": {
+    "id": "hardcover-ru-first-edition",
+    "format": {
+      "widthMm": 300,
+      "heightMm": 240,
+      "orientation": "landscape",
+      "language": "ru"
+    },
+    "printRun": {
+      "minimum": 500,
+      "quoteQuantities": [
+        500,
+        750,
+        1000
+      ]
+    },
+    "pagePlan": {
+      "opening": 16,
+      "windows": 192,
+      "interludes": 32,
+      "apparatus": 48,
+      "total": 288
+    }
+  },
+  "summary": {
+    "windows": 12,
+    "readyWindows": 5,
+    "mediaEntries": 0,
+    "blockingIssues": 0,
+    "readinessGaps": 34,
+    "releaseReady": false
+  },
+  "windows": [
+    {
+      "id": "window-01",
+      "anchorYear": -18000,
+      "status": "needs-review",
+      "reviewedTrackIds": [
+        "european-palaeolithic-mesolithic",
+        "late-pleistocene-americas",
+        "sahul-continuity",
+        "xianrendong"
+      ],
+      "unqualifiedReviewedTrackIds": [],
+      "legacyTrackIds": [],
+      "regions": [
+        "americas",
+        "east-asia",
+        "mediterranean",
+        "oceania"
+      ],
+      "gaps": [
+        "reviewed-tracks:4/6"
+      ]
+    },
+    {
+      "id": "window-02",
+      "anchorYear": -9500,
+      "status": "needs-review",
+      "reviewedTrackIds": [
+        "european-palaeolithic-mesolithic",
+        "gobekli-tepe",
+        "jomon",
+        "sahul-continuity"
+      ],
+      "unqualifiedReviewedTrackIds": [],
+      "legacyTrackIds": [],
+      "regions": [
+        "east-asia",
+        "mediterranean",
+        "oceania",
+        "west-asia"
+      ],
+      "gaps": [
+        "reviewed-tracks:4/6"
+      ]
+    },
+    {
+      "id": "window-03",
+      "anchorYear": -6500,
+      "status": "ready",
+      "reviewedTrackIds": [
+        "catalhoyuk",
+        "european-palaeolithic-mesolithic",
+        "jomon",
+        "korea",
+        "mehrgarh",
+        "sahul-continuity"
+      ],
+      "unqualifiedReviewedTrackIds": [],
+      "legacyTrackIds": [],
+      "regions": [
+        "east-asia",
+        "mediterranean",
+        "oceania",
+        "south-asia",
+        "west-asia"
+      ],
+      "gaps": []
+    },
+    {
+      "id": "window-04",
+      "anchorYear": -3500,
+      "status": "ready",
+      "reviewedTrackIds": [
+        "jomon",
+        "korea",
+        "mehrgarh",
+        "predynastic-nile",
+        "sahul-continuity",
+        "uruk"
+      ],
+      "unqualifiedReviewedTrackIds": [],
+      "legacyTrackIds": [
+        "mesopotamian_religion"
+      ],
+      "regions": [
+        "africa",
+        "east-asia",
+        "mesopotamia",
+        "oceania",
+        "south-asia"
+      ],
+      "gaps": []
+    },
+    {
+      "id": "window-05",
+      "anchorYear": -2500,
+      "status": "ready",
+      "reviewedTrackIds": [
+        "egypt",
+        "greece",
+        "jomon",
+        "korea",
+        "liangzhu",
+        "sumer"
+      ],
+      "unqualifiedReviewedTrackIds": [],
+      "legacyTrackIds": [
+        "andean_religion",
+        "andes",
+        "egyptian_religion",
+        "indus",
+        "mesopotamian_religion",
+        "north_america",
+        "nubia",
+        "phoenicia"
+      ],
+      "regions": [
+        "africa",
+        "east-asia",
+        "mediterranean",
+        "mesopotamia"
+      ],
+      "gaps": []
+    },
+    {
+      "id": "window-06",
+      "anchorYear": -1200,
+      "status": "ready",
+      "reviewedTrackIds": [
+        "assyria",
+        "babylonia",
+        "china",
+        "egypt",
+        "greece",
+        "hittites",
+        "jomon",
+        "korea",
+        "lapita"
+      ],
+      "unqualifiedReviewedTrackIds": [],
+      "legacyTrackIds": [
+        "andean_religion",
+        "egyptian_religion",
+        "greek_religion",
+        "hinduism",
+        "indonesia",
+        "indus",
+        "israel_judah",
+        "japan",
+        "judaism",
+        "maya",
+        "mesoamerican_religion",
+        "mesopotamian_religion",
+        "north_america",
+        "nubia",
+        "oceania",
+        "phoenicia",
+        "southeast_asia",
+        "steppe",
+        "zoroastrianism"
+      ],
+      "regions": [
+        "africa",
+        "east-asia",
+        "mediterranean",
+        "mesopotamia",
+        "oceania",
+        "west-asia"
+      ],
+      "gaps": []
+    },
+    {
+      "id": "window-07",
+      "anchorYear": -500,
+      "status": "ready",
+      "reviewedTrackIds": [
+        "china",
+        "greece",
+        "jomon",
+        "korea",
+        "persia",
+        "rome"
+      ],
+      "unqualifiedReviewedTrackIds": [],
+      "legacyTrackIds": [
+        "andean_religion",
+        "andes",
+        "buddhism",
+        "central_asia",
+        "confucianism",
+        "egyptian_religion",
+        "ethiopia",
+        "greek_religion",
+        "hinduism",
+        "india",
+        "indonesia",
+        "israel_judah",
+        "jainism",
+        "japan",
+        "judaism",
+        "maya",
+        "mesoamerican_religion",
+        "mesopotamian_religion",
+        "north_america",
+        "nubia",
+        "oceania",
+        "phoenicia",
+        "roman_religion",
+        "shinto",
+        "southeast_asia",
+        "steppe",
+        "west_africa",
+        "zoroastrianism"
+      ],
+      "regions": [
+        "east-asia",
+        "mediterranean",
+        "west-asia"
+      ],
+      "gaps": []
+    },
+    {
+      "id": "window-08",
+      "anchorYear": 200,
+      "status": "needs-review",
+      "reviewedTrackIds": [
+        "china",
+        "korea",
+        "persia",
+        "rome"
+      ],
+      "unqualifiedReviewedTrackIds": [],
+      "legacyTrackIds": [
+        "andean_religion",
+        "andes",
+        "buddhism",
+        "central_asia",
+        "christianity",
+        "confucianism",
+        "daoism",
+        "egyptian_religion",
+        "ethiopia",
+        "greek_religion",
+        "hinduism",
+        "india",
+        "indonesia",
+        "jainism",
+        "japan",
+        "judaism",
+        "maya",
+        "mesoamerican_religion",
+        "north_america",
+        "nubia",
+        "oceania",
+        "phoenicia",
+        "roman_religion",
+        "shinto",
+        "southeast_asia",
+        "steppe",
+        "teotihuacan",
+        "west_africa",
+        "zoroastrianism"
+      ],
+      "regions": [
+        "east-asia",
+        "mediterranean",
+        "west-asia"
+      ],
+      "gaps": [
+        "reviewed-tracks:4/6"
+      ]
+    },
+    {
+      "id": "window-09",
+      "anchorYear": 650,
+      "status": "needs-review",
+      "reviewedTrackIds": [
+        "byzantium",
+        "china",
+        "korea",
+        "persia"
+      ],
+      "unqualifiedReviewedTrackIds": [],
+      "legacyTrackIds": [
+        "andean_religion",
+        "andes",
+        "buddhism",
+        "central_asia",
+        "christianity",
+        "daoism",
+        "ethiopia",
+        "hinduism",
+        "india",
+        "indonesia",
+        "islam",
+        "jainism",
+        "japan",
+        "judaism",
+        "manichaeism",
+        "maya",
+        "mesoamerican_religion",
+        "north_america",
+        "oceania",
+        "shinto",
+        "southeast_asia",
+        "steppe",
+        "teotihuacan",
+        "west_africa",
+        "zoroastrianism"
+      ],
+      "regions": [
+        "east-asia",
+        "mediterranean",
+        "west-asia"
+      ],
+      "gaps": [
+        "reviewed-tracks:4/6"
+      ]
+    },
+    {
+      "id": "window-10",
+      "anchorYear": 1000,
+      "status": "needs-review",
+      "reviewedTrackIds": [
+        "byzantium",
+        "china",
+        "korea"
+      ],
+      "unqualifiedReviewedTrackIds": [],
+      "legacyTrackIds": [
+        "andean_religion",
+        "andes",
+        "buddhism",
+        "central_asia",
+        "christianity",
+        "confucianism",
+        "daoism",
+        "ethiopia",
+        "hinduism",
+        "india",
+        "indonesia",
+        "islam",
+        "jainism",
+        "japan",
+        "judaism",
+        "manichaeism",
+        "maya",
+        "mesoamerican_religion",
+        "north_america",
+        "oceania",
+        "shinto",
+        "southeast_asia",
+        "steppe",
+        "west_africa"
+      ],
+      "regions": [
+        "east-asia",
+        "mediterranean"
+      ],
+      "gaps": [
+        "reviewed-tracks:3/6",
+        "regions:2/3"
+      ]
+    },
+    {
+      "id": "window-11",
+      "anchorYear": 1250,
+      "status": "needs-review",
+      "reviewedTrackIds": [
+        "byzantium",
+        "china",
+        "korea"
+      ],
+      "unqualifiedReviewedTrackIds": [],
+      "legacyTrackIds": [
+        "andean_religion",
+        "andes",
+        "aztec",
+        "buddhism",
+        "central_asia",
+        "christianity",
+        "confucianism",
+        "daoism",
+        "ethiopia",
+        "hinduism",
+        "inca",
+        "india",
+        "indonesia",
+        "islam",
+        "jainism",
+        "japan",
+        "judaism",
+        "manichaeism",
+        "maya",
+        "mesoamerican_religion",
+        "north_america",
+        "oceania",
+        "shinto",
+        "sikhism",
+        "southeast_asia",
+        "steppe",
+        "west_africa"
+      ],
+      "regions": [
+        "east-asia",
+        "mediterranean"
+      ],
+      "gaps": [
+        "reviewed-tracks:3/6",
+        "regions:2/3"
+      ]
+    },
+    {
+      "id": "window-12",
+      "anchorYear": 1450,
+      "status": "needs-review",
+      "reviewedTrackIds": [
+        "byzantium",
+        "china",
+        "korea"
+      ],
+      "unqualifiedReviewedTrackIds": [],
+      "legacyTrackIds": [
+        "andean_religion",
+        "aztec",
+        "buddhism",
+        "central_asia",
+        "christianity",
+        "confucianism",
+        "daoism",
+        "ethiopia",
+        "hinduism",
+        "inca",
+        "india",
+        "indonesia",
+        "islam",
+        "jainism",
+        "japan",
+        "judaism",
+        "maya",
+        "mesoamerican_religion",
+        "north_america",
+        "oceania",
+        "shinto",
+        "sikhism",
+        "southeast_asia",
+        "steppe",
+        "west_africa"
+      ],
+      "regions": [
+        "east-asia",
+        "mediterranean"
+      ],
+      "gaps": [
+        "reviewed-tracks:3/6",
+        "regions:2/3"
+      ]
+    }
+  ],
+  "media": [],
+  "issues": [
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-01.hero",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-01.object",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-02.hero",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-02.object",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-03.hero",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-03.object",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-04.hero",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-04.object",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-05.hero",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-05.object",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-06.hero",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-06.object",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-07.hero",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-07.object",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-08.hero",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-08.object",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-09.hero",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-09.object",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-10.hero",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-10.object",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-11.hero",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-11.object",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-12.hero",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "missing-media-slot",
+      "path": "windows.window-12.object",
+      "message": "Cleared media slot is empty"
+    },
+    {
+      "severity": "warning",
+      "code": "window-readiness",
+      "path": "windows.window-01",
+      "message": "reviewed-tracks:4/6"
+    },
+    {
+      "severity": "warning",
+      "code": "window-readiness",
+      "path": "windows.window-02",
+      "message": "reviewed-tracks:4/6"
+    },
+    {
+      "severity": "warning",
+      "code": "window-readiness",
+      "path": "windows.window-08",
+      "message": "reviewed-tracks:4/6"
+    },
+    {
+      "severity": "warning",
+      "code": "window-readiness",
+      "path": "windows.window-09",
+      "message": "reviewed-tracks:4/6"
+    },
+    {
+      "severity": "warning",
+      "code": "window-readiness",
+      "path": "windows.window-10",
+      "message": "reviewed-tracks:3/6"
+    },
+    {
+      "severity": "warning",
+      "code": "window-readiness",
+      "path": "windows.window-10",
+      "message": "regions:2/3"
+    },
+    {
+      "severity": "warning",
+      "code": "window-readiness",
+      "path": "windows.window-11",
+      "message": "reviewed-tracks:3/6"
+    },
+    {
+      "severity": "warning",
+      "code": "window-readiness",
+      "path": "windows.window-11",
+      "message": "regions:2/3"
+    },
+    {
+      "severity": "warning",
+      "code": "window-readiness",
+      "path": "windows.window-12",
+      "message": "reviewed-tracks:3/6"
+    },
+    {
+      "severity": "warning",
+      "code": "window-readiness",
+      "path": "windows.window-12",
+      "message": "regions:2/3"
+    }
+  ]
+}
