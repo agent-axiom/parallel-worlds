@@ -4676,6 +4676,46 @@ test('validation rejects a stale academic audit before tests and restores the wo
     'validator does not explain how to regenerate a stale audit');
 });
 
+test('edition foundation is included in validation and Pages deployment', function () {
+  const validator = fs.readFileSync(path.join(root, 'scripts/validate.sh'), 'utf8');
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/deploy-pages.yml'), 'utf8');
+  [
+    'edition-data.js', 'edition.js', 'media-data.js', 'media-registry.js',
+    'edition-audit.js', 'edition-audit.json', 'edition-view.js',
+    'companion.js', 'companion-routes.json'
+  ].forEach(function (asset) {
+    assert.ok(validator.indexOf(asset) !== -1, 'validator misses ' + asset);
+    assert.ok(workflow.indexOf(asset) !== -1, 'Pages artifact misses ' + asset);
+  });
+  assert.ok(validator.indexOf('build-edition-audit.mjs') !== -1);
+  assert.ok(validator.indexOf('build-companion-routes.mjs --check') !== -1);
+  assert.ok(workflow.indexOf('cp -R go _site/') !== -1);
+});
+
+test('edition audit validation is non-destructive and runs before the test suite', function () {
+  const validator = fs.readFileSync(path.join(root, 'scripts/validate.sh'), 'utf8');
+  const snapshotIndex = validator.indexOf('parallel-worlds-edition-audit');
+  const snapshotCopyIndex = validator.indexOf('cp edition-audit.json');
+  const trapIndex = validator.indexOf('trap restore_academic_audit EXIT');
+  const buildIndex = validator.indexOf('node scripts/build-edition-audit.mjs');
+  const compareIndex = validator.indexOf('cmp -s "$edition_audit_snapshot" edition-audit.json');
+  const routesIndex = validator.indexOf('node scripts/build-companion-routes.mjs --check');
+  const testsIndex = validator.indexOf('node tests/run-tests.js');
+  assert.ok(snapshotIndex !== -1 && snapshotCopyIndex > snapshotIndex);
+  assert.ok(trapIndex > snapshotCopyIndex && trapIndex < buildIndex);
+  assert.ok(buildIndex < compareIndex && compareIndex < routesIndex && routesIndex < testsIndex);
+  assert.ok(/cp "\$edition_audit_snapshot" edition-audit\.json/.test(validator));
+  assert.ok(/edition-audit\.json is stale[\s\S]*build-edition-audit\.mjs/.test(validator));
+});
+
+test('edition method documents release gaps without claiming print readiness', function () {
+  const method = fs.readFileSync(path.join(root, 'docs/edition-method.md'), 'utf8');
+  ['reviewed', 'mediaId', 'print', 'web', 'QR', 'releaseReady', '500', 'npm run validate'].forEach(function (marker) {
+    assert.ok(method.indexOf(marker) !== -1, 'edition method misses ' + marker);
+  });
+  assert.strictEqual(method.indexOf('готово к печати'), -1);
+});
+
 test('required static site and Pages files exist and use relative assets', function () {
   const evidenceAssets = ['chronology.js', 'academic-data.js', 'data-quality.js'];
   const auditAssets = ['academic-audit.js', 'academic-audit.json'];

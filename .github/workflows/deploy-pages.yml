@@ -41,7 +41,8 @@ jobs:
       - name: Prepare static artifact
         run: |
           mkdir _site
-          cp index.html styles.css app.js chronology.js academic-data.js data-quality.js academic-audit.js academic-audit.json data.js i18n.js timeline.js atlas-data.js world-map-data.js insights.js atlas.js explorer-state.js atlas-view.js journeys-data.js journey.js journey-view.js .nojekyll _site/
+          cp index.html styles.css app.js chronology.js academic-data.js data-quality.js academic-audit.js academic-audit.json data.js i18n.js timeline.js atlas-data.js world-map-data.js insights.js atlas.js explorer-state.js atlas-view.js journeys-data.js journey.js journey-view.js edition-data.js edition.js media-data.js media-registry.js edition-audit.js edition-audit.json edition-view.js companion.js companion-routes.json .nojekyll _site/
+          cp -R go _site/
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:
