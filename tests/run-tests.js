@@ -26,6 +26,7 @@ const mediaData = require(path.join(root, 'media-data.js'));
 const mediaRegistry = require(path.join(root, 'media-registry.js'));
 const editionAudit = require(path.join(root, 'edition-audit.js'));
 const companion = require(path.join(root, 'companion.js'));
+const editionView = require(path.join(root, 'edition-view.js'));
 
 let passed = 0;
 
@@ -415,6 +416,117 @@ function makeJourneyControllerHarness() {
     selectedEventNode: selectedEventNode,
     selectedPeriodNode: selectedPeriodNode,
     timers: timers
+  };
+}
+
+function makeEditionControllerHarness(search) {
+  const source = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+  const historyUrls = [];
+  const focused = [];
+  function focusTarget(name) {
+    return {
+      name: name, isConnected: true, focusCount: 0, scrollCount: 0, lastFocusOptions: null,
+      focus: function (options) {
+        this.focusCount += 1;
+        this.lastFocusOptions = options || null;
+        focused.push(this);
+      },
+      scrollIntoView: function () { this.scrollCount += 1; }
+    };
+  }
+  const section = { hidden: true };
+  const content = {
+    html: '', currentHeading: null,
+    set innerHTML(value) {
+      this.html = String(value || '');
+      this.currentHeading = this.html.indexOf('id="edition-companion-title"') !== -1
+        ? focusTarget('edition-heading')
+        : null;
+    },
+    get innerHTML() { return this.html; },
+    querySelector: function (selector) {
+      return selector === 'h2[tabindex="-1"]' ? this.currentHeading : null;
+    }
+  };
+  const mapButton = focusTarget('map-button');
+  const chronologyButton = focusTarget('chronology-button');
+  const explorerHeading = focusTarget('explorer-heading');
+  const elements = {
+    'edition-companion': section,
+    'edition-companion-content': content,
+    'view-map-button': mapButton,
+    'view-chronology-button': chronologyButton,
+    'explorer-heading': explorerHeading
+  };
+  const windowObject = {
+    PARALLEL_WORLDS_DATA: data,
+    PARALLEL_WORLDS_JOURNEYS: journeysData,
+    ParallelWorldsChronology: chronology,
+    ParallelTimeline: timeline,
+    ParallelWorldsI18n: i18n,
+    PARALLEL_WORLDS_ATLAS_DATA: atlasData,
+    PARALLEL_WORLDS_MAP_DATA: worldMapData,
+    PARALLEL_WORLDS_INSIGHTS: insights,
+    ParallelWorldsAtlas: atlas,
+    ParallelWorldsExplorerState: explorerState,
+    ParallelWorldsAtlasView: atlasView,
+    ParallelWorldsJourney: journey,
+    ParallelWorldsJourneyView: journeyView,
+    PARALLEL_WORLDS_EDITION_DATA: editionData,
+    ParallelWorldsEdition: edition,
+    PARALLEL_WORLDS_MEDIA_DATA: mediaData,
+    ParallelWorldsMediaRegistry: mediaRegistry,
+    ParallelWorldsEditionView: editionView,
+    __PARALLEL_WORLDS_EDITION_TEST__: {},
+    location: {
+      search: search || '', pathname: '/parallel-worlds/', origin: 'https://example.test', hash: ''
+    },
+    matchMedia: function () { return { matches: false, addEventListener: function () {} }; },
+    performance: { now: function () { return 100; } },
+    getSelection: function () { return ''; },
+    innerWidth: 1200,
+    innerHeight: 800
+  };
+  const documentObject = {
+    readyState: 'loading', activeElement: null, hidden: false,
+    addEventListener: function () {},
+    body: { classList: { add: function () {}, remove: function () {} } },
+    documentElement: { dataset: {}, style: { setProperty: function () {} } },
+    querySelector: function () { return null; },
+    querySelectorAll: function () { return []; }
+  };
+  const context = {
+    window: windowObject,
+    document: documentObject,
+    navigator: { language: 'ru' },
+    localStorage: { getItem: function () { return null; }, setItem: function () {} },
+    history: { replaceState: function (_, __, url) { historyUrls.push(url); } },
+    URLSearchParams: URLSearchParams,
+    Date: Date,
+    Number: Number,
+    Object: Object,
+    String: String,
+    Boolean: Boolean,
+    Math: Math,
+    Array: Array,
+    Error: Error,
+    setTimeout: function () { return 1; },
+    clearTimeout: function () {},
+    setInterval: function () { throw new Error('edition companion must not start an interval'); },
+    clearInterval: function () {}
+  };
+  windowObject.document = documentObject;
+  windowObject.navigator = context.navigator;
+  vm.runInNewContext(source, context, { filename: 'app.js' });
+  const api = windowObject.__PARALLEL_WORLDS_EDITION_TEST__.api;
+  api.setContext({ elements: elements });
+  return {
+    api: api,
+    content: content,
+    elements: elements,
+    focused: focused,
+    historyUrls: historyUrls,
+    section: section
   };
 }
 
@@ -2414,6 +2526,123 @@ test('companion route builder rejects unsafe paths external targets and duplicat
   assert.throws(function () { companion.buildRoutes(duplicate, mediaData); }, /Duplicate companion route/);
 });
 
+test('edition companion banner renders canonical localized copy and no fake image', function () {
+  const html = editionView.renderBanner(editionData.windows[3], 'ru', null, function (key) { return key; });
+  assert.ok(html.indexOf('Города, реки и управление') !== -1);
+  assert.ok(html.indexOf('window-04') !== -1);
+  assert.ok(html.indexOf('<img') === -1);
+  assert.ok(/<h2[^>]*tabindex="-1"/.test(html));
+  assert.ok(/button[^>]*data-edition-close/.test(html));
+});
+
+test('edition companion banner escapes manifest and media copy', function () {
+  const unsafe = JSON.parse(JSON.stringify(editionData.windows[0]));
+  unsafe.copy.ru.title = '<img src=x onerror=alert(1)>';
+  const html = editionView.renderBanner(unsafe, 'ru', null, function (key) { return key; });
+  assert.strictEqual(html.indexOf('<img src=x'), -1);
+  assert.ok(html.indexOf('&lt;img') !== -1);
+});
+
+test('edition companion renders only cleared safe web media with real caption and credit', function () {
+  const media = {
+    id: 'object-example', kind: 'source',
+    copy: {
+      ru: { caption: 'Предмет', alt: 'Описание предмета' },
+      en: { caption: 'Object', alt: 'Object description' },
+      zh: { caption: '器物', alt: '器物说明' }
+    },
+    provenance: { credit: 'Museum & Archive' },
+    rights: { web: { status: 'cleared' } },
+    derivatives: { web: {
+      avif: 'assets/media/object-example.avif',
+      webp: 'assets/media/object-example.webp',
+      fallback: 'assets/media/object-example.jpg'
+    } },
+    reconstruction: { isReconstruction: false, basis: '' }
+  };
+  const html = editionView.renderBanner(editionData.windows[3], 'en', media, function (key) { return key; });
+  assert.ok(html.indexOf('<picture>') !== -1);
+  assert.ok(html.indexOf('src="assets/media/object-example.jpg"') !== -1);
+  assert.ok(html.indexOf('Object description') !== -1);
+  assert.ok(html.indexOf('Museum &amp; Archive') !== -1);
+  media.rights.web.status = 'candidate';
+  assert.strictEqual(editionView.renderBanner(editionData.windows[3], 'en', media, function (key) { return key; }).indexOf('<img'), -1);
+});
+
+test('edition companion shell and all three locales expose accessible labels', function () {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.ok(html.indexOf('id="edition-companion"') !== -1);
+  ['ru', 'en', 'zh'].forEach(function (locale) {
+    [
+      'editionCompanionLabel', 'editionCompanionClose', 'editionCompanionOpenAtlas',
+      'editionCompanionReconstruction', 'editionCompanionSource', 'editionCompanionImageUnavailable'
+    ].forEach(function (key) {
+      assert.notStrictEqual(i18n.text(locale, key), key, locale + ' misses ' + key);
+    });
+  });
+});
+
+test('direct edition URL opens the passive companion at its anchor without scrolling focus', function () {
+  const harness = makeEditionControllerHarness('?lang=ru&editionWindow=window-04');
+  harness.api.readUrlState();
+  harness.api.render(true);
+  const snapshot = harness.api.snapshot();
+  assert.deepStrictEqual(
+    [snapshot.state.editionWindow, snapshot.state.year, snapshot.state.playing, snapshot.state.journeyMode],
+    ['window-04', -3500, false, 'paused']
+  );
+  assert.strictEqual(harness.section.hidden, false);
+  assert.ok(harness.content.innerHTML.indexOf('Города, реки и управление') !== -1);
+  assert.strictEqual(harness.content.currentHeading.focusCount, 1);
+  assert.strictEqual(harness.content.currentHeading.lastFocusOptions.preventScroll, true);
+});
+
+test('edition companion respects an explicit URL year', function () {
+  const harness = makeEditionControllerHarness('?editionWindow=window-04&year=-1200');
+  harness.api.readUrlState();
+  assert.strictEqual(harness.api.snapshot().state.year, -1200);
+});
+
+test('closing the edition companion preserves atlas state and restores a safe focus target', function () {
+  const harness = makeEditionControllerHarness('');
+  const state = controllerState({
+    editionWindow: 'window-04', editionMedia: '', editionNotice: '',
+    year: -3500, view: 'chronology', focus: ['sumer', 'egypt'], playing: false
+  });
+  harness.api.setContext({ state: state, elements: harness.elements });
+  harness.api.render(false);
+  harness.api.close(false);
+  const snapshot = harness.api.snapshot();
+  assert.deepStrictEqual(
+    [snapshot.state.editionWindow, snapshot.state.editionMedia, snapshot.state.editionNotice],
+    ['', '', '']
+  );
+  assert.deepStrictEqual(
+    [snapshot.state.year, snapshot.state.view, snapshot.state.focus],
+    [-3500, 'chronology', ['sumer', 'egypt']]
+  );
+  assert.strictEqual(harness.section.hidden, true);
+  assert.strictEqual(harness.elements['view-chronology-button'].focusCount, 1);
+});
+
+test('edition companion restores a connected in-page trigger and atlas action moves to the explorer', function () {
+  const harness = makeEditionControllerHarness('');
+  const trigger = {
+    isConnected: true, focusCount: 0,
+    focus: function () { this.focusCount += 1; }
+  };
+  const firstState = controllerState({ editionWindow: 'window-04', year: -3500 });
+  harness.api.setContext({ state: firstState, elements: harness.elements, trigger: trigger });
+  harness.api.close(false);
+  assert.strictEqual(trigger.focusCount, 1);
+
+  const secondState = controllerState({ editionWindow: 'window-04', year: -3500 });
+  harness.api.setContext({ state: secondState, elements: harness.elements, trigger: null });
+  harness.api.openAtlas();
+  assert.strictEqual(harness.elements['explorer-heading'].scrollCount, 1);
+  assert.strictEqual(harness.elements['explorer-heading'].focusCount, 1);
+});
+
 test('academic audit is deterministic and separates reviewed coverage from legacy warnings', function () {
   const audit = require(path.join(root, 'academic-audit.js'));
   const source = {
@@ -3827,8 +4056,20 @@ test('directed journey assets are loaded in dependency order and shipped by Page
     assert.ok(validator.indexOf('node --check ' + asset) !== -1, asset + ' is not validated');
   });
 
-  assert.ok(/<script src="atlas-view\.js"><\/script>\s*<script src="journeys-data\.js"><\/script>\s*<script src="journey\.js"><\/script>\s*<script src="journey-view\.js"><\/script>\s*<script src="app\.js"><\/script>/.test(html),
-    'journey scripts must load after atlas-view and before app in dependency order');
+  assert.ok(/<script src="atlas-view\.js"><\/script>\s*<script src="journeys-data\.js"><\/script>\s*<script src="journey\.js"><\/script>\s*<script src="journey-view\.js"><\/script>\s*<script src="edition-data\.js"><\/script>\s*<script src="edition\.js"><\/script>\s*<script src="media-data\.js"><\/script>\s*<script src="media-registry\.js"><\/script>\s*<script src="edition-view\.js"><\/script>\s*<script src="app\.js"><\/script>/.test(html),
+    'journey and edition scripts must load after atlas-view and before app in dependency order');
+});
+
+test('edition companion CSS is responsive touch-safe and isolated', function () {
+  const css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
+  assert.ok(/\.edition-companion\s*\{[^}]*max-width:\s*1180px/s.test(css));
+  assert.ok(/\.edition-companion-(?:close|atlas)[^{]*\{[^}]*min-height:\s*44px/s.test(css));
+  assert.ok(/\.edition-companion[^\n{]*:focus-visible/.test(css));
+  assert.ok(/@media\s*\(max-width:\s*720px\)[\s\S]*?\.edition-companion-grid\s*\{[^}]*grid-template-columns:\s*1fr/s.test(css));
+  assert.ok(/@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.edition-companion/.test(css));
+  assert.strictEqual(/body\.open[^\n{]*\.edition-companion/.test(css), false);
+  const block = /\.edition-companion\s*\{([^}]*)\}/s.exec(css);
+  assert.ok(block && !/(?:^|[;\s])(?:height|overflow):/.test(block[1]), 'companion must not clip a fixed-height card');
 });
 
 test('page exposes an inert accessible journey launcher and persistent dialog shell', function () {
@@ -5226,8 +5467,8 @@ test('app controller validates directed journeys and restores their URL state th
     'journey routes are not validated against the canonical corpus');
   assert.ok(/journey:\s*''/.test(app) && /stop:\s*''/.test(app) && /journeyMode:\s*'paused'/.test(app) &&
     /journeyNotice:\s*''/.test(app), 'journey URL defaults are incomplete or unexpectedly autoplay');
-  assert.ok(/explorerState\.parse\(\s*params\s*,\s*defaults\s*,\s*rawData\s*,\s*journeysData\s*\)/.test(app),
-    'URL parser does not receive the journey manifest');
+  assert.ok(/explorerState\.parse\(\s*params\s*,\s*defaults\s*,\s*rawData\s*,\s*journeysData\s*,\s*editionManifest\s*,\s*publicMedia\s*\)/.test(app),
+    'URL parser does not receive the journey and edition manifests');
   ['journey-open', 'journey-dialog', 'journey-exit', 'journey-content', 'journey-announcement'].forEach(function (id) {
     assert.ok(app.indexOf("'" + id + "'") !== -1, 'controller does not collect ' + id);
   });

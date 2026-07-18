@@ -15,6 +15,17 @@
   var journey = window.ParallelWorldsJourney;
   var journeyView = window.ParallelWorldsJourneyView;
   var validatedJourneys = journey.validateCollection(journeysData, rawData);
+  var editionData = window.PARALLEL_WORLDS_EDITION_DATA;
+  var edition = window.ParallelWorldsEdition;
+  var mediaData = window.PARALLEL_WORLDS_MEDIA_DATA;
+  var mediaRegistry = window.ParallelWorldsMediaRegistry;
+  var editionView = window.ParallelWorldsEditionView;
+  var validatedEdition = edition && typeof edition.validateManifest === 'function'
+    ? edition.validateManifest(editionData)
+    : { issues: [{ code: 'edition-unavailable' }], windows: [] };
+  var validatedMedia = mediaRegistry && typeof mediaRegistry.validateRegistry === 'function'
+    ? mediaRegistry.validateRegistry(mediaData)
+    : { issues: [{ code: 'media-unavailable' }], entries: [] };
   var activeData = rawData;
   var regionNames = {};
   var regionColors = {
@@ -39,6 +50,7 @@
     query: '', region: 'all', type: 'all', start: rawData.range.start, end: rawData.range.end,
     year: -500, zoom: 100, lang: initialLocale(), view: 'map', focus: [], selectedRegion: '', scaleMode: 'overview', playing: false, filtersOpen: false,
     journey: '', stop: '', journeyMode: 'paused', journeyNotice: '',
+    editionWindow: '', editionMedia: '', editionNotice: '',
     theme: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   };
   var state = Object.assign({}, defaults);
@@ -62,6 +74,8 @@
   var journeyAnnouncementGeneration = 0;
   var detailTrigger = null;
   var journeyRecovering = false;
+  var editionTrigger = null;
+  var pendingEditionFocus = false;
   var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
 
   function get(id) { return document.getElementById(id); }
@@ -77,7 +91,16 @@
 
   function readUrlState() {
     var params = new URLSearchParams(window.location.search);
-    state = explorerState.parse(params, defaults, rawData, journeysData);
+    var editionManifest = { windows: validatedEdition.windows || [] };
+    var publicMedia = { entries: validatedMedia.entries || [] };
+    state = explorerState.parse(params, defaults, rawData, journeysData, editionManifest, publicMedia);
+    if (state.editionWindow && !params.has('year')) {
+      var directWindow = resolveEditionWindow(state.editionWindow);
+      if (directWindow && directWindow.anchorYear >= state.start && directWindow.anchorYear <= state.end) {
+        state.year = directWindow.anchorYear;
+      }
+    }
+    pendingEditionFocus = Boolean(state.editionWindow);
     var savedTheme = localStorage.getItem('parallel-worlds-theme');
     if (savedTheme === 'light' || savedTheme === 'dark') state.theme = savedTheme;
   }
@@ -103,7 +126,8 @@
       'filter-toggle', 'filters-content', 'scale-mode',
       'view-map-button', 'view-chronology-button', 'atlas-view', 'chronology-view', 'atlas-map', 'atlas-world',
       'atlas-regions', 'atlas-panel', 'atlas-region-list', 'atlas-play-button', 'atlas-year-input', 'atlas-year-output', 'atlas-map-summary',
-      'journey-open', 'journey-dialog', 'journey-exit', 'journey-content', 'journey-announcement']
+      'journey-open', 'journey-dialog', 'journey-exit', 'journey-content', 'journey-announcement',
+      'edition-companion', 'edition-companion-content', 'explorer-heading']
       .forEach(function (id) { elements[id] = get(id); });
   }
 
@@ -565,6 +589,95 @@
     elements['event-count'].textContent = eventCount;
   }
 
+  function resolveEditionWindow(id) {
+    var windows = validatedEdition && Array.isArray(validatedEdition.windows) ? validatedEdition.windows : [];
+    for (var index = 0; index < windows.length; index += 1) {
+      if (windows[index] && windows[index].id === id) return windows[index];
+    }
+    return null;
+  }
+
+  function resolveEditionMedia(id, windowId) {
+    if (!id) return null;
+    var entries = validatedMedia && Array.isArray(validatedMedia.entries) ? validatedMedia.entries : [];
+    for (var index = 0; index < entries.length; index += 1) {
+      var entry = entries[index];
+      if (!entry || entry.id !== id || !Array.isArray(entry.links)) continue;
+      for (var linkIndex = 0; linkIndex < entry.links.length; linkIndex += 1) {
+        if (entry.links[linkIndex] && entry.links[linkIndex].windowId === windowId) return entry;
+      }
+    }
+    return null;
+  }
+
+  function focusEditionTarget(target, preventScroll) {
+    if (!connectedFocusTarget(target)) return false;
+    try {
+      target.focus({ preventScroll: Boolean(preventScroll) });
+    } catch (_) {
+      try { target.focus(); } catch (error) { return false; }
+    }
+    return true;
+  }
+
+  function renderEditionCompanion(focusHeading) {
+    var section = elements['edition-companion'];
+    var content = elements['edition-companion-content'];
+    if (!section || !content) return false;
+    var windowData = resolveEditionWindow(state.editionWindow);
+    if (!windowData || !editionView || typeof editionView.renderBanner !== 'function') {
+      content.innerHTML = '';
+      section.hidden = true;
+      if (elements['atlas-play-button']) elements['atlas-play-button'].disabled = false;
+      return false;
+    }
+    state.playing = false;
+    state.journeyMode = 'paused';
+    if (elements['atlas-play-button']) elements['atlas-play-button'].disabled = true;
+    var media = resolveEditionMedia(state.editionMedia, windowData.id);
+    var html = editionView.renderBanner(windowData, state.lang, media, function (key, values) {
+      if (key === 'editionCompanionAnchor') {
+        return t(key, { year: formatYear(windowData.anchorYear) });
+      }
+      return t(key, values);
+    });
+    if (!html) {
+      content.innerHTML = '';
+      section.hidden = true;
+      return false;
+    }
+    content.innerHTML = html;
+    section.hidden = false;
+    if (focusHeading) {
+      focusEditionTarget(content.querySelector('h2[tabindex="-1"]'), true);
+    }
+    return true;
+  }
+
+  function dismissEditionCompanion(moveToAtlas) {
+    var target = !moveToAtlas && connectedFocusTarget(editionTrigger) ? editionTrigger : null;
+    editionTrigger = null;
+    state.editionWindow = '';
+    state.editionMedia = '';
+    state.editionNotice = '';
+    renderEditionCompanion(false);
+    writeUrlState();
+    if (moveToAtlas) {
+      target = elements['explorer-heading'];
+      if (target && typeof target.scrollIntoView === 'function') {
+        target.scrollIntoView({ block: 'start' });
+      }
+      focusEditionTarget(target, false);
+    } else {
+      target = target || elements[state.view === 'chronology' ? 'view-chronology-button' : 'view-map-button'];
+      focusEditionTarget(target, true);
+    }
+  }
+
+  function openEditionAtlas() {
+    dismissEditionCompanion(true);
+  }
+
   function render() {
     activeData = i18n.localizeData(rawData, state.lang);
     applyStaticCopy();
@@ -573,6 +686,8 @@
     renderAtlas();
     renderTimeline();
     renderContemporaries();
+    renderEditionCompanion(pendingEditionFocus);
+    pendingEditionFocus = false;
     writeUrlState();
   }
 
@@ -585,6 +700,7 @@
   }
 
   function startPlayback() {
+    if (state.editionWindow) return;
     var step = chronology.recommendedStep(currentScale());
     if (reducedMotion && reducedMotion.matches) {
       state.year = atlas.nextPlaybackYear(state.year, state.start, state.end, step);
@@ -1204,6 +1320,7 @@
   }
 
   function openDirectJourney() {
+    if (state.editionWindow) return;
     if (state.journeyNotice === 'unknown-route') {
       openJourneyCatalog(t('journeyUnknownRoute'));
       return;
@@ -1483,7 +1600,9 @@
     elements['detail-dialog'].addEventListener('click', function (event) {
       if (event.target === elements['detail-dialog']) closeDetails();
     });
-    elements['journey-open'].addEventListener('click', function () { openJourneyCatalog(''); });
+    elements['journey-open'].addEventListener('click', function () {
+      if (!state.editionWindow) openJourneyCatalog('');
+    });
     elements['journey-exit'].addEventListener('click', function () { finishJourney(false); });
     elements['journey-dialog'].addEventListener('cancel', function (event) {
       event.preventDefault();
@@ -1504,6 +1623,12 @@
     elements['journey-content'].addEventListener('touchstart', handleJourneyTouchStart, { passive: true });
     elements['journey-content'].addEventListener('touchend', handleJourneyTouchEnd, { passive: true });
     elements['journey-content'].addEventListener('touchcancel', handleJourneyTouchCancel, { passive: true });
+    elements['edition-companion-content'].addEventListener('click', function (event) {
+      var target = event.target && typeof event.target.closest === 'function' ? event.target : null;
+      if (!target) return;
+      if (target.closest('[data-edition-close]')) dismissEditionCompanion(false);
+      else if (target.closest('[data-edition-open-atlas]')) openEditionAtlas();
+    });
     document.addEventListener('selectionchange', function () {
       if (!isJourneyOpen() || !journeyState || journeyState.status !== 'playing') return;
       var selection = typeof window.getSelection === 'function' ? window.getSelection() : null;
@@ -1580,9 +1705,36 @@
     };
   }
 
+  function installEditionControllerTestApi(target) {
+    target.api = {
+      setContext: function (context) {
+        context = context || {};
+        if (Object.prototype.hasOwnProperty.call(context, 'state')) state = context.state;
+        if (Object.prototype.hasOwnProperty.call(context, 'elements')) elements = context.elements;
+        if (Object.prototype.hasOwnProperty.call(context, 'trigger')) editionTrigger = context.trigger;
+      },
+      snapshot: function () {
+        return { state: state, trigger: editionTrigger, pendingFocus: pendingEditionFocus };
+      },
+      readUrlState: readUrlState,
+      render: renderEditionCompanion,
+      close: dismissEditionCompanion,
+      openAtlas: openEditionAtlas,
+      resolveWindow: resolveEditionWindow
+    };
+  }
+
+  var hasControllerTest = false;
   if (window.__PARALLEL_WORLDS_CONTROLLER_TEST__ &&
       typeof window.__PARALLEL_WORLDS_CONTROLLER_TEST__ === 'object') {
     installJourneyControllerTestApi(window.__PARALLEL_WORLDS_CONTROLLER_TEST__);
-  } else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-  else init();
+    hasControllerTest = true;
+  }
+  if (window.__PARALLEL_WORLDS_EDITION_TEST__ &&
+      typeof window.__PARALLEL_WORLDS_EDITION_TEST__ === 'object') {
+    installEditionControllerTestApi(window.__PARALLEL_WORLDS_EDITION_TEST__);
+    hasControllerTest = true;
+  }
+  if (!hasControllerTest && document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else if (!hasControllerTest) init();
 }());

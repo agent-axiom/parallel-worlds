@@ -46,6 +46,10 @@
   </header>
 
   <main>
+    <section id="edition-companion" class="edition-companion" aria-labelledby="edition-companion-title" hidden>
+      <div id="edition-companion-content"></div>
+    </section>
+
     <section class="controls-shell" aria-label="Управление шкалой" data-i18n-aria="controlsAria">
       <button id="filter-toggle" class="mobile-filter-toggle" type="button" aria-controls="filters-content" aria-expanded="false">
         <span data-i18n="showFilters">Показать поиск и фильтры</span><span aria-hidden="true">⌄</span>
@@ -110,7 +114,7 @@
       <div class="explorer-heading">
         <div>
           <p class="kicker" data-i18n="explorerKicker">Исследователь мира</p>
-          <h2 id="explorer-heading" data-i18n="explorerHeading">Мир в один момент</h2>
+          <h2 id="explorer-heading" tabindex="-1" data-i18n="explorerHeading">Мир в один момент</h2>
         </div>
         <div class="view-switch" role="tablist" aria-label="Режим исследователя" data-i18n-aria="viewSwitchAria">
           <button id="view-map-button" class="view-button active" type="button" role="tab" aria-selected="true" aria-controls="atlas-view" data-view="map" data-i18n="viewMap">Карта</button>
@@ -270,6 +274,11 @@
   <script src="journeys-data.js"></script>
   <script src="journey.js"></script>
   <script src="journey-view.js"></script>
+  <script src="edition-data.js"></script>
+  <script src="edition.js"></script>
+  <script src="media-data.js"></script>
+  <script src="media-registry.js"></script>
+  <script src="edition-view.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
