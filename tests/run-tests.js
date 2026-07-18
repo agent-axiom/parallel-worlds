@@ -22,6 +22,8 @@ const explorerState = require(path.join(root, 'explorer-state.js'));
 const atlasView = require(path.join(root, 'atlas-view.js'));
 const edition = require(path.join(root, 'edition.js'));
 const editionData = require(path.join(root, 'edition-data.js'));
+const mediaData = require(path.join(root, 'media-data.js'));
+const mediaRegistry = require(path.join(root, 'media-registry.js'));
 
 let passed = 0;
 
@@ -2250,6 +2252,101 @@ test('edition readiness exposes deterministic gaps instead of treating legacy da
     assert.ok(Array.isArray(window.gaps));
   });
   assert.deepStrictEqual(report, edition.buildReadiness(editionData, data));
+});
+
+test('canonical edition media registry starts empty rather than inventing image rights', function () {
+  assert.deepStrictEqual(mediaData, { version: 1, entries: [] });
+  assert.deepStrictEqual(mediaRegistry.validateRegistry(mediaData).issues, []);
+});
+
+test('media registry accepts a fully cleared trilingual documentary image', function () {
+  const fixture = { version: 1, entries: [{
+    id: 'object-example', kind: 'source', academicRefs: ['track.period'],
+    copy: {
+      ru: { caption: 'Предмет', alt: 'Краткое описание предмета' },
+      en: { caption: 'Object', alt: 'A concise description of the object' },
+      zh: { caption: '器物', alt: '器物的简要说明' }
+    },
+    provenance: {
+      creator: 'Museum', owner: 'Museum',
+      sourceUrl: 'https://example.org/object', credit: 'Museum'
+    },
+    rights: {
+      print: {
+        status: 'cleared', maxCopies: 1000,
+        territory: 'worldwide', expiresOn: '2036-07-18'
+      },
+      web: { status: 'cleared', territory: 'worldwide', expiresOn: '2036-07-18' }
+    },
+    master: { ref: 'private://object-example.tif', sha256: 'a'.repeat(64) },
+    derivatives: { web: {
+      avif: 'assets/media/object-example.avif',
+      webp: 'assets/media/object-example.webp',
+      fallback: 'assets/media/object-example.jpg'
+    } },
+    reconstruction: { isReconstruction: false, basis: '' },
+    links: [{ windowId: 'window-04', role: 'object' }]
+  }] };
+  assert.deepStrictEqual(mediaRegistry.validateRegistry(fixture).issues, []);
+});
+
+test('media registry blocks unclear rights, missing alt text, weak hashes and ungrounded reconstruction', function () {
+  const broken = { version: 1, entries: [{
+    id: 'broken', kind: 'reconstruction', academicRefs: [],
+    copy: { ru: {}, en: {}, zh: {} },
+    provenance: { creator: '', owner: '', sourceUrl: 'javascript:alert(1)', credit: '' },
+    rights: { print: { status: 'candidate' }, web: { status: 'candidate' } },
+    master: { ref: '', sha256: 'abc' }, derivatives: { web: {} },
+    reconstruction: { isReconstruction: true, basis: '' }, links: []
+  }] };
+  const codes = mediaRegistry.validateRegistry(broken).issues.map(function (issue) { return issue.code; });
+  [
+    'missing-copy', 'invalid-source-url', 'uncleared-rights', 'invalid-master',
+    'missing-basis', 'missing-academic-ref', 'invalid-derivatives', 'invalid-link'
+  ].forEach(function (code) {
+    assert.ok(codes.indexOf(code) !== -1, 'missing ' + code);
+  });
+});
+
+test('media registry ignores inherited and accessor-controlled entry collections without throwing', function () {
+  const inherited = Object.create({ entries: [] });
+  inherited.version = 1;
+  assert.ok(mediaRegistry.validateRegistry(inherited).issues.some(function (issue) {
+    return issue.code === 'invalid-entries';
+  }));
+  const accessor = { version: 1 };
+  Object.defineProperty(accessor, 'entries', {
+    get: function () { throw new Error('entries getter called'); }
+  });
+  assert.doesNotThrow(function () { mediaRegistry.validateRegistry(accessor); });
+});
+
+test('media registry never coerces hostile license dates or link ids to strings', function () {
+  const hostile = {
+    toString: function () { throw new Error('hostile toString called'); }
+  };
+  const fixture = { version: 1, entries: [{
+    id: 'hostile-values', kind: 'source', academicRefs: ['track.period'],
+    copy: {
+      ru: { caption: 'Предмет', alt: 'Описание' },
+      en: { caption: 'Object', alt: 'Description' },
+      zh: { caption: '器物', alt: '说明' }
+    },
+    provenance: { creator: 'A', owner: 'B', sourceUrl: 'https://example.org/object', credit: 'C' },
+    rights: {
+      print: { status: 'cleared', maxCopies: 1000, territory: 'worldwide', expiresOn: hostile },
+      web: { status: 'cleared', territory: 'worldwide', expiresOn: hostile }
+    },
+    master: { ref: 'private://hostile-values.tif', sha256: 'a'.repeat(64) },
+    derivatives: { web: {
+      avif: 'assets/media/hostile-values.avif',
+      webp: 'assets/media/hostile-values.webp',
+      fallback: 'assets/media/hostile-values.jpg'
+    } },
+    reconstruction: { isReconstruction: false, basis: '' },
+    links: [{ windowId: hostile, role: 'object' }]
+  }] };
+  assert.doesNotThrow(function () { mediaRegistry.validateRegistry(fixture); });
 });
 
 test('academic audit is deterministic and separates reviewed coverage from legacy warnings', function () {
