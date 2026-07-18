@@ -20,6 +20,8 @@ const worldMapData = require(path.join(root, 'world-map-data.js'));
 const insights = require(path.join(root, 'insights.js'));
 const explorerState = require(path.join(root, 'explorer-state.js'));
 const atlasView = require(path.join(root, 'atlas-view.js'));
+const edition = require(path.join(root, 'edition.js'));
+const editionData = require(path.join(root, 'edition-data.js'));
 
 let passed = 0;
 
@@ -2156,6 +2158,54 @@ test('academic schema validates confidence and alternative chronology models', f
   assert.ok(issueCodes(function (dating) { dating.copy.ru.model = '   '; }).indexOf('missing-localization') !== -1);
   assert.ok(issueCodes(function (dating) { dating.copy.zh.disputeNote = '   '; }).indexOf('missing-localization') !== -1);
   assert.ok(issueCodes(function (dating) { dating.alternatives[0].copy.en.label = '   '; }).indexOf('missing-localization') !== -1);
+});
+
+test('hardcover edition manifest fixes the approved physical and editorial structure', function () {
+  const validation = edition.validateManifest(editionData);
+  assert.deepStrictEqual(validation.issues, []);
+  assert.strictEqual(editionData.id, 'hardcover-ru-first-edition');
+  assert.deepStrictEqual(editionData.format, {
+    widthMm: 300, heightMm: 240, orientation: 'landscape', language: 'ru'
+  });
+  assert.deepStrictEqual(editionData.pagePlan, {
+    opening: 16, windows: 192, interludes: 32, apparatus: 48, total: 288
+  });
+  assert.strictEqual(editionData.windows.length, 12);
+  assert.strictEqual(editionData.interludes.length, 8);
+  assert.deepStrictEqual(editionData.windows.map(function (window) { return window.anchorYear; }),
+    [-18000, -9500, -6500, -3500, -2500, -1200, -500, 200, 650, 1000, 1250, 1450]);
+});
+
+test('edition manifest validation rejects unsafe ids, year zero, duplicate routes and bad production invariants', function () {
+  const fixture = JSON.parse(JSON.stringify(editionData));
+  fixture.windows[0].id = '<script>';
+  fixture.windows[1].anchorYear = 0;
+  fixture.windows[2].companionPath = fixture.windows[3].companionPath;
+  fixture.pagePlan.total = 287;
+  fixture.format.widthMm = 301;
+  fixture.interludes.pop();
+  fixture.printRun.minimum = 499;
+  const codes = edition.validateManifest(fixture).issues.map(function (issue) { return issue.code; });
+  [
+    'invalid-id', 'invalid-anchor-year', 'duplicate-companion-path', 'page-plan-mismatch',
+    'invalid-format', 'interlude-count', 'invalid-print-run'
+  ].forEach(function (code) {
+    assert.ok(codes.indexOf(code) !== -1, 'missing ' + code);
+  });
+});
+
+test('edition validation ignores inherited and accessor-controlled collections without throwing', function () {
+  assert.doesNotThrow(function () { edition.validateManifest(null); });
+  const inherited = Object.create({ windows: editionData.windows });
+  inherited.version = 1;
+  assert.ok(edition.validateManifest(inherited).issues.some(function (issue) {
+    return issue.code === 'invalid-windows';
+  }));
+  const accessor = {};
+  Object.defineProperty(accessor, 'windows', {
+    get: function () { throw new Error('windows getter called'); }
+  });
+  assert.doesNotThrow(function () { edition.validateManifest(accessor); });
 });
 
 test('academic audit is deterministic and separates reviewed coverage from legacy warnings', function () {
