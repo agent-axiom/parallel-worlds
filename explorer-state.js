@@ -7,6 +7,11 @@
 
   var MAX_JOURNEY_ROUTES = 100;
   var MAX_JOURNEY_STOPS = 8;
+  var MAX_EDITION_WINDOWS = 100;
+  var MAX_MEDIA_ENTRIES = 1000;
+  var MAX_MEDIA_LINKS = 100;
+  var EDITION_WINDOW_ID = /^window-[0-9]{2}$/;
+  var EDITION_MEDIA_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
@@ -142,7 +147,68 @@
     state.journeyMode = params.get('journeyMode') === 'playing' ? 'playing' : 'paused';
   }
 
-  function parse(params, defaults, data, journeys) {
+  function editionWindowExists(manifest, requestedId) {
+    if (typeof requestedId !== 'string' || !EDITION_WINDOW_ID.test(requestedId)) return false;
+    var windows = ownArray(manifest, 'windows');
+    if (!windows) return false;
+    var count = arrayLength(windows);
+    if (count < 1 || count > MAX_EDITION_WINDOWS) return false;
+    for (var index = 0; index < count; index += 1) {
+      var windowProperty = ownDataProperty(windows, String(index));
+      if (!windowProperty) return false;
+      if (ownValue(windowProperty.value, 'id') === requestedId) return true;
+    }
+    return false;
+  }
+
+  function mediaBelongsToWindow(registry, requestedMedia, requestedWindow) {
+    if (typeof requestedMedia !== 'string' || !EDITION_MEDIA_ID.test(requestedMedia)) return false;
+    var entries = ownArray(registry, 'entries');
+    if (!entries) return false;
+    var entryCount = arrayLength(entries);
+    if (entryCount > MAX_MEDIA_ENTRIES) return false;
+    for (var entryIndex = 0; entryIndex < entryCount; entryIndex += 1) {
+      var entryProperty = ownDataProperty(entries, String(entryIndex));
+      if (!entryProperty) return false;
+      var entry = entryProperty.value;
+      if (ownValue(entry, 'id') !== requestedMedia) continue;
+      var links = ownArray(entry, 'links');
+      if (!links) return false;
+      var linkCount = arrayLength(links);
+      if (linkCount < 1 || linkCount > MAX_MEDIA_LINKS) return false;
+      for (var linkIndex = 0; linkIndex < linkCount; linkIndex += 1) {
+        var linkProperty = ownDataProperty(links, String(linkIndex));
+        if (!linkProperty) return false;
+        if (ownValue(linkProperty.value, 'windowId') === requestedWindow) return true;
+      }
+      return false;
+    }
+    return false;
+  }
+
+  function restoreEdition(params, state, manifest, registry) {
+    state.editionWindow = '';
+    state.editionMedia = '';
+    state.editionNotice = '';
+    var requestedWindow = params.get('editionWindow');
+    if (!requestedWindow) return;
+    if (!editionWindowExists(manifest, requestedWindow)) {
+      state.editionNotice = 'unknown-edition-window';
+      return;
+    }
+    state.editionWindow = requestedWindow;
+    state.playing = false;
+    state.journeyMode = 'paused';
+    var requestedMedia = params.get('editionMedia');
+    if (!requestedMedia) return;
+    if (!mediaBelongsToWindow(registry, requestedMedia, requestedWindow)) {
+      state.editionNotice = 'unknown-edition-media';
+      return;
+    }
+    state.editionMedia = requestedMedia;
+  }
+
+  function parse(params, defaults, data, journeys, editionManifest, mediaRegistry) {
     var state = Object.assign({}, defaults, { focus: (defaults.focus || []).slice() });
     var view = params.get('view');
     if (view === 'map' || view === 'chronology') state.view = view;
@@ -172,6 +238,7 @@
     if (params.has('focus')) state.focus = normalizeFocus(params.get('focus'), data.tracks);
     if (params.has('lang')) state.lang = normalizeLocale(params.get('lang'), defaults.lang);
     restoreJourney(params, state, journeys);
+    restoreEdition(params, state, editionManifest, mediaRegistry);
     return state;
   }
 
@@ -196,6 +263,14 @@
       params.set('journey', journeyId);
       params.set('stop', typeof stopId === 'string' ? stopId : '');
       params.set('journeyMode', journeyMode === 'playing' ? 'playing' : 'paused');
+    }
+    var editionWindow = ownValue(state, 'editionWindow');
+    if (typeof editionWindow === 'string' && EDITION_WINDOW_ID.test(editionWindow)) {
+      params.set('editionWindow', editionWindow);
+      var editionMedia = ownValue(state, 'editionMedia');
+      if (typeof editionMedia === 'string' && EDITION_MEDIA_ID.test(editionMedia)) {
+        params.set('editionMedia', editionMedia);
+      }
     }
     return params;
   }

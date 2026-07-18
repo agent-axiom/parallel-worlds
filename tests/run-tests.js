@@ -3250,6 +3250,96 @@ test('explorer state round-trips the reviewed evidence filter', function () {
   assert.strictEqual(explorerState.serialize(parsed, defaults).get('type'), 'reviewed');
 });
 
+test('explorer state round-trips a valid passive edition companion window', function () {
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'ru',
+    playing: true, journeyMode: 'playing', editionWindow: '', editionMedia: '', editionNotice: ''
+  };
+  const parsed = explorerState.parse(
+    new URLSearchParams('lang=en&editionWindow=window-04'),
+    defaults, data, journeysData, editionData, mediaData
+  );
+  assert.deepStrictEqual(
+    [parsed.editionWindow, parsed.editionMedia, parsed.editionNotice, parsed.playing, parsed.journeyMode],
+    ['window-04', '', '', false, 'paused']
+  );
+  assert.strictEqual(explorerState.serialize(parsed, defaults).toString(),
+    'lang=en&editionWindow=window-04');
+});
+
+test('explorer state validates edition windows and window-scoped media', function () {
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'ru'
+  };
+  const registry = {
+    entries: [{ id: 'uruk-tablet', links: [{ windowId: 'window-04', role: 'object' }] }]
+  };
+  const unknownWindow = explorerState.parse(
+    new URLSearchParams('editionWindow=window-99&editionMedia=uruk-tablet'),
+    defaults, data, journeysData, editionData, registry
+  );
+  assert.deepStrictEqual(
+    [unknownWindow.editionWindow, unknownWindow.editionMedia, unknownWindow.editionNotice],
+    ['', '', 'unknown-edition-window']
+  );
+  const unknownMedia = explorerState.parse(
+    new URLSearchParams('editionWindow=window-04&editionMedia=nope'),
+    defaults, data, journeysData, editionData, registry
+  );
+  assert.deepStrictEqual(
+    [unknownMedia.editionWindow, unknownMedia.editionMedia, unknownMedia.editionNotice],
+    ['window-04', '', 'unknown-edition-media']
+  );
+  const knownMedia = explorerState.parse(
+    new URLSearchParams('editionWindow=window-04&editionMedia=uruk-tablet'),
+    defaults, data, journeysData, editionData, registry
+  );
+  assert.deepStrictEqual(
+    [knownMedia.editionWindow, knownMedia.editionMedia, knownMedia.editionNotice],
+    ['window-04', 'uruk-tablet', '']
+  );
+  assert.strictEqual(explorerState.serialize(knownMedia, defaults).toString(),
+    'lang=ru&editionWindow=window-04&editionMedia=uruk-tablet');
+});
+
+test('explorer state edition links pause directed journeys without losing their stop', function () {
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'ru', playing: true
+  };
+  const parsed = explorerState.parse(
+    new URLSearchParams('journey=birth-of-cities&stop=uruk-urban-center&journeyMode=playing&editionWindow=window-04'),
+    defaults, data, journeysData, editionData, mediaData
+  );
+  assert.deepStrictEqual(
+    [parsed.journey, parsed.stop, parsed.journeyMode, parsed.playing, parsed.editionWindow],
+    ['birth-of-cities', 'uruk-urban-center', 'paused', false, 'window-04']
+  );
+});
+
+test('explorer state never serializes edition notices or invokes edition accessors', function () {
+  const defaults = {
+    view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
+    start: data.range.start, end: data.range.end, zoom: 100, lang: 'ru'
+  };
+  const inherited = Object.assign(Object.create({
+    editionWindow: 'window-04', editionMedia: 'uruk-tablet', editionNotice: 'inherited'
+  }), defaults);
+  assert.strictEqual(explorerState.serialize(inherited, defaults).toString(), 'lang=ru');
+
+  const accessor = Object.assign({}, defaults, { editionNotice: 'unknown-edition-media' });
+  ['editionWindow', 'editionMedia'].forEach(function (field) {
+    Object.defineProperty(accessor, field, {
+      get: function () { throw new Error(field + ' getter called'); }
+    });
+  });
+  const serialized = explorerState.serialize(accessor, defaults);
+  assert.strictEqual(serialized.toString(), 'lang=ru');
+  assert.strictEqual(serialized.has('editionNotice'), false);
+});
+
 test('explorer state round-trips a paused directed journey stop', function () {
   const defaults = {
     view: 'map', year: -500, focus: [], query: '', region: 'all', type: 'all',
