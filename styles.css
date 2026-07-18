@@ -1358,10 +1358,14 @@ body.journey-open { overflow: hidden; }
 .edition-companion-close:hover { background: rgba(244, 237, 224, .1); }
 .edition-companion-atlas:hover { background: #e07b59; }
 .edition-companion-close:focus-visible,
-.edition-companion-atlas:focus-visible,
-.edition-companion h2:focus-visible {
+.edition-companion-atlas:focus-visible {
   outline: 3px solid #f4c36c;
   outline-offset: 4px;
+}
+.edition-companion h2:focus-visible {
+  outline: none;
+  box-shadow: inset 3px 0 #f4c36c;
+  padding-inline-start: .18em;
 }
 .edition-companion-grid {
   display: grid;

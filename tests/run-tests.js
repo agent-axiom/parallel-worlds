@@ -4072,6 +4072,14 @@ test('edition companion CSS is responsive touch-safe and isolated', function () 
   assert.ok(block && !/(?:^|[;\s])(?:height|overflow):/.test(block[1]), 'companion must not clip a fixed-height card');
 });
 
+test('edition companion heading focus uses a compact marker instead of a full debug-like frame', function () {
+  const css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
+  const rule = /\.edition-companion h2:focus-visible\s*\{([^}]*)\}/s.exec(css);
+  assert.ok(rule, 'missing dedicated companion heading focus rule');
+  assert.ok(/outline:\s*none/.test(rule[1]));
+  assert.ok(/box-shadow:\s*inset\s+3px\s+0\s+#f4c36c/.test(rule[1]));
+});
+
 test('page exposes an inert accessible journey launcher and persistent dialog shell', function () {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const launcherIndex = html.indexOf('class="journey-launch"');
